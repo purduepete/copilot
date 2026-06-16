@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Copilot Reference Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d1117;--card:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--code:#1c2128;--side:300px;
+    --mono:'Roboto Mono',Consolas,monospace;}
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:'Roboto Flex',system-ui,sans-serif;font-optical-sizing:auto;margin:0;background:var(--bg);color:var(--text);line-height:1.6;}
+  .layout{display:flex;align-items:flex-start;}
+
+  /* Icons */
+  .icon{width:18px;height:18px;flex:0 0 18px;stroke:currentColor;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+  .icon-sm{width:15px;height:15px;flex:0 0 15px;}
+
+  /* Sidebar */
+  .sidebar{width:var(--side);flex:0 0 var(--side);position:sticky;top:0;height:100vh;overflow-y:auto;
+    background:var(--card);border-right:1px solid var(--border);padding:22px 14px;}
+  .brand{display:flex;align-items:center;gap:10px;margin:0 6px;}
+  .brand .logo{width:30px;height:30px;flex:0 0 30px;color:var(--accent);}
+  .brand .t{font-size:14px;font-weight:700;color:var(--text);}
+  .brand .t small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:1px;}
+  .navhead{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:20px 6px 8px;font-weight:600;}
+
+  .nav details{border-radius:8px;}
+  .nav summary{list-style:none;cursor:pointer;border-radius:8px;display:flex;align-items:center;gap:9px;
+    color:var(--text);user-select:none;padding:8px;font-weight:500;}
+  .nav summary::-webkit-details-marker{display:none;}
+  .nav summary:hover{background:#1f262e;}
+  .nav .chev{width:14px;height:14px;flex:0 0 14px;color:var(--muted);transition:transform .18s ease;}
+  .nav details[open]>summary>.chev{transform:rotate(90deg);}
+  .nav .subject>summary{font-size:14px;font-weight:600;color:var(--accent);}
+  .nav .topic{margin-left:16px;}
+  .nav .topic>summary{font-size:13px;color:var(--text);font-weight:500;}
+  .nav .links{margin-left:34px;padding:2px 0 6px;border-left:1px solid var(--border);}
+  .nav .links a{display:block;padding:6px 10px;border-radius:6px;font-size:12.5px;color:var(--muted);}
+  .nav .links a:hover{background:#1f262e;color:var(--text);text-decoration:none;}
+  .nav a.leaf{display:flex;align-items:center;gap:9px;padding:8px;border-radius:8px;font-size:14px;color:var(--text);font-weight:500;}
+  .nav a.leaf:hover{background:#1f262e;text-decoration:none;}
+
+  /* Main */
+  .main{flex:1 1 auto;min-width:0;}
+  .wrap{max-width:860px;margin:0 auto;padding:0 0 90px;}
+  .hero{position:relative;padding:40px 36px 30px;background:
+      radial-gradient(900px 240px at 12% -10%, rgba(88,166,255,.22), transparent 60%),
+      radial-gradient(700px 240px at 100% 0%, rgba(126,231,135,.12), transparent 55%),
+      linear-gradient(180deg,#11161d,#0d1117);
+    border-bottom:1px solid var(--border);overflow:hidden;}
+  .hero h1{font-size:30px;font-weight:800;letter-spacing:-.3px;margin:0 0 8px;}
+  .hero .lead{color:var(--muted);font-size:15px;max-width:620px;margin:0;}
+  .hero .art{position:absolute;right:24px;top:50%;transform:translateY(-50%);width:120px;height:120px;color:var(--accent);opacity:.85;}
+  .body{padding:28px 36px;}
+
+  .subject-banner{display:flex;align-items:center;gap:12px;margin:40px 0 6px;padding-bottom:10px;border-bottom:2px solid var(--accent);}
+  .subject-banner .badge{width:40px;height:40px;flex:0 0 40px;display:flex;align-items:center;justify-content:center;
+    border-radius:10px;background:linear-gradient(135deg,#1f6feb33,#1f6feb0d);color:var(--accent);border:1px solid #1f6feb55;}
+  .subject-banner .badge .icon{width:22px;height:22px;}
+  .subject-banner h2{font-size:22px;margin:0;border:none;padding:0;font-weight:700;}
+
+  .topic-head{display:flex;align-items:center;gap:10px;margin:28px 0 10px;}
+  .topic-head .icon{color:var(--accent);width:20px;height:20px;}
+  .topic-head h3{font-size:18px;margin:0;font-weight:600;}
+  .main h4{font-size:14.5px;margin:20px 0 6px;color:var(--text);scroll-margin-top:16px;font-weight:600;}
+  p{margin:8px 0;}
+  a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+  code{background:var(--code);padding:2px 6px;border-radius:5px;font-family:var(--mono);font-size:12.5px;color:#79c0ff;}
+  pre{background:var(--code);border:1px solid var(--border);border-radius:8px;padding:14px 16px;overflow-x:auto;}
+  pre code{background:none;padding:0;color:#e6edf3;}
+  .callout{display:flex;align-items:flex-start;gap:10px;background:#1f6feb1a;border-left:3px solid var(--accent);border-radius:6px;padding:12px 16px;margin:16px 0;}
+  .callout .icon{color:var(--accent);margin-top:3px;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:14px 0;}
+  table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin:12px 0;}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;}
+  th{background:var(--code);color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.5px;}
+  td code{font-size:12px;}
+  .future{color:var(--muted);font-style:italic;font-size:13px;}
+
+  @media (max-width:760px){
+    .layout{flex-direction:column;}
+    .sidebar{position:static;width:100%;height:auto;border-right:none;border-bottom:1px solid var(--border);}
+    .hero .art{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="layout" id="top">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 24 24"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M12 22V12"/><path d="m3 7 9 5 9-5"/></svg>
+      <div class="t">Copilot Reference Hub<small>Personal documentation</small></div>
+    </div>
+    <div class="navhead">Subjects</div>
+    <nav class="nav">
+
+      <a class="leaf" href="#overview">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        Overview
+      </a>
+
+      <details class="subject">
+        <summary>
+          <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+          Azure DevOps
+        </summary>
+
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+            Open Work Item Report
+          </summary>
+          <div class="links">
+            <a href="#ado-regenerate">1. How to regenerate</a>
+            <a href="#ado-output">2. What gets produced</a>
+            <a href="#ado-options">3. Useful options</a>
+            <a href="#ado-setup">4. Setup / troubleshooting</a>
+            <a href="#ado-locations">5. Locations at a glance</a>
+          </div>
+        </details>
+
+      </details>
+
+      <details class="subject">
+        <summary>
+          <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Work Tracking
+        </summary>
+
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+            Time-Tracked Work Log
+          </summary>
+          <div class="links">
+            <a href="#wl-use">1. How to use (via Copilot)</a>
+            <a href="#wl-cli">2. CLI commands</a>
+            <a href="#wl-reports">3. Standup &amp; weekly reports</a>
+            <a href="#wl-model">4. How it works</a>
+            <a href="#wl-locations">5. Locations at a glance</a>
+          </div>
+        </details>
+
+      </details>
+
+      <!-- ============================================================
+           ADD A FUTURE SUBJECT: copy this block, place above this comment.
+           (For a new TOPIC under an existing subject, copy just the inner
+            <details class="topic"> ... </details> block into that subject.)
+
+      <details class="subject">
+        <summary>
+          <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="PICK_AN_ICON_SVG_PATH"/></svg>
+          SUBJECT NAME
+        </summary>
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="PICK_AN_ICON_SVG_PATH"/></svg>
+            TOPIC NAME
+          </summary>
+          <div class="links">
+            <a href="#unique-id-1">1. Section one</a>
+            <a href="#unique-id-2">2. Section two</a>
+          </div>
+        </details>
+      </details>
+      ============================================================ -->
+
+    </nav>
+  </aside>
+
+  <main class="main">
+  <div class="wrap">
+
+    <header class="hero">
+      <svg class="art" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+      <h1>Copilot Reference Hub</h1>
+      <p class="lead">My personal documentation, organized by subject. Use the sidebar to drill down: <strong>Subject &rarr; Topic &rarr; Section</strong>.</p>
+    </header>
+
+    <div class="body">
+
+    <section id="overview">
+      <div class="card">
+        <strong>About this hub</strong>
+        <p>This is a living reference for things I want to remember how to do. Each <strong>subject</strong> (e.g. Azure DevOps)
+        contains one or more <strong>topics</strong>, and each topic has its own sections. New subjects can be added over time.</p>
+        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Work Tracking</strong>. <span class="future">More to come…</span></p>
+      </div>
+    </section>
+
+    <!-- ===================== SUBJECT: AZURE DEVOPS ===================== -->
+    <div class="subject-banner">
+      <span class="badge"><svg class="icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg></span>
+      <h2>Azure DevOps</h2>
+    </div>
+
+    <div class="topic-head" id="ado-report">
+      <svg class="icon" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+      <h3>Topic: Open Work Item Report</h3>
+    </div>
+    <p>Quick reference for regenerating my open Azure DevOps work item list as an HTML report.</p>
+
+    <h4 id="ado-regenerate">1. How to regenerate</h4>
+    <p><strong>Option A — Ask Copilot (easiest).</strong> In any new Copilot session, just type:</p>
+    <div class="callout">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+      <div><strong>Regenerate my ADO work item list</strong></div>
+    </div>
+    <p>Copilot has stored memories about the script and will run it automatically.</p>
+    <p><strong>Option B — Run it myself (no Copilot needed).</strong> Open a terminal and run:</p>
+    <pre><code>pwsh -File C:\Files\Dev\main\work\copilot\Generate-OpenWorkItems.ps1</code></pre>
+    <p>This regenerates and opens the report in the browser.</p>
+
+    <h4 id="ado-output">2. What gets produced</h4>
+    <ul>
+      <li><strong>Output file:</strong> <code>C:\Files\Dev\main\copilot\open-work-items.html</code></li>
+      <li><strong>Contents:</strong> all work items assigned to me that are <strong>not</strong> Closed / Done / Removed / Resolved</li>
+      <li><strong>Layout:</strong> grouped by <strong>Area &rarr; Status</strong>, sorted by <strong>Changed date (oldest &rarr; newest)</strong></li>
+      <li><strong>Columns:</strong> Changed, Project, ID, Type, Status, Task (with clickable ADO links)</li>
+      <li><strong>Features:</strong> color-coded status badges + live search/filter box</li>
+    </ul>
+
+    <h4 id="ado-options">3. Useful options</h4>
+    <p>Include Resolved items too:</p>
+    <pre><code>pwsh -File C:\Files\Dev\main\work\copilot\Generate-OpenWorkItems.ps1 -Exclude Closed,Done,Removed</code></pre>
+    <p>Generate without auto-opening the browser:</p>
+    <pre><code>pwsh -File C:\Files\Dev\main\work\copilot\Generate-OpenWorkItems.ps1 -NoOpen</code></pre>
+    <p>Write to a different file:</p>
+    <pre><code>pwsh -File C:\Files\Dev\main\work\copilot\Generate-OpenWorkItems.ps1 -OutFile C:\temp\items.html</code></pre>
+    <p>You can also ask Copilot for variations, e.g. <em>"regenerate but include Resolved"</em>.</p>
+
+    <h4 id="ado-setup">4. Setup / troubleshooting</h4>
+    <ul>
+      <li><strong>Org:</strong> <code>https://dev.azure.com/StarlightAgileBI</code></li>
+      <li><strong>Auth:</strong> uses my existing Azure login — no PAT needed. If the script errors with a token problem, run <code>az login</code>.</li>
+      <li><strong>Why counts fluctuate during cleanup:</strong> the script uses stable single-condition WIQL to get IDs,
+        then strongly-consistent point-reads of each work item. This avoids the unreliable counts that ADO's
+        multi-condition WIQL returns while its query index lags behind live edits.</li>
+    </ul>
+
+    <h4 id="ado-locations">5. Locations at a glance</h4>
+    <table>
+      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>C:\Files\Dev\main\work\copilot\Generate-OpenWorkItems.ps1</code></td><td>The reusable script (in the <code>work</code> GitHub repo: github.com/jimlertech/work)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\</code></td><td>Generated assets/outputs from Copilot sessions</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\open-work-items.html</code></td><td>The latest generated report</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\instructions.html</code></td><td>This reference hub</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ================================================================
+         ADD A FUTURE SUBJECT (content): copy this block here, then add the
+         matching sidebar entry above. Keep ids unique and matching the
+         sidebar <a href="#..."> links.
+
+    <div class="subject-banner">
+      <span class="badge"><svg class="icon" viewBox="0 0 24 24"><path d="PICK_AN_ICON_SVG_PATH"/></svg></span>
+      <h2>SUBJECT NAME</h2>
+    </div>
+
+    <div class="topic-head" id="unique-topic-id">
+      <svg class="icon" viewBox="0 0 24 24"><path d="PICK_AN_ICON_SVG_PATH"/></svg>
+      <h3>Topic: TOPIC NAME</h3>
+    </div>
+    <p>Short description.</p>
+
+    <h4 id="unique-id-1">1. Section one</h4>
+    <p>Content…</p>
+    <h4 id="unique-id-2">2. Section two</h4>
+    <p>Content…</p>
+    ================================================================ -->
+
+    <!-- ===================== SUBJECT: WORK TRACKING ===================== -->
+    <div class="subject-banner">
+      <span class="badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+      <h2>Work Tracking</h2>
+    </div>
+
+    <div class="topic-head" id="wl-worklog">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
+      <h3>Topic: Time-Tracked Work Log</h3>
+    </div>
+    <p>A conversational, time-tracked work log. I tell Copilot when I <strong>start</strong> work (and what it is),
+    when I <strong>switch</strong>, and when I <strong>finish</strong> (and what I accomplished). It records timestamped
+    sessions and rolls them up into a <strong>daily standup</strong> and <strong>weekly summary</strong> &mdash;
+    as HTML (to view) and Markdown (to paste into Teams / email / ADO).</p>
+
+    <h4 id="wl-use">1. How to use (via Copilot)</h4>
+    <p>The intended way to use this is to just talk to Copilot. For example:</p>
+    <div class="callout">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+      <div>
+        <strong>Starting on the MS Sales pull, work item 435324.</strong><br>
+        <strong>Switching to a review meeting.</strong> &nbsp;(the pull stays open)<br>
+        <strong>Back on the pull.</strong><br>
+        <strong>Done with the pull &mdash; patched the view, validated counts. Blocked on prod approval.</strong><br>
+        <strong>Give me my standup.</strong> &nbsp;/&nbsp; <strong>Wrap up the week.</strong>
+      </div>
+    </div>
+    <p>Copilot has stored memories about this framework and will call the right functions to log work and generate reports.</p>
+
+    <h4 id="wl-cli">2. CLI commands</h4>
+    <p>I can also drive it directly without Copilot:</p>
+    <pre><code>pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 start "Architecture review" -Category Meeting
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 switch -Id 1
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 note  "Found root cause in the view definition"
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 stop  "Patched view, validated counts" -Id 1 -Blocker "Need prod approval"
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 status
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 standup
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 week
+pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 log -Days 14</code></pre>
+    <ul>
+      <li><code>start</code> opens a session (ad-hoc unless <code>-Ado &lt;id&gt;</code> is given). Other open sessions stay open.</li>
+      <li><code>switch -Id &lt;n&gt;</code> moves focus &mdash; it never closes anything.</li>
+      <li><code>stop</code> closes the current session (or <code>-Id &lt;n&gt;</code>) with an accomplishment and optional <code>-Blocker</code>.</li>
+      <li><code>-At &lt;datetime&gt;</code> on start/stop lets me back-date if I forgot to log in real time.</li>
+    </ul>
+
+    <h4 id="wl-reports">3. Standup &amp; weekly reports</h4>
+    <ul>
+      <li><strong>Daily standup</strong> &rarr; <code>standup.html</code> + <code>standup.md</code>: Yesterday (accomplishments + time), Today (in progress / planned), Blockers.</li>
+      <li><strong>Weekly summary</strong> &rarr; <code>weekly-summary.html</code> + <code>weekly-summary.md</code>: accomplishments grouped by day, total time, time by category, and blockers.</li>
+      <li>Each report is written as both a styled HTML file (to view) and Markdown (to paste). The HTML opens automatically unless I ask not to.</li>
+    </ul>
+
+    <h4 id="wl-model">4. How it works</h4>
+    <ul>
+      <li><strong>Parallel sessions:</strong> starting or switching <strong>never</strong> closes another session &mdash; they stay open until I explicitly stop them.</li>
+      <li><strong>Time tracking:</strong> start/stop timestamps give duration per session, rolled up per item, per day, and per category.</li>
+      <li><strong>ADO or ad-hoc:</strong> link an ADO work item by ID (auto-linked in reports), or log meetings / reviews / support with a <code>-Category</code>.</li>
+      <li><strong>Notes:</strong> timestamped log entries I capture while working, rolled into the reports.</li>
+      <li><strong>State</strong> persists in <code>work-log.json</code>, so the log survives across sessions.</li>
+    </ul>
+
+    <h4 id="wl-locations">5. Locations at a glance</h4>
+    <table>
+      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>C:\Files\Dev\main\work\copilot\WorkLog.psm1</code></td><td>Core module (logic + report generators), in the <code>work</code> GitHub repo</td></tr>
+        <tr><td><code>C:\Files\Dev\main\work\copilot\Work.ps1</code></td><td>CLI wrapper (start / switch / stop / note / status / standup / week / log)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\work\copilot\README-WorkLog.md</code></td><td>Usage docs</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\work-log.json</code></td><td>Persistent state (the log itself)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\standup.{html,md}</code></td><td>Latest daily standup</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\weekly-summary.{html,md}</code></td><td>Latest weekly summary</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ===================== ADD FUTURE SUBJECTS BELOW ===================== -->
+
+    </div>
+  </div>
+  </main>
+</div>
+</body>
+</html>
