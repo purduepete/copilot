@@ -1,12 +1,13 @@
 <#
 .SYNOPSIS
-  CLI wrapper for the WorkLog framework (start / switch / stop / note / status / standup / week / log).
+  CLI wrapper for the WorkLog framework (start / switch / stop / note / summary / status / standup / week / log).
 
 .EXAMPLES
   pwsh -File Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
   pwsh -File Work.ps1 start "Standup meeting" -Category Meeting
   pwsh -File Work.ps1 switch -Id 1
   pwsh -File Work.ps1 note "Found root cause in view definition"
+  pwsh -File Work.ps1 summary "High-level recap of the day's accomplishments"
   pwsh -File Work.ps1 stop "Patched view, validated row counts" -Id 1
   pwsh -File Work.ps1 status
   pwsh -File Work.ps1 standup
@@ -21,7 +22,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)]
-    [ValidateSet('start', 'switch', 'stop', 'note', 'edit', 'status', 'standup', 'week', 'dashboard', 'log', 'profile')]
+    [ValidateSet('start', 'switch', 'stop', 'note', 'edit', 'summary', 'commentary', 'status', 'standup', 'week', 'dashboard', 'log', 'profile')]
     [string]$Command,
 
     [Parameter(Position = 1)][string]$Text,
@@ -35,6 +36,9 @@ param(
     [ValidateSet('done', 'paused', 'in-progress')][string]$Status = 'done',
     [int]$Days = 7,
     [string]$Profile = '',
+    [datetime]$Start,
+    [datetime]$End,
+    [datetime]$At,
     [switch]$Reopen,
     [switch]$NoOpen
 )
@@ -43,10 +47,12 @@ Import-Module (Join-Path $PSScriptRoot 'WorkLog.psm1') -Force
 if ($Profile) { Set-WorkProfile -Profile $Profile | Out-Null }
 
 switch ($Command) {
-    'start'   { Start-Work -Title $Text -AdoId $Ado -Category $Category -Tags $Tags | Out-Null }
+    'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Start-Work @sp | Out-Null }
     'switch'  { Switch-Work -Id $Id }
-    'stop'    { Stop-Work -Id $Id -Accomplishment $Text -Blocker $Blocker -Status $Status | Out-Null }
+    'stop'    { $sp = @{ Id = $Id; Accomplishment = $Text; Blocker = $Blocker; Status = $Status }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Stop-Work @sp | Out-Null }
     'note'    { Add-WorkNote -Text $Text -Id $Id }
+    'summary'    { Set-DayCommentary -Text $Text }
+    'commentary' { Set-DayCommentary -Text $Text }
     'edit'    {
         $p = @{ Id = $Id }
         if     ($PSBoundParameters.ContainsKey('Title')) { $p.Title = $Title }
@@ -57,6 +63,8 @@ switch ($Command) {
         if ($PSBoundParameters.ContainsKey('Accomplishment')) { $p.Accomplishment = $Accomplishment }
         if ($PSBoundParameters.ContainsKey('Blocker'))        { $p.Blocker = $Blocker }
         if ($PSBoundParameters.ContainsKey('Status'))         { $p.Status = $Status }
+        if ($PSBoundParameters.ContainsKey('Start'))          { $p.Start = $Start }
+        if ($PSBoundParameters.ContainsKey('End'))            { $p.End = $End }
         if ($Reopen)                                          { $p.Reopen = $true }
         Edit-Work @p | Out-Null
     }

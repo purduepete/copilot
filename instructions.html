@@ -143,11 +143,13 @@
           </summary>
           <div class="links">
             <a href="#wl-use">1. How to use (via Copilot)</a>
-            <a href="#wl-cli">2. CLI commands</a>
-            <a href="#wl-reports">3. Standup, weekly &amp; dashboard</a>
-            <a href="#wl-model">4. How it works</a>
-            <a href="#wl-profiles">5. Work vs personal profiles</a>
-            <a href="#wl-locations">6. Locations at a glance</a>
+            <a href="#wl-phrases">2. Talking to Copilot (phrases)</a>
+            <a href="#wl-cli">3. CLI commands</a>
+            <a href="#wl-reports">4. Standup, weekly &amp; dashboard</a>
+            <a href="#wl-model">5. How it works</a>
+            <a href="#wl-profiles">6. Work vs personal profiles</a>
+            <a href="#wl-vscode">7. VS Code integration</a>
+            <a href="#wl-locations">8. Locations at a glance</a>
           </div>
         </details>
 
@@ -313,14 +315,38 @@
     </div>
     <p>Copilot has stored memories about this framework and will call the right functions to log work and generate reports.</p>
 
-    <h4 id="wl-cli">2. CLI commands</h4>
+    <h4 id="wl-phrases">2. Talking to Copilot (phrases)</h4>
+    <p>I don't need exact syntax or item numbers &mdash; I just describe what I did and Copilot infers the IDs, timestamps, and flags, then regenerates the dashboard. Things I can type:</p>
+    <table class="ref">
+      <thead><tr><th>What I say</th><th>What Copilot runs</th></tr></thead>
+      <tbody>
+        <tr><td>&ldquo;Starting work on &lt;thing&gt;&rdquo; / &ldquo;Now on the MS Sales pull, ADO 435324&rdquo;</td><td><code>start</code></td></tr>
+        <tr><td>&ldquo;Switching to item 3&rdquo; / &ldquo;Back on the pull&rdquo;</td><td><code>switch -Id 3</code></td></tr>
+        <tr><td>&ldquo;Done with item 3 &mdash; &lt;accomplishment&gt;&rdquo; / &ldquo;Stop item 3&rdquo;</td><td><code>stop</code></td></tr>
+        <tr><td>&ldquo;Add a note to item 5: &lt;text&gt;&rdquo;</td><td><code>note</code></td></tr>
+        <tr><td>&ldquo;Add a link to item 5 named &lt;X&gt;: &lt;url&gt;&rdquo;</td><td><code>note</code> as <code>[X](url)</code></td></tr>
+        <tr><td>&ldquo;Edit item 5: category Dev / retitle / reopen&rdquo;</td><td><code>edit</code></td></tr>
+        <tr><td>&ldquo;Daily summary: &lt;high-level recap&gt;&rdquo;</td><td><code>summary</code></td></tr>
+        <tr><td>&ldquo;What's open?&rdquo; / &ldquo;Status&rdquo;</td><td><code>status</code></td></tr>
+        <tr><td>&ldquo;Give me my standup&rdquo;</td><td><code>standup</code></td></tr>
+        <tr><td>&ldquo;Wrap up the week&rdquo; / &ldquo;Weekly summary&rdquo;</td><td><code>week</code></td></tr>
+        <tr><td>&ldquo;Update / open the dashboard&rdquo;</td><td><code>dashboard</code></td></tr>
+        <tr><td>&ldquo;Show my log / last 14 days&rdquo;</td><td><code>log -Days 14</code></td></tr>
+        <tr><td>&ldquo;Switch to my personal profile&rdquo;</td><td><code>profile personal</code></td></tr>
+      </tbody>
+    </table>
+
+    <h4 id="wl-cli">3. CLI commands</h4>
     <p>I can also drive it directly without Copilot:</p>
     <pre><code>pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Architecture review" -Category Meeting
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 switch -Id 1
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 note  "Found root cause in the view definition"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 summary "High-level, fuzzy recap of the day's accomplishments"
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop  "Patched view, validated counts" -Id 1 -Blocker "Need prod approval"
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit  -Id 1 -Status paused -Category Dev
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit  -Id 1 -Start "2026-06-16 14:00" -End "2026-06-16 15:30"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop  "Aligned on structure" -Id 7 -At "2026-06-16 16:23"
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 status
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 standup
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 week
@@ -331,11 +357,12 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile persona
       <li><code>start</code> opens a session (ad-hoc unless <code>-Ado &lt;id&gt;</code> is given). Other open sessions stay open.</li>
       <li><code>switch -Id &lt;n&gt;</code> moves focus &mdash; it never closes anything.</li>
       <li><code>stop</code> closes the current session (or <code>-Id &lt;n&gt;</code>) with an accomplishment and optional <code>-Blocker</code>.</li>
+      <li><code>summary "&lt;text&gt;"</code> sets the day's high-level, fuzzy recap shown under the dashboard summary stats (below &ldquo;Showing&rdquo;).</li>
       <li><code>edit -Id &lt;n&gt;</code> changes any field of a logged session after the fact (only the fields you pass); <code>-Reopen</code> clears the end time.</li>
-      <li><code>-At &lt;datetime&gt;</code> on start/stop lets me back-date if I forgot to log in real time.</li>
+      <li><strong>Back-dating</strong> &mdash; forgot to log in real time? <code>-At &lt;datetime&gt;</code> on <code>start</code>/<code>stop</code>, or <code>edit -Id &lt;n&gt; -Start &lt;dt&gt; -End &lt;dt&gt;</code> to fix an existing session's times. Or just tell Copilot &ldquo;I forgot to log 2&ndash;3pm, I was doing X in Dev&rdquo; and it inserts the session.</li>
     </ul>
 
-    <h4 id="wl-reports">3. Standup, weekly &amp; dashboard reports</h4>
+    <h4 id="wl-reports">4. Standup, weekly &amp; dashboard reports</h4>
     <ul>
       <li><strong>Work dashboard</strong> &rarr; <code>work-dashboard.html</code>: a modern, interactive view of the whole log with an
         <strong>navigable month calendar</strong> &mdash; days with logged work are highlighted; click one to filter the table to that date.
@@ -345,7 +372,7 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile persona
       <li>Standup &amp; weekly are written as both styled HTML (to view) and Markdown (to paste). The HTML opens automatically unless I ask not to.</li>
     </ul>
 
-    <h4 id="wl-model">4. How it works</h4>
+    <h4 id="wl-model">5. How it works</h4>
     <ul>
       <li><strong>Parallel sessions:</strong> starting or switching <strong>never</strong> closes another session &mdash; they stay open until I explicitly stop them.</li>
       <li><strong>Time tracking:</strong> start/stop timestamps give duration per session, rolled up per item, per day, and per category.</li>
@@ -354,7 +381,7 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile persona
       <li><strong>State</strong> persists in <code>work-log.json</code>, so the log survives across sessions.</li>
     </ul>
 
-    <h4 id="wl-profiles">5. Work vs personal profiles</h4>
+    <h4 id="wl-profiles">6. Work vs personal profiles</h4>
     <p>The tool is <strong>portable</strong> (all paths resolve from its own folder, so it runs wherever the
       <code>purduepete/copilot</code> repo is cloned) and <strong>profile-aware</strong> &mdash; each profile keeps its
       own log and reports under <code>worklog\data\&lt;profile&gt;\</code>, so work and personal entries never mix.</p>
@@ -383,12 +410,31 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 profile work</code></pre>
     <p class="muted">Typical setup: the work computer stays on <code>work</code>; the personal computer is set once to
       <code>personal</code> so you never have to think about it. A <code>-Profile</code> flag always overrides the default for that one command.</p>
 
-    <h4 id="wl-locations">6. Locations at a glance</h4>
+    <h4 id="wl-vscode">7. VS Code integration</h4>
+    <p>Two ways to track time while working in VS Code. A reusable template lives at
+      <code>worklog\vscode\</code> (<code>tasks.json</code>, <code>keybindings.jsonc</code>, <code>README.md</code>).</p>
+    <ul>
+      <li><strong>Talk to Copilot in the integrated terminal (recommended):</strong> run the GitHub Copilot CLI in VS Code's
+        terminal and describe what you're doing &mdash; Copilot maps it to the right command (see &ldquo;Talking to Copilot (phrases)&rdquo; above).</li>
+      <li><strong>Tasks + keybindings (no Copilot needed):</strong> copy <code>worklog\vscode\tasks.json</code> into a workspace's
+        <code>.vscode\tasks.json</code>, then run <em>Ctrl+Shift+P &rarr; Tasks: Run Task &rarr; WorkLog: &hellip;</em>
+        (Start / Switch / Note / Stop / Daily summary / Status / Dashboard / Standup). Tasks prompt for title / category / id / text.</li>
+      <li><strong>Optional chords:</strong> paste <code>worklog\vscode\keybindings.jsonc</code> into your user
+        <code>keybindings.json</code> &mdash; e.g. <code>Ctrl+Alt+W</code> then <code>S</code> = Start, <code>X</code> = Stop,
+        <code>N</code> = Note, <code>M</code> = Daily summary, <code>T</code> = Status, <code>D</code> = Dashboard.</li>
+      <li><strong>Path:</strong> the template references <code>Work.ps1</code> via a <code>WORKLOG</code> env var at the top of
+        <code>tasks.json</code> &mdash; edit it if the repo is cloned elsewhere.</li>
+      <li><strong>Note:</strong> true &ldquo;track-as-you-type&rdquo; automation (idle detection, per-file time) needs a dedicated
+        extension such as WakaTime; this framework is intentionally explicit so sessions map cleanly to ADO items, meetings, and categories.</li>
+    </ul>
+
+    <h4 id="wl-locations">8. Locations at a glance</h4>
     <table>
       <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
       <tbody>
         <tr><td><code>C:\Files\Dev\main\copilot\worklog\WorkLog.psm1</code></td><td>Core module (logic + report generators)</td></tr>
-        <tr><td><code>C:\Files\Dev\main\copilot\worklog\Work.ps1</code></td><td>CLI wrapper (start / switch / stop / note / edit / status / standup / week / dashboard / log / profile)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\Work.ps1</code></td><td>CLI wrapper (start / switch / stop / note / edit / summary / status / standup / week / dashboard / log / profile)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\vscode\</code></td><td>VS Code integration template (tasks.json, keybindings.jsonc, README.md)</td></tr>
         <tr><td><code>C:\Files\Dev\main\copilot\worklog\worklog.config.json</code></td><td>Profiles + per-profile settings (ADO org, etc.)</td></tr>
         <tr><td><code>C:\Files\Dev\main\copilot\worklog\.profile</code></td><td>This machine's default profile (git-ignored)</td></tr>
         <tr><td><code>C:\Files\Dev\main\copilot\worklog\README-WorkLog.md</code></td><td>Usage docs</td></tr>

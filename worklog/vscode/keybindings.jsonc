@@ -1,0 +1,12 @@
+// WorkLog keybindings. Open the Command Palette -> "Preferences: Open Keyboard Shortcuts (JSON)"
+// and paste these entries into your user keybindings.json. Adjust the chords if they clash.
+// Each runs a task defined in .vscode\tasks.json (copied from worklog\vscode\tasks.json).
+[
+  { "key": "ctrl+alt+w s", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Start" },
+  { "key": "ctrl+alt+w w", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Switch" },
+  { "key": "ctrl+alt+w n", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Note" },
+  { "key": "ctrl+alt+w x", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Stop" },
+  { "key": "ctrl+alt+w m", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Daily summary" },
+  { "key": "ctrl+alt+w t", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Status" },
+  { "key": "ctrl+alt+w d", "command": "workbench.action.tasks.runTask", "args": "WorkLog: Dashboard" }
+]

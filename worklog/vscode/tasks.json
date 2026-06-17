@@ -1,0 +1,64 @@
+{
+  // WorkLog VS Code tasks. Copy this file into any workspace's .vscode\tasks.json
+  // (or merge the "tasks"/"inputs" arrays into an existing one).
+  // Run with: Ctrl+Shift+P -> "Tasks: Run Task" -> pick a WorkLog task,
+  // or bind them to keys via keybindings.json (see keybindings.jsonc in this folder).
+  "version": "2.0.0",
+  "options": {
+    "env": { "WORKLOG": "C:\\Files\\Dev\\main\\copilot\\worklog\\Work.ps1" }
+  },
+  "presentation": { "reveal": "silent", "panel": "shared", "clear": false },
+  "tasks": [
+    {
+      "label": "WorkLog: Start",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" start \"${input:wlTitle}\" -Category ${input:wlCategory}"
+    },
+    {
+      "label": "WorkLog: Switch",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" switch -Id ${input:wlId}"
+    },
+    {
+      "label": "WorkLog: Note",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" note \"${input:wlText}\""
+    },
+    {
+      "label": "WorkLog: Stop",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" stop \"${input:wlText}\" -Id ${input:wlId}"
+    },
+    {
+      "label": "WorkLog: Daily summary",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" summary \"${input:wlText}\""
+    },
+    {
+      "label": "WorkLog: Status",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" status",
+      "presentation": { "reveal": "always", "panel": "shared" }
+    },
+    {
+      "label": "WorkLog: Dashboard",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" dashboard"
+    },
+    {
+      "label": "WorkLog: Standup",
+      "type": "shell",
+      "command": "pwsh -NoProfile -File \"${env:WORKLOG}\" standup"
+    }
+  ],
+  "inputs": [
+    { "id": "wlTitle", "type": "promptString", "description": "Work item / task title" },
+    { "id": "wlText", "type": "promptString", "description": "Text (accomplishment / note / summary)" },
+    { "id": "wlId", "type": "promptString", "description": "Session id (leave blank for current)" },
+    {
+      "id": "wlCategory", "type": "pickString", "description": "Category",
+      "options": ["Dev", "Meeting", "Review", "Support", "Docs", "DevOps", "Reporting", "Housekeeping", "Personal", "Other"],
+      "default": "Dev"
+    }
+  ]
+}

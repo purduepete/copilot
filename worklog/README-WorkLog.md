@@ -16,6 +16,7 @@ and `personal`, that never mix.
 | --- | --- |
 | `WorkLog.psm1` | Core module (all logic + report generators) |
 | `Work.ps1` | Thin CLI wrapper (verbs) |
+| `vscode\` | VS Code integration template (`tasks.json`, `keybindings.jsonc`, `README.md`) |
 | `worklog.config.json` | Profiles + per-profile settings (e.g. ADO org) |
 | `.profile` | This machine's default profile (git-ignored, not synced) |
 | `data\<profile>\work-log.json` | Persistent state (the log) for that profile |
@@ -89,13 +90,19 @@ pwsh -File Work.ps1 start "Architecture review" -Category Meeting
 
 pwsh -File Work.ps1 switch -Id 1            # move 'current' to #1, nothing closes
 pwsh -File Work.ps1 note  "Found root cause in the view definition"
+pwsh -File Work.ps1 summary "High-level, fuzzy recap of the day's accomplishments"  # daily summary shown on the dashboard
 pwsh -File Work.ps1 stop  "Patched view, validated counts" -Id 1 -Blocker "Need prod approval"
 
 # edit a logged session after the fact (only the fields you pass change):
 pwsh -File Work.ps1 edit -Id 5 "Better title"          # retitle (positional or -Title)
 pwsh -File Work.ps1 edit -Id 5 -Category Dev -Status paused
 pwsh -File Work.ps1 edit -Id 5 -Accomplishment "..." -Blocker "..."
+pwsh -File Work.ps1 edit -Id 5 -Start "2026-06-16 14:00" -End "2026-06-16 15:30"  # back-date times
 pwsh -File Work.ps1 edit -Id 5 -Reopen                 # clear end time, mark in-progress again
+
+# forgot to log in real time? back-date a start/stop with -At:
+pwsh -File Work.ps1 start "Architecture review" -Category Meeting -At "2026-06-16 16:00"
+pwsh -File Work.ps1 stop  "Aligned on structure" -Id 7 -At "2026-06-16 16:23"
 
 pwsh -File Work.ps1 status                  # all open sessions + time logged today
 pwsh -File Work.ps1 standup                 # build + open daily standup (html), print md
@@ -114,6 +121,7 @@ Import-Module .\WorkLog.psm1 -Force
 Start-Work -Title "..." [-AdoId 123] [-Category Dev] [-Tags a,b] [-At <datetime>]
 Switch-Work -Id <n>
 Add-WorkNote -Text "..." [-Id <n>]
+Set-DayCommentary -Text "..." [-Date <dt>]     # high-level daily summary on the dashboard
 Edit-Work -Id <n> [-Title ..] [-Category ..] [-AdoId ..] [-Tags a,b] [-Accomplishment ..] [-Blocker ..] [-Status ..] [-Start <dt>] [-End <dt>] [-Reopen]
 Stop-Work [-Id <n>] -Accomplishment "..." [-Blocker "..."] [-Status done|paused|in-progress] [-At <datetime>]
 Get-OpenSessions

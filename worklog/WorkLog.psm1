@@ -36,6 +36,7 @@ Add-Type -AssemblyName System.Web
 # runs from wherever the repo is cloned. Each profile (e.g. 'work', 'personal')
 # keeps its own log + reports under <script>\data\<profile>\.
 $script:Fmt        = 'yyyy-MM-dd HH:mm:ss'
+$script:SuppressDashboard = $false
 $script:ScriptDir  = $PSScriptRoot
 $script:DataRoot   = if ($env:WORKLOG_HOME) { $env:WORKLOG_HOME } else { $PSScriptRoot }
 $script:ConfigPath = Join-Path $script:ScriptDir 'worklog.config.json'
@@ -138,6 +139,10 @@ function Save-LogState($state) {
     $json = $state | ConvertTo-Json -Depth 12
     if (-not (Test-Path -LiteralPath $script:OutDir)) { New-Item -ItemType Directory -Path $script:OutDir -Force | Out-Null }
     [System.IO.File]::WriteAllText($script:StatePath, $json, (New-Object System.Text.UTF8Encoding $false))
+    if (-not $script:SuppressDashboard) {
+        try { New-WorkDashboard -NoOpen | Out-Null }
+        catch { Write-Warning "Dashboard rebuild failed: $($_.Exception.Message)" }
+    }
 }
 
 function Find-Session($state, [int]$Id) {
@@ -209,6 +214,19 @@ function Stop-Work {
     Save-LogState $st
     Write-Host ("# Stopped #{0}: {1}  ({2})" -f $Id, $s['title'], (FmtMin $s['durationMin']))
     return $s
+}
+
+# ---- Public: Day commentary -----------------------------------------------
+function Set-DayCommentary {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Text, [datetime]$Date = (Get-Date))
+    $st = Get-LogState
+    $key = $Date.ToString('yyyy-MM-dd')
+    $map = if ($st.ContainsKey('commentary') -and $st['commentary']) { $st['commentary'] } else { @{} }
+    if ($Text.Trim()) { $map[$key] = $Text.Trim() } else { $map.Remove($key) | Out-Null }
+    $st['commentary'] = $map
+    Save-LogState $st
+    Write-Host ("* Commentary set for {0}" -f $key)
 }
 
 # ---- Public: Note ----------------------------------------------------------
@@ -352,6 +370,8 @@ table.log tbody tr:hover td{background:#161f30;}
 .stat .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
 .stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
 .chips{margin-bottom:8px;}.scope{font-size:12.5px;color:var(--muted);}
+.commentary{margin:10px 0 2px;padding:7px 10px;border-left:3px solid var(--accent,#3b82f6);background:rgba(59,130,246,.07);border-radius:4px;font-size:12.5px;font-style:italic;line-height:1.45;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.commentary b{font-style:normal;color:var(--fg,#e6e6e6);font-weight:600;}
 .daygrp{margin:0 0 18px;}
 .dayhdr{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px;padding:0 2px;}
 .dayhdr span:first-child{font-size:15px;font-weight:700;color:var(--accent);}
@@ -601,6 +621,11 @@ function New-WorkDashboard {
     })
     $json = $data | ConvertTo-Json -Depth 6 -AsArray
     $json = $json.Replace('</', '<\/')
+    $state = Get-LogState
+    $commentaryMap = if ($state['commentary']) { $state['commentary'] } else { @{} }
+    $commentaryJson = ([pscustomobject]$commentaryMap | ConvertTo-Json -Depth 3)
+    if (-not $commentaryJson -or $commentaryJson -notmatch '[:{]') { $commentaryJson = '{}' }
+    $commentaryJson = $commentaryJson.Replace('</', '<\/')
     $count = $data.Count
     $totalMin = (@($data) | Measure-Object min -Sum).Sum; if (-not $totalMin) { $totalMin = 0 }
     $meta = "Generated $((Get-Date).ToString('yyyy-MM-dd HH:mm')) &bull; $count session(s) &bull; $(FmtMin ([int]$totalMin)) total &bull; click a highlighted day to filter"
@@ -618,9 +643,18 @@ function fmtTs(s){
   if(!m) return esc(s);
   return m[2]+'/'+m[3]+'/'+m[1]+' '+m[4]+':'+m[5];
 }
+function urlLabel(u){
+  var raw=String(u).replace(/&amp;/g,'&');
+  var pm=raw.match(/[?&]path=([^&]+)/i);
+  var p = pm ? decodeURIComponent(pm[1]) : raw.replace(/[?#].*$/,'');
+  var seg=p.split('/').filter(function(x){return x.length;});
+  if(seg.length) return seg[seg.length-1];
+  return raw.replace(/^https?:\/\//,'').split('/')[0];
+}
 function linkify(s){
   var e=esc(s);
-  e=e.replace(/(https?:\/\/[^\s<]+)/g, function(u){ return "<a href='"+u+"' target='_blank' rel='noopener'>"+u+"</a>"; });
+  e=e.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function(m,name,u){ return "<a href='"+u+"' target='_blank' rel='noopener'>"+name+"</a>"; });
+  e=e.replace(/(^|[^'(>])(https?:\/\/[^\s<]+)/g, function(m,pre,u){ return pre+"<a href='"+u+"' target='_blank' rel='noopener'>"+urlLabel(u)+"</a>"; });
   if(ADO_BASE){ e=e.replace(/\b(ADO(?:\s+item)?\s+#?)(\d{3,})\b/gi, function(m,p,n){ return p+"<a href='"+ADO_BASE+"/_workitems/edit/"+n+"' target='_blank' rel='noopener'>"+n+"</a>"; }); }
   return e;
 }
@@ -652,6 +686,21 @@ function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11
 function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
 function clearSel(){ sel=null; renderCal(); renderView(); }
 function curSet(){ return sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); }
+function autoSummary(set){
+  if(!set.length) return '';
+  var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
+  var keys=Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; });
+  var top=keys.slice(0,3);
+  var lead = top.length>1 ? (top.slice(0,-1).join(', ')+' and '+top[top.length-1]) : top[0];
+  return 'Focused mainly on '+lead+' across '+set.length+' session'+(set.length===1?'':'s')+'.';
+}
+function dayCommentary(set){
+  if(!set.length) return '';
+  var dates={}; set.forEach(function(s){ dates[s.date]=1; });
+  var dk=Object.keys(dates);
+  if(dk.length===1 && COMMENTARY[dk[0]]) return COMMENTARY[dk[0]];
+  return autoSummary(set);
+}
 function renderSummary(){
   var set=curSet(); var total=0; var cat={};
   set.forEach(function(s){ total+=s.min; var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -659,11 +708,13 @@ function renderSummary(){
   Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
   if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
   var label = sel ? sel : 'All time';
+  var comm = dayCommentary(set);
   document.getElementById('sum').innerHTML =
     "<div class='sum-row'><div class='stat'><div class='big'>"+fmtMin(total)+"</div><div class='lbl'>Total time</div></div>"+
     "<div class='stat'><div class='big'>"+set.length+"</div><div class='lbl'>Sessions</div></div>"+
     "<div class='stat'><div class='big'>"+Object.keys(cat).length+"</div><div class='lbl'>Categories</div></div></div>"+
-    "<div class='chips'>"+chips+"</div><div class='scope'>Showing: <b>"+esc(label)+"</b></div>";
+    "<div class='chips'>"+chips+"</div><div class='scope'>Showing: <b>"+esc(label)+"</b></div>"+
+    (comm ? "<div class='commentary' title='"+esc(comm)+"'><b>Highlights:</b> "+esc(comm)+"</div>" : "");
 }
 function renderTable(){
   var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
@@ -730,6 +781,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
 </div>
 <script>
 var SESSIONS = $json;
+var COMMENTARY = $commentaryJson;
 var ADO_BASE = "$($script:Org)";
 $js
 </script>
@@ -743,6 +795,6 @@ $js
     [pscustomobject]@{ Html = $outPath }
 }
 
-Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Add-WorkNote, Edit-Work, `
+Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Add-WorkNote, Edit-Work, Set-DayCommentary, `
     Get-OpenSessions, Get-WorkLog, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, `
     Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile
