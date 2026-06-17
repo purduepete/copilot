@@ -3,3 +3,8 @@
 
 # Per-machine WorkLog profile selection (machine-specific, not synced)
 worklog/.profile
+
+# WorkLog atomic-write transients and rollback backups
+worklog/data/**/work-log.json.tmp
+worklog/data/**/work-log.json.bak
+worklog/data/**/*.premigrate.bak

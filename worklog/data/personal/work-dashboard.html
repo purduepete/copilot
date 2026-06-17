@@ -72,12 +72,27 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-box{background:var(--card);border:1px solid var(--border);width:min(680px,100%);max-height:80vh;display:flex;flex-direction:column;}
 .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;}
 .modal-body{padding:16px 18px;overflow:auto;}
-@media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}</style></head><body>
+@media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}
+.searchbar{display:flex;gap:.5rem;align-items:center;margin:0 0 .75rem 0;}
+.searchbar input{flex:1;padding:.55rem .8rem;border-radius:0;border:1px solid var(--bd,#d0d7de);background:var(--card,#fff);color:inherit;font-size:.95rem;outline:none;}
+.searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(77,141,255,.25);}
+.searchbar button{padding:.55rem 1rem;font-size:.9rem;line-height:1;color:var(--muted);transition:background .15s,border-color .15s,color .15s;}
+.searchbar button:hover{background:var(--card2);border-color:var(--accent);color:var(--text);}
+.nh{font-weight:700;margin:.5rem 0 .25rem;}
+.np{margin:.25rem 0;}
+.nlist{margin:.25rem 0 .25rem 1.1rem;padding:0;}
+.nlist li{margin:.15rem 0;}
+.modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
+</style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 08:54 &bull; 22 session(s) &bull; 19h 29m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 13:21 &bull; 24 session(s) &bull; 20h 11m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
+</div>
+<div class='searchbar'>
+  <input id='q' type='search' placeholder='Search title, notes, project, accomplishment&hellip;' oninput='onSearch(this.value)' autocomplete='off'>
+  <button class='pill' onclick='clearSearch()'>Clear</button>
 </div>
 <div id='log'></div>
 </div>
@@ -154,7 +169,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 1,
+    "id": 5,
     "date": "2026-06-14",
     "start": "08:27",
     "end": "09:32",
@@ -170,7 +185,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 2,
+    "id": 6,
     "date": "2026-06-14",
     "start": "09:46",
     "end": "09:56",
@@ -186,7 +201,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 3,
+    "id": 7,
     "date": "2026-06-14",
     "start": "11:38",
     "end": "12:46",
@@ -202,7 +217,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 4,
+    "id": 8,
     "date": "2026-06-14",
     "start": "15:54",
     "end": "16:38",
@@ -218,7 +233,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 5,
+    "id": 9,
     "date": "2026-06-14",
     "start": "17:05",
     "end": "18:22",
@@ -234,7 +249,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 1,
+    "id": 10,
     "date": "2026-06-15",
     "start": "07:32",
     "end": "07:59",
@@ -250,7 +265,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 2,
+    "id": 11,
     "date": "2026-06-15",
     "start": "12:41",
     "end": "13:37",
@@ -266,7 +281,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 3,
+    "id": 12,
     "date": "2026-06-15",
     "start": "13:42",
     "end": "14:21",
@@ -282,7 +297,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 4,
+    "id": 13,
     "date": "2026-06-15",
     "start": "16:44",
     "end": "17:06",
@@ -298,7 +313,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 5,
+    "id": 14,
     "date": "2026-06-15",
     "start": "17:32",
     "end": "19:13",
@@ -314,7 +329,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 6,
+    "id": 15,
     "date": "2026-06-15",
     "start": "22:07",
     "end": "23:16",
@@ -330,7 +345,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 7,
+    "id": 16,
     "date": "2026-06-15",
     "start": "23:32",
     "end": "23:55",
@@ -346,7 +361,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 1,
+    "id": 17,
     "date": "2026-06-16",
     "start": "08:12",
     "end": "08:54",
@@ -362,7 +377,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 2,
+    "id": 18,
     "date": "2026-06-16",
     "start": "09:55",
     "end": "10:00",
@@ -378,7 +393,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 3,
+    "id": 19,
     "date": "2026-06-16",
     "start": "14:19",
     "end": "14:21",
@@ -394,7 +409,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 4,
+    "id": 20,
     "date": "2026-06-16",
     "start": "17:38",
     "end": "17:42",
@@ -410,7 +425,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 1,
+    "id": 21,
     "date": "2026-06-17",
     "start": "08:08",
     "end": "08:30",
@@ -425,13 +440,13 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f.",
-        "ts": "2026-06-17 08:29:58"
+        "ts": "2026-06-17 08:29:58",
+        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f."
       }
     ]
   },
   {
-    "id": 2,
+    "id": 22,
     "date": "2026-06-17",
     "start": "08:30",
     "end": "08:40",
@@ -446,8 +461,50 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production.",
-        "ts": "2026-06-17 08:43:30"
+        "ts": "2026-06-17 08:43:30",
+        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production."
+      }
+    ]
+  },
+  {
+    "id": 23,
+    "date": "2026-06-17",
+    "start": "09:34",
+    "end": "09:54",
+    "min": 20,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Fix #261: Restore Edit action for option positions on Stock Performance page",
+    "accomplishment": "Restored the Edit (pencil) action for option positions on the Stock Performance page; committed 09c76cb.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-17 09:59:00",
+        "text": "GitHub issue: [#261 Restore Edit action for option positions on Stock Performance page](https://github.com/jimlertech/webportfolio/issues/261) (v3.2, closed). Committed as 09c76cb."
+      }
+    ]
+  },
+  {
+    "id": 24,
+    "date": "2026-06-17",
+    "start": "09:54",
+    "end": "10:16",
+    "min": 22,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Fix #262: Stock Performance Cash Only sorting, Strategy column, and column alignment",
+    "accomplishment": "On Stock Performance Cash Only mode: skipped the CASH-to-bottom sort rule so columns sort normally, showed the Strategy column (header, body, footer), and center-aligned Account, Asset Type, and Strategy cells to match headers; committed 7eb0281.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-17 10:16:00",
+        "text": "GitHub issue: [#262 Stock Performance Cash Only: fix sorting, show Strategy column, fix column alignment](https://github.com/jimlertech/webportfolio/issues/262) (v3.2, closed). Committed as 7eb0281."
       }
     ]
   }
@@ -474,12 +531,31 @@ function urlLabel(u){
   if(seg.length) return seg[seg.length-1];
   return raw.replace(/^https?:\/\//,'').split('/')[0];
 }
-function linkify(s){
-  var e=esc(s);
+function mdInline(e){
   e=e.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function(m,name,u){ return "<a href='"+u+"' target='_blank' rel='noopener'>"+name+"</a>"; });
   e=e.replace(/(^|[^'(>])(https?:\/\/[^\s<]+)/g, function(m,pre,u){ return pre+"<a href='"+u+"' target='_blank' rel='noopener'>"+urlLabel(u)+"</a>"; });
+  e=e.replace(/`([^`]+)`/g, function(m,c){ return "<code>"+c+"</code>"; });
+  e=e.replace(/\*\*([^*]+)\*\*/g, function(m,b){ return "<b>"+b+"</b>"; });
   if(ADO_BASE){ e=e.replace(/\b(ADO(?:\s+item)?\s+#?)(\d{3,})\b/gi, function(m,p,n){ return p+"<a href='"+ADO_BASE+"/_workitems/edit/"+n+"' target='_blank' rel='noopener'>"+n+"</a>"; }); }
   return e;
+}
+function linkify(s){ return mdInline(esc(s)); }
+function mdNote(s){
+  var lines=String(s==null?'':s).split(/\r?\n/);
+  var html=''; var inList=false;
+  function closeList(){ if(inList){ html+='</ul>'; inList=false; } }
+  lines.forEach(function(ln){
+    var t=ln.replace(/\s+$/,'');
+    var li=t.match(/^\s*[-*]\s+(.*)$/);
+    if(li){ if(!inList){ html+="<ul class='nlist'>"; inList=true; } html+='<li>'+mdInline(esc(li[1]))+'</li>'; return; }
+    closeList();
+    if(t.trim()===''){ return; }
+    var h=t.match(/^\s*(#{1,6})\s+(.*)$/);
+    if(h){ html+="<div class='nh'>"+mdInline(esc(h[2]))+"</div>"; return; }
+    html+="<div class='np'>"+mdInline(esc(t))+"</div>";
+  });
+  closeList();
+  return html;
 }
 function pad(n){ return (n<10?'0':'')+n; }
 function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
@@ -509,7 +585,16 @@ function renderCal(){
 function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
 function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
 function clearSel(){ sel=null; renderCal(); renderView(); }
-function curSet(){ return sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); }
+var SEARCH='';
+function matchQ(s,q){
+  if(!q) return true;
+  var hay=[s.title,s.accomplishment,s.blocker,s.project,s.category,s.adoId].join('\n');
+  if(s.notes){ s.notes.forEach(function(n){ hay+='\n'+(n.text||''); }); }
+  return hay.toLowerCase().indexOf(q)!==-1;
+}
+function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
+function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; } onSearch(''); }
+function curSet(){ var base = sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
 function autoSummary(set){
   if(!set.length) return '';
   var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -532,6 +617,7 @@ function renderSummary(){
   Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
   if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
   var label = sel ? sel : 'All time';
+  if(SEARCH){ label += ' \u2022 \u201C'+SEARCH+'\u201D'; }
   var comm = dayCommentary(set);
   document.getElementById('sum').innerHTML =
     "<div class='sum-row'><div class='stat'><div class='big'>"+fmtMin(total)+"</div><div class='lbl'>Total time</div></div>"+
@@ -542,7 +628,7 @@ function renderSummary(){
 }
 function renderTable(){
   var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
-  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions for this selection.</div>"; return; }
+  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions"+(SEARCH?" matching \u201C"+esc(SEARCH)+"\u201D":"")+" for this selection.</div>"; return; }
   var groups={}; var order=[];
   set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
   var h='';
@@ -552,7 +638,7 @@ function renderTable(){
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
     h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
-    rows.forEach(function(s){
+    rows.forEach(function(s,ri){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
       var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
@@ -567,7 +653,7 @@ function renderTable(){
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
       var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
       var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum' title='id "+s.id+"'>"+(ri+1)+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
@@ -579,7 +665,7 @@ function openNotes(id){
   var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
   document.getElementById('mTitle').innerHTML=esc(s.title||'');
   var b="<table class='log'><thead><tr><th class='nowrap'>When</th><th>Note</th></tr></thead><tbody>";
-  s.notes.forEach(function(n){ b+="<tr><td class='nowrap muted'>"+fmtTs(n.ts)+"</td><td>"+linkify(n.text)+"</td></tr>"; });
+  s.notes.forEach(function(n){ b+="<tr><td class='nowrap muted'>"+fmtTs(n.ts)+"</td><td>"+mdNote(n.text)+"</td></tr>"; });
   b+="</tbody></table>";
   document.getElementById('mBody').innerHTML=b;
   document.getElementById('modal').classList.add('show');

@@ -1,5 +1,5 @@
 {
-  "nextId": 3,
+  "nextId": 12,
   "sessions": [
     {
       "notes": [
@@ -154,7 +154,7 @@
       "project": "fde",
       "blocker": "",
       "title": "FD&E All Team Connection (June)",
-      "id": 1,
+      "id": 9,
       "status": "done",
       "start": "2026-06-17 10:05:00",
       "durationMin": 65,
@@ -167,7 +167,7 @@
     {
       "notes": [
         {
-          "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first).",
+          "text": "Learned about Fabric CLI \u2014 a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first).",
           "ts": "2026-06-17 12:33:00"
         }
       ],
@@ -176,7 +176,7 @@
       "project": "ai",
       "blocker": "",
       "title": "AI In-the-middle",
-      "id": 2,
+      "id": 10,
       "status": "done",
       "start": "2026-06-17 12:00:00",
       "durationMin": 33,
@@ -188,7 +188,7 @@
     {
       "notes": [
         {
-          "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) — UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti · `users/srvoru/UIDev` → `main` · ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell → microfrontend modules → GraphQL BFF → Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet.",
+          "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) \u2014 UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti \u00b7 `users/srvoru/UIDev` \u2192 `main` \u00b7 ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell \u2192 microfrontend modules \u2192 GraphQL BFF \u2192 Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet.",
           "ts": "2026-06-17 12:55:00"
         }
       ],
@@ -197,7 +197,7 @@
       "project": "bedrock",
       "blocker": "",
       "title": "Review PR #206931 - UI Shell & Tenant Scaffolding",
-      "id": 3,
+      "id": 11,
       "status": "done",
       "start": "2026-06-17 12:51:00",
       "durationMin": 5,
@@ -211,5 +211,5 @@
   "commentary": {
     "2026-06-16": "A build-and-align day: stood up a personal work-tracking framework and dashboard, moved Copilot assets into a private repo, and synced with the team on the Bedrock data-platform architecture."
   },
-  "current": 2
+  "current": null
 }

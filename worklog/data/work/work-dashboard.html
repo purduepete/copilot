@@ -85,7 +85,7 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 13:11 &bull; 11 session(s) &bull; 5h 48m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 13:21 &bull; 11 session(s) &bull; 5h 48m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -120,8 +120,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 14:41:01",
-        "text": "Now is the time for all good men"
+        "text": "Now is the time for all good men",
+        "ts": "2026-06-16 14:41:01"
       }
     ]
   },
@@ -205,12 +205,12 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 16:49:07",
-        "text": "Priority is to work on ADO item 445704"
+        "text": "Priority is to work on ADO item 445704",
+        "ts": "2026-06-16 16:49:07"
       },
       {
-        "ts": "2026-06-16 16:59:53",
-        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling"
+        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling",
+        "ts": "2026-06-16 16:59:53"
       }
     ]
   },
@@ -246,13 +246,13 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 17:38:25",
-        "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)"
+        "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)",
+        "ts": "2026-06-16 17:38:25"
       }
     ]
   },
   {
-    "id": 1,
+    "id": 9,
     "date": "2026-06-17",
     "start": "10:05",
     "end": "11:10",
@@ -268,7 +268,7 @@ var SESSIONS = [
     "notes": []
   },
   {
-    "id": 2,
+    "id": 10,
     "date": "2026-06-17",
     "start": "12:00",
     "end": "12:33",
@@ -283,13 +283,13 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 12:33:00",
-        "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first)."
+        "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first).",
+        "ts": "2026-06-17 12:33:00"
       }
     ]
   },
   {
-    "id": 3,
+    "id": 11,
     "date": "2026-06-17",
     "start": "12:51",
     "end": "12:56",
@@ -304,8 +304,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 12:55:00",
-        "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) — UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti · `users/srvoru/UIDev` → `main` · ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell → microfrontend modules → GraphQL BFF → Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet."
+        "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) — UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti · `users/srvoru/UIDev` → `main` · ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell → microfrontend modules → GraphQL BFF → Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet.",
+        "ts": "2026-06-17 12:55:00"
       }
     ]
   }
@@ -441,7 +441,7 @@ function renderTable(){
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
     h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
-    rows.forEach(function(s){
+    rows.forEach(function(s,ri){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
       var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
@@ -456,7 +456,7 @@ function renderTable(){
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
       var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
       var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum' title='id "+s.id+"'>"+(ri+1)+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });

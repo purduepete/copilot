@@ -1,413 +1,457 @@
 {
-  "nextId": 3,
+  "updated": "2026-06-17 10:16:00",
+  "nextId": 25,
   "current": null,
-  "updated": "2026-06-17 08:42:22",
   "sessions": [
     {
-      "durationMin": 42.0,
-      "blocker": "",
-      "start": "2026-06-16 08:12:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Fix stock-analysis Sell account-number bug",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-16 08:54:00",
-      "accomplishment": "Sell action passed wrong/none account number in URL; fixed, audited for similar breakage elsewhere, committed, pushed, and deployed (deploy exit 0).",
-      "id": 1,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 5.0,
-      "blocker": "",
-      "start": "2026-06-16 09:55:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Split Copilot instructions file via /init",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-16 10:00:00",
-      "accomplishment": "Ran /init; split main instructions 1589->663 lines into separate 933-line instructions file; verified integrity.",
-      "id": 2,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 2.0,
-      "blocker": "",
-      "start": "2026-06-16 14:19:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Add local files as bookmarks",
-      "category": "Dev",
-      "tags": [
-        "webbookmarks"
-      ],
-      "end": "2026-06-16 14:21:00",
-      "accomplishment": "Adding local files as bookmarks was failing; implemented support, committed and pushed.",
-      "id": 3,
-      "adoId": "",
-      "project": "webbookmarks"
-    },
-    {
-      "durationMin": 4.0,
-      "blocker": "",
-      "start": "2026-06-16 17:38:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Open file-based HTML (file: URLs)",
-      "category": "Dev",
-      "tags": [
-        "webbookmarks"
-      ],
-      "end": "2026-06-16 17:42:00",
-      "accomplishment": "Browser blocked file: URLs via window.location.href; routed through GM_openInTab (option 1, ~95% of cases); committed, pushed, updated gist.",
-      "id": 4,
-      "adoId": "",
-      "project": "webbookmarks"
-    },
-    {
-      "durationMin": 27.0,
-      "blocker": "",
-      "start": "2026-06-15 07:32:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Fix option strike-% grouping & delta sort",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 07:59:00",
-      "accomplishment": "SMCI was in wrong strike-% group; corrected to <5% and ordered by delta to top; committed, pushed, deployed.",
-      "id": 1,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 56.0,
-      "blocker": "",
-      "start": "2026-06-15 12:41:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Tampermonkey buy-to-close audit fix + overlay fields + income sums",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 13:37:00",
-      "accomplishment": "Routed buy-to-close through position page (not research); added missing overlay fields (open date, underlying price); added premium & net P&L sums to options-income by-strategy month groupings; updated gist, committed, deployed.",
-      "id": 2,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 39.0,
-      "blocker": "",
-      "start": "2026-06-15 13:42:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Reconcile option premium income & performance discrepancies",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 14:21:00",
-      "accomplishment": "Reconciled net premium vs monthly premium sums and YTD gain vs account performance; added total cost of rolls to chart and right-aligned numbers; deployed option income fix.",
-      "id": 3,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 22.0,
-      "blocker": "",
-      "start": "2026-06-15 16:44:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Add Option Chain link to ticker action menu",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 17:06:00",
-      "accomplishment": "Added Option Chain action (Fidelity URL with expiration/strike) to option positions ticker menu, consistent with other actions; committed, deployed.",
-      "id": 4,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 101.0,
-      "blocker": "",
-      "start": "2026-06-15 17:32:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Notable trades algorithm, trade cards, watchlist upload & formatting",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 19:13:00",
-      "accomplishment": "Better best/worst algorithm (annualized return + days held); clickable trade-detail cards extended to top-10 best & worst; added Barchart price-history links (trade details + options-income by-strategy); DB-backed options-watchlist symbol upload container; queued-trades expiration mm/dd/yyyy formatting; multiple gh tasks, commits, deploys.",
-      "id": 5,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 69.0,
-      "blocker": "",
-      "start": "2026-06-15 22:07:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Rebalance page deploy + desired-allocation button consolidation",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 23:16:00",
-      "accomplishment": "Deployed pending rebalance change; consolidated and logically grouped desired-allocation buttons; committed, deployed.",
-      "id": 6,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 23.0,
-      "blocker": "",
-      "start": "2026-06-15 23:32:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Fix rebalance deep links + watchlist caution-symbols ordering",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-15 23:55:00",
-      "accomplishment": "Fixed rebalance deep-link query-param navigation (incl. no re-render when link changes); ensured caution-symbols input always appears above watchlist textarea; committed, deployed.",
-      "id": 7,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 253.0,
-      "blocker": "",
-      "start": "2026-06-13 00:08:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Fidelity Tampermonkey overlay consistency overhaul",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-13 04:21:00",
       "accomplishment": "Reworked Fidelity trade-context overlays for consistent parameters across new vs owned positions, account & holdings-by-strategy & stock-performance pages, close-position/buy-to-close and roll workflows; common new-option overlay with dashes for empty values; Barchart overlay consistency; multiple site audits; committed, updated gist, deployed.",
-      "id": 1,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 45.0,
-      "blocker": "",
-      "start": "2026-06-13 11:10:00",
-      "status": "done",
       "kind": "adhoc",
-      "notes": [],
-      "title": "Fix slow iOS Safari B2C auth + Pushover deploy alerts",
-      "category": "Dev",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-13 00:08:00",
+      "title": "Fidelity Tampermonkey overlay consistency overhaul",
+      "end": "2026-06-13 04:21:00",
+      "blocker": "",
       "tags": [
         "webportfolio"
       ],
-      "end": "2026-06-13 11:55:00",
+      "durationMin": 253.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 1,
+      "notes": []
+    },
+    {
       "accomplishment": "Diagnosed/fixed slow Azure B2C login screen (timeout) on iPad/iPhone Safari; gh task, committed, pushed, deployed; added Pushover API notification on deploy completion.",
-      "id": 2,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 120.0,
-      "blocker": "",
-      "start": "2026-06-13 13:32:00",
-      "status": "done",
       "kind": "adhoc",
-      "notes": [],
-      "title": "Trade alerts + browser/push notifications & helper page",
-      "category": "Dev",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-13 11:10:00",
+      "title": "Fix slow iOS Safari B2C auth + Pushover deploy alerts",
+      "end": "2026-06-13 11:55:00",
+      "blocker": "",
       "tags": [
         "webportfolio"
       ],
-      "end": "2026-06-13 15:32:00",
+      "durationMin": 45.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 2,
+      "notes": []
+    },
+    {
       "accomplishment": "Added prod/101/100 API-URL dropdown (default 101) to audit tampermonkey; paper vs active in alerts; browser/window + Pushover notifications with extensive testing; alert pill color (blue) and close links; standardized price-change email alert format; iPad helper-page Fidelity link ordering; gh tasks, commits, deploys.",
-      "id": 3,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 65.0,
-      "blocker": "",
-      "start": "2026-06-13 23:02:00",
-      "status": "done",
       "kind": "adhoc",
-      "notes": [],
-      "title": "Watchlist research links + tampermonkey script renames",
-      "category": "Dev",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-13 13:32:00",
+      "title": "Trade alerts + browser/push notifications & helper page",
+      "end": "2026-06-13 15:32:00",
+      "blocker": "",
       "tags": [
         "webportfolio"
       ],
-      "end": "2026-06-14 00:07:00",
+      "durationMin": 120.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 3,
+      "notes": []
+    },
+    {
       "accomplishment": "Made options-watchlist research links a common site action; renamed tampermonkey scripts (Fidelity Trade Overlay, Fidelity CSP Audit, Fidelity Auto Trade Controller); reworked Evaluate Trade & Execute Option Trade research buttons; close-position deep links from stock-performance & holdings-by-strategy into Execute Option Trade; committed, pushed, deployed.",
-      "id": 4,
+      "kind": "adhoc",
+      "status": "done",
       "adoId": "",
-      "project": "webportfolio"
-    },
-    {
+      "start": "2026-06-13 23:02:00",
+      "title": "Watchlist research links + tampermonkey script renames",
+      "end": "2026-06-14 00:07:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
       "durationMin": 65.0,
-      "blocker": "",
-      "start": "2026-06-14 08:27:00",
-      "status": "done",
-      "kind": "adhoc",
-      "notes": [],
-      "title": "Fix weekly report scheduling + failure notifications",
       "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-14 09:32:00",
+      "project": "webportfolio",
+      "id": 4,
+      "notes": []
+    },
+    {
       "accomplishment": "Investigated why Saturday-morning scheduled weekly reports (incl. CSP weekly report) were not being created; fixed scheduling and added failure notifications.",
-      "id": 1,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 10.0,
-      "blocker": "",
-      "start": "2026-06-14 09:46:00",
-      "status": "done",
       "kind": "adhoc",
-      "notes": [],
-      "title": "Portfolio reports: filter by mode (paper/live)",
-      "category": "Dev",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-14 08:27:00",
+      "title": "Fix weekly report scheduling + failure notifications",
+      "end": "2026-06-14 09:32:00",
+      "blocker": "",
       "tags": [
         "webportfolio"
       ],
-      "end": "2026-06-14 09:56:00",
+      "durationMin": 65.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 5,
+      "notes": []
+    },
+    {
       "accomplishment": "Added paper/live mode filtering to the portfolio reports page; gh task, committed, pushed, deployed.",
-      "id": 2,
-      "adoId": "",
-      "project": "webportfolio"
-    },
-    {
-      "durationMin": 68.0,
-      "blocker": "",
-      "start": "2026-06-14 11:38:00",
-      "status": "done",
       "kind": "adhoc",
-      "notes": [],
-      "title": "Tampermonkey UX: chevron toggle + Auto Trade mode cleanup",
-      "category": "Dev",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-14 09:46:00",
+      "title": "Portfolio reports: filter by mode (paper/live)",
+      "end": "2026-06-14 09:56:00",
+      "blocker": "",
       "tags": [
         "webportfolio"
       ],
-      "end": "2026-06-14 12:46:00",
-      "accomplishment": "Added a chevron collapse control (far left) to all tampermonkey scripts; clarified/cleaned Auto Trade modes (disabled default, no/ask/preview-only) and restyled the Auto Trade dropdown to match the site.",
-      "id": 3,
-      "adoId": "",
-      "project": "webportfolio"
+      "durationMin": 10.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 6,
+      "notes": []
     },
     {
-      "durationMin": 44.0,
-      "blocker": "",
-      "start": "2026-06-14 15:54:00",
-      "status": "done",
+      "accomplishment": "Added a chevron collapse control (far left) to all tampermonkey scripts; clarified/cleaned Auto Trade modes (disabled default, no/ask/preview-only) and restyled the Auto Trade dropdown to match the site.",
       "kind": "adhoc",
-      "notes": [],
-      "title": "WebBookmarks: font consistency, Tab profile switching, profile-aware groups",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-14 11:38:00",
+      "title": "Tampermonkey UX: chevron toggle + Auto Trade mode cleanup",
+      "end": "2026-06-14 12:46:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 68.0,
       "category": "Dev",
+      "project": "webportfolio",
+      "id": 7,
+      "notes": []
+    },
+    {
+      "accomplishment": "Unified fonts between apps and tampermonkey script; enabled Tab-key profile switching; made Add-current-page bookmark groups update with the selected profile and excluded All-profile groups from individual profiles; committed, pushed (auto-deploy via gh actions).",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-14 15:54:00",
+      "title": "WebBookmarks: font consistency, Tab profile switching, profile-aware groups",
+      "end": "2026-06-14 16:38:00",
+      "blocker": "",
       "tags": [
         "webbookmarks"
       ],
-      "end": "2026-06-14 16:38:00",
-      "accomplishment": "Unified fonts between apps and tampermonkey script; enabled Tab-key profile switching; made Add-current-page bookmark groups update with the selected profile and excluded All-profile groups from individual profiles; committed, pushed (auto-deploy via gh actions).",
-      "id": 4,
-      "adoId": "",
-      "project": "webbookmarks"
+      "durationMin": 44.0,
+      "category": "Dev",
+      "project": "webbookmarks",
+      "id": 8,
+      "notes": []
     },
     {
-      "durationMin": 77.0,
-      "blocker": "",
-      "start": "2026-06-14 17:05:00",
-      "status": "done",
+      "accomplishment": "Added Fidelity option-chain button (highlighting selected expiration/strike) on Execute Option Trade and Evaluate Trade popout; wired standard research overlay; added info icon/tooltip explaining premium/annualized-gain color coding; fixed favorites ordering; issues, commits, deploys.",
       "kind": "adhoc",
-      "notes": [],
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-14 17:05:00",
       "title": "Execute Option Trade: chain button, research overlay, premium info icon",
-      "category": "Dev",
+      "end": "2026-06-14 18:22:00",
+      "blocker": "",
       "tags": [
         "webportfolio"
       ],
-      "end": "2026-06-14 18:22:00",
-      "accomplishment": "Added Fidelity option-chain button (highlighting selected expiration/strike) on Execute Option Trade and Evaluate Trade popout; wired standard research overlay; added info icon/tooltip explaining premium/annualized-gain color coding; fixed favorites ordering; issues, commits, deploys.",
-      "id": 5,
-      "adoId": "",
-      "project": "webportfolio"
+      "durationMin": 77.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 9,
+      "notes": []
     },
     {
-      "durationMin": 22.0,
-      "blocker": "",
-      "start": "2026-06-17 08:08:00",
-      "status": "done",
+      "accomplishment": "SMCI was in wrong strike-% group; corrected to <5% and ordered by delta to top; committed, pushed, deployed.",
       "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 07:32:00",
+      "title": "Fix option strike-% grouping & delta sort",
+      "end": "2026-06-15 07:59:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 27.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 10,
+      "notes": []
+    },
+    {
+      "accomplishment": "Routed buy-to-close through position page (not research); added missing overlay fields (open date, underlying price); added premium & net P&L sums to options-income by-strategy month groupings; updated gist, committed, deployed.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 12:41:00",
+      "title": "Tampermonkey buy-to-close audit fix + overlay fields + income sums",
+      "end": "2026-06-15 13:37:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 56.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 11,
+      "notes": []
+    },
+    {
+      "accomplishment": "Reconciled net premium vs monthly premium sums and YTD gain vs account performance; added total cost of rolls to chart and right-aligned numbers; deployed option income fix.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 13:42:00",
+      "title": "Reconcile option premium income & performance discrepancies",
+      "end": "2026-06-15 14:21:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 39.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 12,
+      "notes": []
+    },
+    {
+      "accomplishment": "Added Option Chain action (Fidelity URL with expiration/strike) to option positions ticker menu, consistent with other actions; committed, deployed.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 16:44:00",
+      "title": "Add Option Chain link to ticker action menu",
+      "end": "2026-06-15 17:06:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 22.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 13,
+      "notes": []
+    },
+    {
+      "accomplishment": "Better best/worst algorithm (annualized return + days held); clickable trade-detail cards extended to top-10 best & worst; added Barchart price-history links (trade details + options-income by-strategy); DB-backed options-watchlist symbol upload container; queued-trades expiration mm/dd/yyyy formatting; multiple gh tasks, commits, deploys.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 17:32:00",
+      "title": "Notable trades algorithm, trade cards, watchlist upload & formatting",
+      "end": "2026-06-15 19:13:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 101.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 14,
+      "notes": []
+    },
+    {
+      "accomplishment": "Deployed pending rebalance change; consolidated and logically grouped desired-allocation buttons; committed, deployed.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 22:07:00",
+      "title": "Rebalance page deploy + desired-allocation button consolidation",
+      "end": "2026-06-15 23:16:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 69.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 15,
+      "notes": []
+    },
+    {
+      "accomplishment": "Fixed rebalance deep-link query-param navigation (incl. no re-render when link changes); ensured caution-symbols input always appears above watchlist textarea; committed, deployed.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-15 23:32:00",
+      "title": "Fix rebalance deep links + watchlist caution-symbols ordering",
+      "end": "2026-06-15 23:55:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 23.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 16,
+      "notes": []
+    },
+    {
+      "accomplishment": "Sell action passed wrong/none account number in URL; fixed, audited for similar breakage elsewhere, committed, pushed, and deployed (deploy exit 0).",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-16 08:12:00",
+      "title": "Fix stock-analysis Sell account-number bug",
+      "end": "2026-06-16 08:54:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 42.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 17,
+      "notes": []
+    },
+    {
+      "accomplishment": "Ran /init; split main instructions 1589->663 lines into separate 933-line instructions file; verified integrity.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-16 09:55:00",
+      "title": "Split Copilot instructions file via /init",
+      "end": "2026-06-16 10:00:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 5.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 18,
+      "notes": []
+    },
+    {
+      "accomplishment": "Adding local files as bookmarks was failing; implemented support, committed and pushed.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-16 14:19:00",
+      "title": "Add local files as bookmarks",
+      "end": "2026-06-16 14:21:00",
+      "blocker": "",
+      "tags": [
+        "webbookmarks"
+      ],
+      "durationMin": 2.0,
+      "category": "Dev",
+      "project": "webbookmarks",
+      "id": 19,
+      "notes": []
+    },
+    {
+      "accomplishment": "Browser blocked file: URLs via window.location.href; routed through GM_openInTab (option 1, ~95% of cases); committed, pushed, updated gist.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-16 17:38:00",
+      "title": "Open file-based HTML (file: URLs)",
+      "end": "2026-06-16 17:42:00",
+      "blocker": "",
+      "tags": [
+        "webbookmarks"
+      ],
+      "durationMin": 4.0,
+      "category": "Dev",
+      "project": "webbookmarks",
+      "id": 20,
+      "notes": []
+    },
+    {
+      "accomplishment": "Made Rebalance deep-link clearing router-aware and fixed SYMNBOL typo in bulk-sell flow on Stock Analysis page.",
+      "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-17 08:08:00",
+      "title": "Fix #259: deep-link URL handling in Rebalance + SYMNBOL typo in bulk sell",
+      "end": "2026-06-17 08:30:06",
+      "blocker": "",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 22.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 21,
       "notes": [
         {
           "ts": "2026-06-17 08:29:58",
           "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f."
         }
-      ],
-      "title": "Fix #259: deep-link URL handling in Rebalance + SYMNBOL typo in bulk sell",
-      "category": "Dev",
-      "tags": [
-        "webportfolio"
-      ],
-      "end": "2026-06-17 08:30:06",
-      "accomplishment": "Made Rebalance deep-link clearing router-aware and fixed SYMNBOL typo in bulk-sell flow on Stock Analysis page.",
-      "id": 1,
-      "adoId": "",
-      "project": "webportfolio"
+      ]
     },
     {
-      "durationMin": 10.0,
-      "blocker": "",
-      "start": "2026-06-17 08:30:06",
-      "category": "Dev",
+      "accomplishment": "Added an ITM bucket to the Strike % grouping on the Cash Secured Puts page; committed (4d6a843) and deployed to production.",
       "kind": "adhoc",
+      "status": "done",
+      "adoId": "",
+      "start": "2026-06-17 08:30:06",
+      "title": "Fix #260: Add ITM bucket to Strike % grouping on Cash Secured Puts",
+      "end": "2026-06-17 08:40:00",
+      "blocker": "",
+      "tags": [
+        "webportfolio,deploy"
+      ],
+      "durationMin": 10.0,
+      "category": "Dev",
+      "project": "webportfolio",
+      "id": 22,
       "notes": [
         {
           "ts": "2026-06-17 08:43:30",
           "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production."
         }
-      ],
+      ]
+    },
+    {
+      "category": "Dev",
+      "kind": "adhoc",
+      "project": "webportfolio",
+      "title": "Fix #261: Restore Edit action for option positions on Stock Performance page",
+      "start": "2026-06-17 09:34:00",
+      "end": "2026-06-17 09:54:00",
       "status": "done",
-      "title": "Fix #260: Add ITM bucket to Strike % grouping on Cash Secured Puts",
-      "tags": [
-        "webportfolio,deploy"
-      ],
-      "end": "2026-06-17 08:40:00",
-      "accomplishment": "Added an ITM bucket to the Strike % grouping on the Cash Secured Puts page; committed (4d6a843) and deployed to production.",
-      "id": 2,
+      "accomplishment": "Restored the Edit (pencil) action for option positions on the Stock Performance page; committed 09c76cb.",
+      "tags": [],
+      "durationMin": 20.0,
+      "blocker": "",
       "adoId": "",
-      "project": "webportfolio"
+      "id": 23,
+      "notes": [
+        {
+          "ts": "2026-06-17 09:59:00",
+          "text": "GitHub issue: [#261 Restore Edit action for option positions on Stock Performance page](https://github.com/jimlertech/webportfolio/issues/261) (v3.2, closed). Committed as 09c76cb."
+        }
+      ]
+    },
+    {
+      "category": "Dev",
+      "kind": "adhoc",
+      "project": "webportfolio",
+      "title": "Fix #262: Stock Performance Cash Only sorting, Strategy column, and column alignment",
+      "start": "2026-06-17 09:54:00",
+      "end": "2026-06-17 10:16:00",
+      "status": "done",
+      "accomplishment": "On Stock Performance Cash Only mode: skipped the CASH-to-bottom sort rule so columns sort normally, showed the Strategy column (header, body, footer), and center-aligned Account, Asset Type, and Strategy cells to match headers; committed 7eb0281.",
+      "tags": [
+        "webportfolio"
+      ],
+      "durationMin": 22.0,
+      "blocker": "",
+      "adoId": "",
+      "id": 24,
+      "notes": [
+        {
+          "ts": "2026-06-17 10:16:00",
+          "text": "GitHub issue: [#262 Stock Performance Cash Only: fix sorting, show Strategy column, fix column alignment](https://github.com/jimlertech/webportfolio/issues/262) (v3.2, closed). Committed as 7eb0281."
+        }
+      ]
     }
   ]
 }

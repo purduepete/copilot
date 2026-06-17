@@ -144,7 +144,17 @@ function Save-LogState($state) {
     $state['sessions'] = @($state['sessions'])
     $json = $state | ConvertTo-Json -Depth 12
     if (-not (Test-Path -LiteralPath $script:OutDir)) { New-Item -ItemType Directory -Path $script:OutDir -Force | Out-Null }
-    [System.IO.File]::WriteAllText($script:StatePath, $json, (New-Object System.Text.UTF8Encoding $false))
+    $utf8 = New-Object System.Text.UTF8Encoding $false
+    # Atomic write: stage to a temp file, then swap into place keeping a .bak rollback copy.
+    $tmp = "$script:StatePath.tmp"
+    [System.IO.File]::WriteAllText($tmp, $json, $utf8)
+    if (Test-Path -LiteralPath $script:StatePath) {
+        $bak = "$script:StatePath.bak"
+        try   { [System.IO.File]::Replace($tmp, $script:StatePath, $bak) }
+        catch { [System.IO.File]::Copy($script:StatePath, $bak, $true); [System.IO.File]::Move($tmp, $script:StatePath, $true) }
+    } else {
+        [System.IO.File]::Move($tmp, $script:StatePath)
+    }
     if (-not $script:SuppressDashboard) {
         try { New-WorkDashboard -NoOpen | Out-Null }
         catch { Write-Warning "Dashboard rebuild failed: $($_.Exception.Message)" }
@@ -824,7 +834,7 @@ function renderTable(){
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
     h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
-    rows.forEach(function(s){
+    rows.forEach(function(s,ri){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
       var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
@@ -839,7 +849,7 @@ function renderTable(){
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
       var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
       var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum' title='id "+s.id+"'>"+(ri+1)+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });

@@ -396,7 +396,8 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile persona
       <li><strong>ADO or ad-hoc:</strong> link an ADO work item by ID (auto-linked in reports), or log meetings / reviews / support with a <code>-Category</code>.</li>
       <li><strong>Project tagging:</strong> <code>-Project &lt;name&gt;</code> records the product/app a session belongs to as a first-class field (previously embedded in the item title in brackets/parentheses).</li>
       <li><strong>Notes:</strong> timestamped log entries I capture while working, rolled into the reports.</li>
-      <li><strong>State</strong> persists in <code>work-log.json</code>, so the log survives across sessions.</li>
+      <li><strong>IDs vs the &ldquo;#&rdquo; column:</strong> every session has a <em>durable, globally-unique</em> id (immutable for its lifetime &mdash; shown in the &ldquo;#&rdquo; cell tooltip and used by <code>-Id</code>). The &ldquo;#&rdquo; shown in the dashboard is just a <strong>per-day display number</strong> (each day restarts at&nbsp;1), computed at render time &mdash; renumbering the view never touches the stored ids.</li>
+      <li><strong>State</strong> persists in <code>work-log.json</code>, so the log survives across sessions. Saves are <strong>atomic</strong> (staged to a <code>.tmp</code> file, then swapped in) and keep a one-deep <code>.bak</code> rollback copy, so a crash mid-write can&rsquo;t corrupt the log (both are git-ignored).</li>
     </ul>
 
     <h4 id="wl-profiles">6. Work vs personal profiles</h4>
