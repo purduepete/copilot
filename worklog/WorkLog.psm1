@@ -877,9 +877,9 @@ function openNotes(id){
 function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNotes(); });
 (function(){
-  if(SESSIONS.length){ var ds=SESSIONS.map(function(s){ return s.date; }).sort(); var last=ds[ds.length-1]; var o=new Date(last+'T00:00:00'); calY=o.getFullYear(); calM=o.getMonth(); }
-  else { var n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); }
-  sel=null; renderCal(); renderView();
+  var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
+  calY=n.getFullYear(); calM=n.getMonth();
+  sel=today; renderCal(); renderView();
 })();
 '@
 

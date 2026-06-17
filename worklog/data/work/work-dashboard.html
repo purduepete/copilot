@@ -85,7 +85,7 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 15:06 &bull; 12 session(s) &bull; 6h 42m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 16:30 &bull; 14 session(s) &bull; 8h 2m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -324,6 +324,48 @@ var SESSIONS = [
     "blocker": "",
     "status": "done",
     "notes": []
+  },
+  {
+    "id": 13,
+    "date": "2026-06-17",
+    "start": "15:05",
+    "end": "15:44",
+    "min": 39,
+    "category": "Meeting",
+    "project": "bedrock",
+    "adoId": "",
+    "url": "",
+    "title": "[Bedrock] Standup",
+    "accomplishment": "",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "Investigate ontology and better understand what that is",
+        "ts": "2026-06-17 15:34:36"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "date": "2026-06-17",
+    "start": "15:45",
+    "end": "16:26",
+    "min": 41,
+    "category": "Data",
+    "project": "fy27 budget",
+    "adoId": "",
+    "url": "",
+    "title": "Debug Budget FDL data issues",
+    "accomplishment": "Narrowed down problem to legacy data",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "The following ManagementReportingIDs are mapping to the incorrect business -> 261148, 247340, and 261047",
+        "ts": "2026-06-17 16:26:00"
+      }
+    ]
   }
 ];
 var COMMENTARY = {
@@ -492,9 +534,9 @@ function openNotes(id){
 function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNotes(); });
 (function(){
-  if(SESSIONS.length){ var ds=SESSIONS.map(function(s){ return s.date; }).sort(); var last=ds[ds.length-1]; var o=new Date(last+'T00:00:00'); calY=o.getFullYear(); calM=o.getMonth(); }
-  else { var n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); }
-  sel=null; renderCal(); renderView();
+  var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
+  calY=n.getFullYear(); calM=n.getMonth();
+  sel=today; renderCal(); renderView();
 })();
 </script>
 </body></html>
