@@ -16,6 +16,7 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted
 .run{color:var(--green);font-weight:600;}
 .blk{color:var(--red);font-size:12px;margin-top:4px;}
 .cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.proj{display:inline-block;background:#a06bff22;color:#c7adff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;}
 .sbadge{display:inline-block;border-radius:0;padding:1px 8px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-left:8px;vertical-align:middle;white-space:nowrap;border:1px solid transparent;}
 .sbadge.open{background:#33d68522;color:var(--green);border-color:#33d68555;}
 .sbadge.paused{background:#ffb64822;color:var(--amber);border-color:#ffb64855;}
@@ -30,6 +31,9 @@ table.log{width:100%;border-collapse:separate;border-spacing:0;background:var(--
 table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;}
 table.log td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:top;}
 table.log tbody tr:hover td{background:#161f30;}
+table.log.day{table-layout:fixed;}
+table.log.day th,table.log.day td{overflow-wrap:anywhere;word-break:break-word;}
+table.log.day td.nowrap{white-space:normal;}
 .callout{display:flex;gap:9px;background:#4d8dff12;border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
 .callout.warn{background:#ff5d5d1a;border-left-color:var(--red);}
 .top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin:18px 0 8px;}
@@ -70,7 +74,7 @@ table.log tbody tr:hover td{background:#161f30;}
 .modal-body{padding:16px 18px;overflow:auto;}
 @media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}</style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-16 18:47 &bull; 8 session(s) &bull; 4h 5m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 09:31 &bull; 8 session(s) &bull; 4h 5m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -92,6 +96,7 @@ var SESSIONS = [
     "end": "13:31",
     "min": 2,
     "category": "Reporting",
+    "project": "personal",
     "adoId": "",
     "url": "",
     "title": "Regenerate ADO work item list",
@@ -100,8 +105,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 14:41:01",
-        "text": "Now is the time for all good men"
+        "text": "Now is the time for all good men",
+        "ts": "2026-06-16 14:41:01"
       }
     ]
   },
@@ -112,6 +117,7 @@ var SESSIONS = [
     "end": "13:56",
     "min": 25,
     "category": "Dev",
+    "project": "personal",
     "adoId": "",
     "url": "",
     "title": "Build work tracking framework",
@@ -127,6 +133,7 @@ var SESSIONS = [
     "end": "13:59",
     "min": 3,
     "category": "Docs",
+    "project": "personal",
     "adoId": "",
     "url": "",
     "title": "Document framework in Copilot reference hub",
@@ -142,6 +149,7 @@ var SESSIONS = [
     "end": "14:06",
     "min": 5,
     "category": "DevOps",
+    "project": "personal",
     "adoId": "",
     "url": "",
     "title": "Move copilot assets to a git repo and publish",
@@ -157,6 +165,7 @@ var SESSIONS = [
     "end": "15:07",
     "min": 43,
     "category": "Dev",
+    "project": "personal",
     "adoId": "",
     "url": "",
     "title": "Time-tracked log development",
@@ -172,6 +181,7 @@ var SESSIONS = [
     "end": "16:00",
     "min": 52,
     "category": "Meeting",
+    "project": "bedrock",
     "adoId": "",
     "url": "",
     "title": "Daily standup",
@@ -180,12 +190,12 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 16:49:07",
-        "text": "Priority is to work on ADO item 445704"
+        "text": "Priority is to work on ADO item 445704",
+        "ts": "2026-06-16 16:49:07"
       },
       {
-        "ts": "2026-06-16 16:59:53",
-        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling"
+        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling",
+        "ts": "2026-06-16 16:59:53"
       }
     ]
   },
@@ -196,6 +206,7 @@ var SESSIONS = [
     "end": "16:23",
     "min": 23,
     "category": "Meeting",
+    "project": "bedrock",
     "adoId": "",
     "url": "",
     "title": "Data Platform Architecture with Jesus",
@@ -211,6 +222,7 @@ var SESSIONS = [
     "end": "18:14",
     "min": 92,
     "category": "Housekeeping",
+    "project": "personal",
     "adoId": "",
     "url": "",
     "title": "Workflow cleanup",
@@ -219,8 +231,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 17:38:25",
-        "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)"
+        "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)",
+        "ts": "2026-06-16 17:38:25"
       }
     ]
   }
@@ -259,6 +271,7 @@ function linkify(s){
 function pad(n){ return (n<10?'0':'')+n; }
 function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
 var DAYMAP={};
+SESSIONS.forEach(function(s,i){ s._uid=i; });
 SESSIONS.forEach(function(s){ if(!DAYMAP[s.date]) DAYMAP[s.date]={count:0,min:0}; DAYMAP[s.date].count++; DAYMAP[s.date].min+=s.min; });
 function renderCal(){
   var first=new Date(calY,calM,1);
@@ -325,7 +338,7 @@ function renderTable(){
     var o=new Date(dt+'T00:00:00');
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
-    h+="<table class='log'><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
     rows.forEach(function(s){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
@@ -339,15 +352,16 @@ function renderTable(){
       }
       var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
-      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s.id+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
+      var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
   document.getElementById('log').innerHTML=h;
 }
 function renderView(){ renderSummary(); renderTable(); }
-function byId(id){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i].id===id) return SESSIONS[i]; } return null; }
+function byId(uid){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i]._uid===uid) return SESSIONS[i]; } return null; }
 function openNotes(id){
   var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
   document.getElementById('mTitle').innerHTML=esc(s.title||'');
