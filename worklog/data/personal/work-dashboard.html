@@ -85,7 +85,7 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 13:21 &bull; 24 session(s) &bull; 20h 11m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 16:50 &bull; 24 session(s) &bull; 20h 11m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -440,8 +440,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 08:29:58",
-        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f."
+        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f.",
+        "ts": "2026-06-17 08:29:58"
       }
     ]
   },
@@ -461,8 +461,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 08:43:30",
-        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production."
+        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production.",
+        "ts": "2026-06-17 08:43:30"
       }
     ]
   },
@@ -482,8 +482,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 09:59:00",
-        "text": "GitHub issue: [#261 Restore Edit action for option positions on Stock Performance page](https://github.com/jimlertech/webportfolio/issues/261) (v3.2, closed). Committed as 09c76cb."
+        "text": "GitHub issue: [#261 Restore Edit action for option positions on Stock Performance page](https://github.com/jimlertech/webportfolio/issues/261) (v3.2, closed). Committed as 09c76cb.",
+        "ts": "2026-06-17 09:59:00"
       }
     ]
   },
@@ -503,8 +503,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 10:16:00",
-        "text": "GitHub issue: [#262 Stock Performance Cash Only: fix sorting, show Strategy column, fix column alignment](https://github.com/jimlertech/webportfolio/issues/262) (v3.2, closed). Committed as 7eb0281."
+        "text": "GitHub issue: [#262 Stock Performance Cash Only: fix sorting, show Strategy column, fix column alignment](https://github.com/jimlertech/webportfolio/issues/262) (v3.2, closed). Committed as 7eb0281.",
+        "ts": "2026-06-17 10:16:00"
       }
     ]
   }
@@ -673,9 +673,9 @@ function openNotes(id){
 function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
 document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNotes(); });
 (function(){
-  if(SESSIONS.length){ var ds=SESSIONS.map(function(s){ return s.date; }).sort(); var last=ds[ds.length-1]; var o=new Date(last+'T00:00:00'); calY=o.getFullYear(); calM=o.getMonth(); }
-  else { var n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); }
-  sel=null; renderCal(); renderView();
+  var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
+  calY=n.getFullYear(); calM=n.getMonth();
+  sel=today; renderCal(); renderView();
 })();
 </script>
 </body></html>
