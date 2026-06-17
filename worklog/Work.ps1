@@ -29,6 +29,7 @@ param(
     [int]$Id = 0,
     [string]$Ado = '',
     [string]$Category = '',
+    [string]$Project = '',
     [string[]]$Tags = @(),
     [string]$Title = '',
     [string]$Accomplishment = '',
@@ -47,7 +48,7 @@ Import-Module (Join-Path $PSScriptRoot 'WorkLog.psm1') -Force
 if ($Profile) { Set-WorkProfile -Profile $Profile | Out-Null }
 
 switch ($Command) {
-    'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Start-Work @sp | Out-Null }
+    'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Project = $Project; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Start-Work @sp | Out-Null }
     'switch'  { Switch-Work -Id $Id }
     'stop'    { $sp = @{ Id = $Id; Accomplishment = $Text; Blocker = $Blocker; Status = $Status }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Stop-Work @sp | Out-Null }
     'note'    { Add-WorkNote -Text $Text -Id $Id }
@@ -58,6 +59,7 @@ switch ($Command) {
         if     ($PSBoundParameters.ContainsKey('Title')) { $p.Title = $Title }
         elseif ($PSBoundParameters.ContainsKey('Text'))  { $p.Title = $Text }   # convenience: edit -Id 5 "new title"
         if ($PSBoundParameters.ContainsKey('Category'))       { $p.Category = $Category }
+        if ($PSBoundParameters.ContainsKey('Project'))        { $p.Project = $Project }
         if ($PSBoundParameters.ContainsKey('Ado'))            { $p.AdoId = $Ado }
         if ($PSBoundParameters.ContainsKey('Tags'))           { $p.Tags = $Tags }
         if ($PSBoundParameters.ContainsKey('Accomplishment')) { $p.Accomplishment = $Accomplishment }

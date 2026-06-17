@@ -16,6 +16,7 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted
 .run{color:var(--green);font-weight:600;}
 .blk{color:var(--red);font-size:12px;margin-top:4px;}
 .cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.proj{display:inline-block;background:#a06bff22;color:#c7adff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;}
 .sbadge{display:inline-block;border-radius:0;padding:1px 8px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-left:8px;vertical-align:middle;white-space:nowrap;border:1px solid transparent;}
 .sbadge.open{background:#33d68522;color:var(--green);border-color:#33d68555;}
 .sbadge.paused{background:#ffb64822;color:var(--amber);border-color:#ffb64855;}
@@ -30,6 +31,9 @@ table.log{width:100%;border-collapse:separate;border-spacing:0;background:var(--
 table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;}
 table.log td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:top;}
 table.log tbody tr:hover td{background:#161f30;}
+table.log.day{table-layout:fixed;}
+table.log.day th,table.log.day td{overflow-wrap:anywhere;word-break:break-word;}
+table.log.day td.nowrap{white-space:normal;}
 .callout{display:flex;gap:9px;background:#4d8dff12;border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
 .callout.warn{background:#ff5d5d1a;border-left-color:var(--red);}
 .top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin:18px 0 8px;}
@@ -70,7 +74,7 @@ table.log tbody tr:hover td{background:#161f30;}
 .modal-body{padding:16px 18px;overflow:auto;}
 @media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}</style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-16 22:54 &bull; 20 session(s) &bull; 18h 57m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 08:54 &bull; 22 session(s) &bull; 19h 29m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -86,136 +90,209 @@ table.log tbody tr:hover td{background:#161f30;}
 <script>
 var SESSIONS = [
   {
-    "id": 12,
+    "id": 1,
     "date": "2026-06-13",
     "start": "00:08",
     "end": "04:21",
     "min": 253,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Fidelity Tampermonkey overlay consistency overhaul (webportfolio)",
+    "title": "Fidelity Tampermonkey overlay consistency overhaul",
     "accomplishment": "Reworked Fidelity trade-context overlays for consistent parameters across new vs owned positions, account & holdings-by-strategy & stock-performance pages, close-position/buy-to-close and roll workflows; common new-option overlay with dashes for empty values; Barchart overlay consistency; multiple site audits; committed, updated gist, deployed.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 13,
+    "id": 2,
     "date": "2026-06-13",
     "start": "11:10",
     "end": "11:55",
     "min": 45,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Fix slow iOS Safari B2C auth + Pushover deploy alerts (webportfolio)",
+    "title": "Fix slow iOS Safari B2C auth + Pushover deploy alerts",
     "accomplishment": "Diagnosed/fixed slow Azure B2C login screen (timeout) on iPad/iPhone Safari; gh task, committed, pushed, deployed; added Pushover API notification on deploy completion.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 14,
+    "id": 3,
     "date": "2026-06-13",
     "start": "13:32",
     "end": "15:32",
     "min": 120,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Trade alerts + browser/push notifications & helper page (webportfolio)",
+    "title": "Trade alerts + browser/push notifications & helper page",
     "accomplishment": "Added prod/101/100 API-URL dropdown (default 101) to audit tampermonkey; paper vs active in alerts; browser/window + Pushover notifications with extensive testing; alert pill color (blue) and close links; standardized price-change email alert format; iPad helper-page Fidelity link ordering; gh tasks, commits, deploys.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 15,
+    "id": 4,
     "date": "2026-06-13",
     "start": "23:02",
     "end": "00:07",
     "min": 65,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Watchlist research links + tampermonkey script renames (webportfolio)",
+    "title": "Watchlist research links + tampermonkey script renames",
     "accomplishment": "Made options-watchlist research links a common site action; renamed tampermonkey scripts (Fidelity Trade Overlay, Fidelity CSP Audit, Fidelity Auto Trade Controller); reworked Evaluate Trade & Execute Option Trade research buttons; close-position deep links from stock-performance & holdings-by-strategy into Execute Option Trade; committed, pushed, deployed.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 16,
+    "id": 1,
     "date": "2026-06-14",
     "start": "08:27",
     "end": "09:32",
     "min": 65,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Fix weekly report scheduling + failure notifications (webportfolio)",
+    "title": "Fix weekly report scheduling + failure notifications",
     "accomplishment": "Investigated why Saturday-morning scheduled weekly reports (incl. CSP weekly report) were not being created; fixed scheduling and added failure notifications.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 17,
+    "id": 2,
     "date": "2026-06-14",
     "start": "09:46",
     "end": "09:56",
     "min": 10,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Portfolio reports: filter by mode (paper/live) (webportfolio)",
+    "title": "Portfolio reports: filter by mode (paper/live)",
     "accomplishment": "Added paper/live mode filtering to the portfolio reports page; gh task, committed, pushed, deployed.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 18,
+    "id": 3,
     "date": "2026-06-14",
     "start": "11:38",
     "end": "12:46",
     "min": 68,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Tampermonkey UX: chevron toggle + Auto Trade mode cleanup (webportfolio)",
+    "title": "Tampermonkey UX: chevron toggle + Auto Trade mode cleanup",
     "accomplishment": "Added a chevron collapse control (far left) to all tampermonkey scripts; clarified/cleaned Auto Trade modes (disabled default, no/ask/preview-only) and restyled the Auto Trade dropdown to match the site.",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 19,
+    "id": 4,
     "date": "2026-06-14",
     "start": "15:54",
     "end": "16:38",
     "min": 44,
     "category": "Dev",
+    "project": "webbookmarks",
     "adoId": "",
     "url": "",
-    "title": "WebBookmarks: font consistency, Tab profile switching, profile-aware groups (webbookmarks)",
+    "title": "WebBookmarks: font consistency, Tab profile switching, profile-aware groups",
     "accomplishment": "Unified fonts between apps and tampermonkey script; enabled Tab-key profile switching; made Add-current-page bookmark groups update with the selected profile and excluded All-profile groups from individual profiles; committed, pushed (auto-deploy via gh actions).",
     "blocker": "",
     "status": "done",
     "notes": []
   },
   {
-    "id": 20,
+    "id": 5,
     "date": "2026-06-14",
     "start": "17:05",
     "end": "18:22",
     "min": 77,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Execute Option Trade: chain button, research overlay, premium info icon (webportfolio)",
+    "title": "Execute Option Trade: chain button, research overlay, premium info icon",
     "accomplishment": "Added Fidelity option-chain button (highlighting selected expiration/strike) on Execute Option Trade and Evaluate Trade popout; wired standard research overlay; added info icon/tooltip explaining premium/annualized-gain color coding; fixed favorites ordering; issues, commits, deploys.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 1,
+    "date": "2026-06-15",
+    "start": "07:32",
+    "end": "07:59",
+    "min": 27,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Fix option strike-% grouping & delta sort",
+    "accomplishment": "SMCI was in wrong strike-% group; corrected to <5% and ordered by delta to top; committed, pushed, deployed.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 2,
+    "date": "2026-06-15",
+    "start": "12:41",
+    "end": "13:37",
+    "min": 56,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Tampermonkey buy-to-close audit fix + overlay fields + income sums",
+    "accomplishment": "Routed buy-to-close through position page (not research); added missing overlay fields (open date, underlying price); added premium & net P&L sums to options-income by-strategy month groupings; updated gist, committed, deployed.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 3,
+    "date": "2026-06-15",
+    "start": "13:42",
+    "end": "14:21",
+    "min": 39,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Reconcile option premium income & performance discrepancies",
+    "accomplishment": "Reconciled net premium vs monthly premium sums and YTD gain vs account performance; added total cost of rolls to chart and right-aligned numbers; deployed option income fix.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 4,
+    "date": "2026-06-15",
+    "start": "16:44",
+    "end": "17:06",
+    "min": 22,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Add Option Chain link to ticker action menu",
+    "accomplishment": "Added Option Chain action (Fidelity URL with expiration/strike) to option positions ticker menu, consistent with other actions; committed, deployed.",
     "blocker": "",
     "status": "done",
     "notes": []
@@ -223,14 +300,15 @@ var SESSIONS = [
   {
     "id": 5,
     "date": "2026-06-15",
-    "start": "07:32",
-    "end": "07:59",
-    "min": 27,
+    "start": "17:32",
+    "end": "19:13",
+    "min": 101,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Fix option strike-% grouping & delta sort (webportfolio)",
-    "accomplishment": "SMCI was in wrong strike-% group; corrected to <5% and ordered by delta to top; committed, pushed, deployed.",
+    "title": "Notable trades algorithm, trade cards, watchlist upload & formatting",
+    "accomplishment": "Better best/worst algorithm (annualized return + days held); clickable trade-detail cards extended to top-10 best & worst; added Barchart price-history links (trade details + options-income by-strategy); DB-backed options-watchlist symbol upload container; queued-trades expiration mm/dd/yyyy formatting; multiple gh tasks, commits, deploys.",
     "blocker": "",
     "status": "done",
     "notes": []
@@ -238,14 +316,15 @@ var SESSIONS = [
   {
     "id": 6,
     "date": "2026-06-15",
-    "start": "12:41",
-    "end": "13:37",
-    "min": 56,
+    "start": "22:07",
+    "end": "23:16",
+    "min": 69,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Tampermonkey buy-to-close audit fix + overlay fields + income sums (webportfolio)",
-    "accomplishment": "Routed buy-to-close through position page (not research); added missing overlay fields (open date, underlying price); added premium & net P&L sums to options-income by-strategy month groupings; updated gist, committed, deployed.",
+    "title": "Rebalance page deploy + desired-allocation button consolidation",
+    "accomplishment": "Deployed pending rebalance change; consolidated and logically grouped desired-allocation buttons; committed, deployed.",
     "blocker": "",
     "status": "done",
     "notes": []
@@ -253,73 +332,14 @@ var SESSIONS = [
   {
     "id": 7,
     "date": "2026-06-15",
-    "start": "13:42",
-    "end": "14:21",
-    "min": 39,
-    "category": "Dev",
-    "adoId": "",
-    "url": "",
-    "title": "Reconcile option premium income & performance discrepancies (webportfolio)",
-    "accomplishment": "Reconciled net premium vs monthly premium sums and YTD gain vs account performance; added total cost of rolls to chart and right-aligned numbers; deployed option income fix.",
-    "blocker": "",
-    "status": "done",
-    "notes": []
-  },
-  {
-    "id": 8,
-    "date": "2026-06-15",
-    "start": "16:44",
-    "end": "17:06",
-    "min": 22,
-    "category": "Dev",
-    "adoId": "",
-    "url": "",
-    "title": "Add Option Chain link to ticker action menu (webportfolio)",
-    "accomplishment": "Added Option Chain action (Fidelity URL with expiration/strike) to option positions ticker menu, consistent with other actions; committed, deployed.",
-    "blocker": "",
-    "status": "done",
-    "notes": []
-  },
-  {
-    "id": 9,
-    "date": "2026-06-15",
-    "start": "17:32",
-    "end": "19:13",
-    "min": 101,
-    "category": "Dev",
-    "adoId": "",
-    "url": "",
-    "title": "Notable trades algorithm, trade cards, watchlist upload & formatting (webportfolio)",
-    "accomplishment": "Better best/worst algorithm (annualized return + days held); clickable trade-detail cards extended to top-10 best & worst; added Barchart price-history links (trade details + options-income by-strategy); DB-backed options-watchlist symbol upload container; queued-trades expiration mm/dd/yyyy formatting; multiple gh tasks, commits, deploys.",
-    "blocker": "",
-    "status": "done",
-    "notes": []
-  },
-  {
-    "id": 10,
-    "date": "2026-06-15",
-    "start": "22:07",
-    "end": "23:16",
-    "min": 69,
-    "category": "Dev",
-    "adoId": "",
-    "url": "",
-    "title": "Rebalance page deploy + desired-allocation button consolidation (webportfolio)",
-    "accomplishment": "Deployed pending rebalance change; consolidated and logically grouped desired-allocation buttons; committed, deployed.",
-    "blocker": "",
-    "status": "done",
-    "notes": []
-  },
-  {
-    "id": 11,
-    "date": "2026-06-15",
     "start": "23:32",
     "end": "23:55",
     "min": 23,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Fix rebalance deep links + watchlist caution-symbols ordering (webportfolio)",
+    "title": "Fix rebalance deep links + watchlist caution-symbols ordering",
     "accomplishment": "Fixed rebalance deep-link query-param navigation (incl. no re-render when link changes); ensured caution-symbols input always appears above watchlist textarea; committed, deployed.",
     "blocker": "",
     "status": "done",
@@ -332,9 +352,10 @@ var SESSIONS = [
     "end": "08:54",
     "min": 42,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Fix stock-analysis Sell account-number bug (webportfolio)",
+    "title": "Fix stock-analysis Sell account-number bug",
     "accomplishment": "Sell action passed wrong/none account number in URL; fixed, audited for similar breakage elsewhere, committed, pushed, and deployed (deploy exit 0).",
     "blocker": "",
     "status": "done",
@@ -347,9 +368,10 @@ var SESSIONS = [
     "end": "10:00",
     "min": 5,
     "category": "Dev",
+    "project": "webportfolio",
     "adoId": "",
     "url": "",
-    "title": "Split Copilot instructions file via /init (webportfolio)",
+    "title": "Split Copilot instructions file via /init",
     "accomplishment": "Ran /init; split main instructions 1589->663 lines into separate 933-line instructions file; verified integrity.",
     "blocker": "",
     "status": "done",
@@ -362,9 +384,10 @@ var SESSIONS = [
     "end": "14:21",
     "min": 2,
     "category": "Dev",
+    "project": "webbookmarks",
     "adoId": "",
     "url": "",
-    "title": "Add local files as bookmarks (webbookmarks)",
+    "title": "Add local files as bookmarks",
     "accomplishment": "Adding local files as bookmarks was failing; implemented support, committed and pushed.",
     "blocker": "",
     "status": "done",
@@ -377,13 +400,56 @@ var SESSIONS = [
     "end": "17:42",
     "min": 4,
     "category": "Dev",
+    "project": "webbookmarks",
     "adoId": "",
     "url": "",
-    "title": "Open file-based HTML (file: URLs) (webbookmarks)",
+    "title": "Open file-based HTML (file: URLs)",
     "accomplishment": "Browser blocked file: URLs via window.location.href; routed through GM_openInTab (option 1, ~95% of cases); committed, pushed, updated gist.",
     "blocker": "",
     "status": "done",
     "notes": []
+  },
+  {
+    "id": 1,
+    "date": "2026-06-17",
+    "start": "08:08",
+    "end": "08:30",
+    "min": 22,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Fix #259: deep-link URL handling in Rebalance + SYMNBOL typo in bulk sell",
+    "accomplishment": "Made Rebalance deep-link clearing router-aware and fixed SYMNBOL typo in bulk-sell flow on Stock Analysis page.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f.",
+        "ts": "2026-06-17 08:29:58"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "date": "2026-06-17",
+    "start": "08:30",
+    "end": "08:40",
+    "min": 10,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Fix #260: Add ITM bucket to Strike % grouping on Cash Secured Puts",
+    "accomplishment": "Added an ITM bucket to the Strike % grouping on the Cash Secured Puts page; committed (4d6a843) and deployed to production.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production.",
+        "ts": "2026-06-17 08:43:30"
+      }
+    ]
   }
 ];
 var COMMENTARY = {};
@@ -418,6 +484,7 @@ function linkify(s){
 function pad(n){ return (n<10?'0':'')+n; }
 function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
 var DAYMAP={};
+SESSIONS.forEach(function(s,i){ s._uid=i; });
 SESSIONS.forEach(function(s){ if(!DAYMAP[s.date]) DAYMAP[s.date]={count:0,min:0}; DAYMAP[s.date].count++; DAYMAP[s.date].min+=s.min; });
 function renderCal(){
   var first=new Date(calY,calM,1);
@@ -484,7 +551,7 @@ function renderTable(){
     var o=new Date(dt+'T00:00:00');
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
-    h+="<table class='log'><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
     rows.forEach(function(s){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
@@ -498,15 +565,16 @@ function renderTable(){
       }
       var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
-      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s.id+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
+      var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
   document.getElementById('log').innerHTML=h;
 }
 function renderView(){ renderSummary(); renderTable(); }
-function byId(id){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i].id===id) return SESSIONS[i]; } return null; }
+function byId(uid){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i]._uid===uid) return SESSIONS[i]; } return null; }
 function openNotes(id){
   var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
   document.getElementById('mTitle').innerHTML=esc(s.title||'');

@@ -156,6 +156,7 @@ function Start-Work {
         [Parameter(Mandatory)][string]$Title,
         [string]$AdoId = '',
         [string]$Category = '',
+        [string]$Project = '',
         [string[]]$Tags = @(),
         [datetime]$At = (Get-Date)
     )
@@ -163,7 +164,7 @@ function Start-Work {
     $id = [int]$st['nextId']
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
     $s = @{
-        id = $id; kind = $kind; adoId = $AdoId; category = $Category; tags = @($Tags)
+        id = $id; kind = $kind; adoId = $AdoId; category = $Category; project = $Project; tags = @($Tags)
         title = $Title; start = $At.ToString($script:Fmt); end = $null; durationMin = 0
         status = 'in-progress'; accomplishment = ''; blocker = ''; notes = @()
     }
@@ -252,6 +253,7 @@ function Edit-Work {
         [Parameter(Mandatory)][int]$Id,
         [string]$Title,
         [string]$Category,
+        [string]$Project,
         [string]$AdoId,
         [string[]]$Tags,
         [string]$Accomplishment,
@@ -267,6 +269,7 @@ function Edit-Work {
     $changed = @()
     if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = $Title; $changed += 'title' }
     if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = $Category; $changed += 'category' }
+    if ($PSBoundParameters.ContainsKey('Project'))       { $s['project'] = $Project; $changed += 'project' }
     if ($PSBoundParameters.ContainsKey('AdoId'))         { $s['adoId'] = $AdoId; $s['kind'] = if ($AdoId) { 'ado' } else { 'adhoc' }; $changed += 'adoId' }
     if ($PSBoundParameters.ContainsKey('Tags'))          { $s['tags'] = @($Tags); $changed += 'tags' }
     if ($PSBoundParameters.ContainsKey('Accomplishment')){ $s['accomplishment'] = $Accomplishment; $changed += 'accomplishment' }
@@ -290,7 +293,7 @@ function Edit-Work {
 function ConvertTo-SessionView($s) {
     [pscustomobject]@{
         Id = [int]$s['id']; Title = $s['title']; Kind = $s['kind']; AdoId = $s['adoId']
-        Category = $s['category']; Tags = (@($s['tags']) -join ', ')
+        Category = $s['category']; Project = $s['project']; Tags = (@($s['tags']) -join ', ')
         Start = (ParseTs $s['start']); End = $(if ($s['end']) { ParseTs $s['end'] } else { $null })
         Min = [int]$s['durationMin']; Status = $s['status']
         Accomplishment = $s['accomplishment']; Blocker = $s['blocker']; Notes = @($s['notes'])
@@ -355,6 +358,7 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted
 .run{color:var(--green);font-weight:600;}
 .blk{color:var(--red);font-size:12px;margin-top:4px;}
 .cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.proj{display:inline-block;background:#a06bff22;color:#c7adff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;}
 .sbadge{display:inline-block;border-radius:0;padding:1px 8px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-left:8px;vertical-align:middle;white-space:nowrap;border:1px solid transparent;}
 .sbadge.open{background:#33d68522;color:var(--green);border-color:#33d68555;}
 .sbadge.paused{background:#ffb64822;color:var(--amber);border-color:#ffb64855;}
@@ -369,6 +373,9 @@ table.log{width:100%;border-collapse:separate;border-spacing:0;background:var(--
 table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;}
 table.log td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:top;}
 table.log tbody tr:hover td{background:#161f30;}
+table.log.day{table-layout:fixed;}
+table.log.day th,table.log.day td{overflow-wrap:anywhere;word-break:break-word;}
+table.log.day td.nowrap{white-space:normal;}
 .callout{display:flex;gap:9px;background:#4d8dff12;border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
 .callout.warn{background:#ff5d5d1a;border-left-color:var(--red);}
 .top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin:18px 0 8px;}
@@ -616,6 +623,7 @@ function New-WorkDashboard {
             end   = if ($_.End) { $_.End.ToString('HH:mm') } else { '' }
             min   = $_.Min
             category = if ($_.Category) { $_.Category } elseif ($_.AdoId) { 'ADO' } else { 'Other' }
+            project = $_.Project
             adoId = $_.AdoId
             url   = if ($_.AdoId -and $script:Org) { "$script:Org/_workitems/edit/$($_.AdoId)" } else { '' }
             title = $_.Title
@@ -667,6 +675,7 @@ function linkify(s){
 function pad(n){ return (n<10?'0':'')+n; }
 function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
 var DAYMAP={};
+SESSIONS.forEach(function(s,i){ s._uid=i; });
 SESSIONS.forEach(function(s){ if(!DAYMAP[s.date]) DAYMAP[s.date]={count:0,min:0}; DAYMAP[s.date].count++; DAYMAP[s.date].min+=s.min; });
 function renderCal(){
   var first=new Date(calY,calM,1);
@@ -733,7 +742,7 @@ function renderTable(){
     var o=new Date(dt+'T00:00:00');
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
-    h+="<table class='log'><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
     rows.forEach(function(s){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
@@ -747,15 +756,16 @@ function renderTable(){
       }
       var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
-      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s.id+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
+      var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
   document.getElementById('log').innerHTML=h;
 }
 function renderView(){ renderSummary(); renderTable(); }
-function byId(id){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i].id===id) return SESSIONS[i]; } return null; }
+function byId(uid){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i]._uid===uid) return SESSIONS[i]; } return null; }
 function openNotes(id){
   var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
   document.getElementById('mTitle').innerHTML=esc(s.title||'');
