@@ -1,0 +1,13 @@
+{
+  "defaultProfile": "work",
+  "profiles": {
+    "work": {
+      "label": "Work",
+      "org": "https://dev.azure.com/StarlightAgileBI"
+    },
+    "personal": {
+      "label": "Personal",
+      "org": ""
+    }
+  }
+}

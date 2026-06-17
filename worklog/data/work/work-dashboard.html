@@ -1,0 +1,289 @@
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><title>Work Log</title>
+<style>@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&family=Roboto+Mono:wght@400;500&display=swap');
+:root{--bg:#0a0e1a;--card:#0f1524;--card2:#151c2d;--border:#1e2739;--text:#e9eef6;--muted:#7d8a9e;--accent:#4d8dff;--green:#33d685;--red:#ff5d5d;--mono:'Roboto Mono',Consolas,monospace;}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Roboto Flex',system-ui,sans-serif;font-optical-sizing:auto;margin:0;background:var(--bg);color:var(--text);line-height:1.55;}
+.page{max-width:none;margin:0;padding:26px 20% 80px;}
+a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+.rpt-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:6px 2px 16px;border-bottom:1px solid var(--border);}
+.rpt-hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:0;}
+.meta{color:var(--muted);font-size:13px;margin-top:6px;}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:26px 0 10px;font-weight:600;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:0;padding:18px;}
+.muted{color:var(--muted);}.nowrap{white-space:nowrap;}.center{text-align:center;}
+.run{color:var(--green);font-weight:600;}
+.blk{color:var(--red);font-size:12px;margin-top:4px;}
+.cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.adoid{color:var(--muted);font-family:var(--mono);font-size:11.5px;font-weight:500;}
+.idnum{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);}
+.chip{display:inline-block;background:#4d8dff1a;color:#9cc2ff;border:1px solid #4d8dff33;border-radius:0;padding:3px 11px;font-size:12px;margin:0 6px 6px 0;}
+.ncount{display:inline-block;min-width:20px;text-align:center;background:#4d8dff33;color:#9cc2ff;border-radius:0;font-size:11px;padding:1px 7px;font-weight:600;cursor:default;}
+table.log{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--border);border-radius:0;overflow:hidden;}
+table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;}
+table.log td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:top;}
+table.log tbody tr:hover td{background:#161f30;}
+.callout{display:flex;gap:9px;background:#4d8dff12;border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
+.callout.warn{background:#ff5d5d1a;border-left-color:var(--red);}
+.top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin:18px 0 8px;}
+.sum-row{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:14px;}
+.stat .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
+.stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+.chips{margin-bottom:8px;}.scope{font-size:12.5px;color:var(--muted);}
+.daygrp{margin:0 0 18px;}
+.dayhdr{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px;padding:0 2px;}
+.dayhdr span:first-child{font-size:15px;font-weight:700;color:var(--accent);}
+.daytot{font-size:12px;color:var(--muted);}
+.empty{color:var(--muted);padding:34px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:0;}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-title{font-size:14px;font-weight:700;}
+.cbtn{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;}
+.cbtn:hover{background:#161f30;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-grid .dow{font-size:9.5px;color:var(--muted);text-align:center;text-transform:uppercase;padding-bottom:3px;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:0;font-size:13px;color:#46505c;}
+.cal-day.in{color:var(--text);}
+.cal-day.has{background:#4d8dff22;cursor:pointer;font-weight:600;}
+.cal-day.has:hover{background:#4d8dff55;}
+.cal-day.today{outline:1.5px solid var(--accent);outline-offset:-1.5px;}
+.cal-day.sel{background:var(--accent);color:#06101f;}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:3px;}
+.cal-day.sel .dot{background:#06101f;}
+.cal-foot{margin-top:12px;text-align:center;}
+.pill{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;padding:5px 14px;font-size:12px;cursor:pointer;}
+.pill:hover{background:#161f30;}
+.nbtn{cursor:pointer;border:none;font-family:var(--mono);}
+.ncount.zero{background:transparent;color:var(--muted);}
+.modal{display:none;position:fixed;inset:0;background:rgba(4,7,14,.72);z-index:50;align-items:flex-start;justify-content:center;padding:8vh 16px;}
+.modal.show{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);width:min(680px,100%);max-height:80vh;display:flex;flex-direction:column;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;}
+.modal-body{padding:16px 18px;overflow:auto;}
+@media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}</style></head><body>
+<div class='page'>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-16 17:04 &bull; 6 session(s) &bull; 2h 34m total &bull; click a highlighted day to filter</div></div></header>
+<div class='top'>
+  <div class='card'><div id='cal'></div></div>
+  <div class='card'><div id='sum'></div></div>
+</div>
+<div id='log'></div>
+</div>
+<div id='modal' class='modal' onclick='if(event.target===this)closeNotes()'>
+  <div class='modal-box'>
+    <div class='modal-head'><span id='mTitle'></span><button class='cbtn' onclick='closeNotes()'>&times;</button></div>
+    <div id='mBody' class='modal-body'></div>
+  </div>
+</div>
+<script>
+var SESSIONS = [
+  {
+    "id": 1,
+    "date": "2026-06-16",
+    "start": "13:29",
+    "end": "13:31",
+    "min": 2,
+    "category": "Reporting",
+    "adoId": "",
+    "url": "",
+    "title": "Regenerate ADO work item list",
+    "accomplishment": "Ran Generate-OpenWorkItems.ps1 - 439 assigned, 9 open; regenerated open-work-items.html",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "Now is the time for all good men",
+        "ts": "2026-06-16 14:41:01"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "date": "2026-06-16",
+    "start": "13:31",
+    "end": "13:56",
+    "min": 25,
+    "category": "Dev",
+    "adoId": "",
+    "url": "",
+    "title": "Build work tracking framework",
+    "accomplishment": "Created WorkLog.psm1 (parallel time-tracked sessions + standup/weekly reports in HTML & Markdown), Work.ps1 CLI, and README; tested full flow end-to-end",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 3,
+    "date": "2026-06-16",
+    "start": "13:56",
+    "end": "13:59",
+    "min": 3,
+    "category": "Docs",
+    "adoId": "",
+    "url": "",
+    "title": "Document framework in Copilot reference hub",
+    "accomplishment": "Added Work Tracking subject/topic (5 sections) to instructions.html; validated all anchors resolve and tags balance",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 4,
+    "date": "2026-06-16",
+    "start": "14:01",
+    "end": "14:06",
+    "min": 5,
+    "category": "DevOps",
+    "adoId": "",
+    "url": "",
+    "title": "Move copilot assets to a git repo and publish",
+    "accomplishment": "Moved copilot folder under main, repointed all script/doc paths, git init + commit, created & pushed private repo purduepete/copilot",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 5,
+    "date": "2026-06-16",
+    "start": "14:25",
+    "end": "15:07",
+    "min": 43,
+    "category": "Dev",
+    "adoId": "",
+    "url": "",
+    "title": "Time-tracked log development",
+    "accomplishment": "Navy theme + square edges + wider layout; note modals; row IDs; portable + work/personal profiles; docs & hub updates",
+    "blocker": "",
+    "status": "paused",
+    "notes": []
+  },
+  {
+    "id": 6,
+    "date": "2026-06-16",
+    "start": "15:07",
+    "end": "16:23",
+    "min": 76,
+    "category": "Meeting",
+    "adoId": "",
+    "url": "",
+    "title": "Daily standup",
+    "accomplishment": "Attended daily standup",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "Priority is to work on ADO item 445704",
+        "ts": "2026-06-16 16:49:07"
+      },
+      {
+        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling",
+        "ts": "2026-06-16 16:59:53"
+      }
+    ]
+  }
+];
+var ADO_BASE = "https://dev.azure.com/StarlightAgileBI";
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var calY, calM, sel=null;
+function fmtMin(m){ if(m<=0) return '0m'; if(m<60) return m+'m'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
+function esc(s){ s=(s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtTs(s){
+  if(!s) return '';
+  var m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+  if(!m) return esc(s);
+  return m[2]+'/'+m[3]+'/'+m[1]+' '+m[4]+':'+m[5];
+}
+function linkify(s){
+  var e=esc(s);
+  e=e.replace(/(https?:\/\/[^\s<]+)/g, function(u){ return "<a href='"+u+"' target='_blank' rel='noopener'>"+u+"</a>"; });
+  if(ADO_BASE){ e=e.replace(/\b(ADO(?:\s+item)?\s+#?)(\d{3,})\b/gi, function(m,p,n){ return p+"<a href='"+ADO_BASE+"/_workitems/edit/"+n+"' target='_blank' rel='noopener'>"+n+"</a>"; }); }
+  return e;
+}
+function pad(n){ return (n<10?'0':'')+n; }
+function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
+var DAYMAP={};
+SESSIONS.forEach(function(s){ if(!DAYMAP[s.date]) DAYMAP[s.date]={count:0,min:0}; DAYMAP[s.date].count++; DAYMAP[s.date].min+=s.min; });
+function renderCal(){
+  var first=new Date(calY,calM,1);
+  var startDow=(first.getDay()+6)%7;
+  var daysIn=new Date(calY,calM+1,0).getDate();
+  var now=new Date(); var tstr=ymd(now.getFullYear(),now.getMonth(),now.getDate());
+  var h="<div class='cal-head'><button class='cbtn' onclick='navMonth(-1)'>&#8249;</button><div class='cal-title'>"+MONTHS[calM]+' '+calY+"</div><button class='cbtn' onclick='navMonth(1)'>&#8250;</button></div><div class='cal-grid'>";
+  for(var i=0;i<7;i++){ h+="<div class='dow'>"+DOW[i]+"</div>"; }
+  for(var b=0;b<startDow;b++){ h+="<div class='cal-day'></div>"; }
+  for(var d=1;d<=daysIn;d++){
+    var ds=ymd(calY,calM,d);
+    var cls='cal-day in'; var dot='';
+    if(DAYMAP[ds]){ cls+=' has'; dot="<span class='dot'></span>"; }
+    if(ds===tstr){ cls+=' today'; }
+    if(ds===sel){ cls+=' sel'; }
+    var clk = DAYMAP[ds] ? (" onclick=\"selDay('"+ds+"')\" title=\""+fmtMin(DAYMAP[ds].min)+", "+DAYMAP[ds].count+" session(s)\"") : '';
+    h+="<div class='"+cls+"'"+clk+"><span>"+d+"</span>"+dot+"</div>";
+  }
+  h+="</div><div class='cal-foot'><button class='pill' onclick='clearSel()'>All dates</button></div>";
+  document.getElementById('cal').innerHTML=h;
+}
+function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
+function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
+function clearSel(){ sel=null; renderCal(); renderView(); }
+function curSet(){ return sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); }
+function renderSummary(){
+  var set=curSet(); var total=0; var cat={};
+  set.forEach(function(s){ total+=s.min; var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
+  var chips='';
+  Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
+  if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
+  var label = sel ? sel : 'All time';
+  document.getElementById('sum').innerHTML =
+    "<div class='sum-row'><div class='stat'><div class='big'>"+fmtMin(total)+"</div><div class='lbl'>Total time</div></div>"+
+    "<div class='stat'><div class='big'>"+set.length+"</div><div class='lbl'>Sessions</div></div>"+
+    "<div class='stat'><div class='big'>"+Object.keys(cat).length+"</div><div class='lbl'>Categories</div></div></div>"+
+    "<div class='chips'>"+chips+"</div><div class='scope'>Showing: <b>"+esc(label)+"</b></div>";
+}
+function renderTable(){
+  var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
+  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions for this selection.</div>"; return; }
+  var groups={}; var order=[];
+  set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
+  var h='';
+  order.forEach(function(dt){
+    var rows=groups[dt]; var dmin=0; rows.forEach(function(r){ dmin+=r.min; });
+    var o=new Date(dt+'T00:00:00');
+    var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
+    h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
+    h+="<table class='log'><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    rows.forEach(function(s){
+      var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
+      var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
+      if(s.adoId){ item="<span class='adoid'>#"+esc(s.adoId)+"</span> "+item; }
+      var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
+      if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
+      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s.id+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
+      h+="<tr><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+    });
+    h+="</tbody></table></div>";
+  });
+  document.getElementById('log').innerHTML=h;
+}
+function renderView(){ renderSummary(); renderTable(); }
+function byId(id){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i].id===id) return SESSIONS[i]; } return null; }
+function openNotes(id){
+  var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
+  document.getElementById('mTitle').innerHTML=esc(s.title||'');
+  var b="<table class='log'><thead><tr><th class='nowrap'>When</th><th>Note</th></tr></thead><tbody>";
+  s.notes.forEach(function(n){ b+="<tr><td class='nowrap muted'>"+fmtTs(n.ts)+"</td><td>"+linkify(n.text)+"</td></tr>"; });
+  b+="</tbody></table>";
+  document.getElementById('mBody').innerHTML=b;
+  document.getElementById('modal').classList.add('show');
+}
+function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNotes(); });
+(function(){
+  if(SESSIONS.length){ var ds=SESSIONS.map(function(s){ return s.date; }).sort(); var last=ds[ds.length-1]; var o=new Date(last+'T00:00:00'); calY=o.getFullYear(); calM=o.getMonth(); }
+  else { var n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); }
+  sel=null; renderCal(); renderView();
+})();
+</script>
+</body></html>

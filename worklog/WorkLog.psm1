@@ -1,0 +1,748 @@
+<#
+.SYNOPSIS
+  Conversational, time-tracked work-logging framework (daily standup + weekly summary).
+
+.DESCRIPTION
+  A persistent activity log designed to be driven through conversation: you say when
+  you start a piece of work and what it is; you say when you switch; you say when you
+  finish and what you accomplished. The framework records timestamped sessions and
+  rolls them up into a daily standup and a weekly summary (HTML to view + Markdown
+  to paste into Teams/email/ADO).
+
+  Session model (PARALLEL sessions supported):
+    - Multiple sessions can be open at once. Starting or switching NEVER closes another.
+    - 'current' is just the session that notes/stop default to; switching moves it.
+    - A session stays open (end = null) until you explicitly Stop-Work it.
+
+  Each session captures:
+    id, kind ('ado' | 'adhoc'), adoId, category, tags, title,
+    start, end, durationMin, status, accomplishment, blocker, notes[] (timestamped)
+
+  State : <script>\data\<profile>\work-log.json  (profile = work | personal | ...)
+  Output: standup.* / weekly-summary.* / work-dashboard.html (in the same per-profile folder)
+
+  Public functions:
+    Start-Work, Switch-Work, Stop-Work, Add-WorkNote,
+    Get-OpenSessions, Get-WorkLog, Show-WorkStatus,
+    New-Standup, New-WeeklySummary
+#>
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = 'Stop'
+Add-Type -AssemblyName System.Web
+
+# ---- Configuration ---------------------------------------------------------
+# Portable + profile-aware. Paths resolve relative to this script, so the tool
+# runs from wherever the repo is cloned. Each profile (e.g. 'work', 'personal')
+# keeps its own log + reports under <script>\data\<profile>\.
+$script:Fmt        = 'yyyy-MM-dd HH:mm:ss'
+$script:ScriptDir  = $PSScriptRoot
+$script:DataRoot   = if ($env:WORKLOG_HOME) { $env:WORKLOG_HOME } else { $PSScriptRoot }
+$script:ConfigPath = Join-Path $script:ScriptDir 'worklog.config.json'
+
+function Get-WorkConfig {
+    if (Test-Path $script:ConfigPath) {
+        try { return Get-Content $script:ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json } catch {}
+    }
+    return $null
+}
+
+function Resolve-WorkProfile {
+    param([string]$Profile)
+    if ($Profile)              { return $Profile }
+    if ($env:WORKLOG_PROFILE)  { return $env:WORKLOG_PROFILE }
+    $pf = Join-Path $script:ScriptDir '.profile'
+    if (Test-Path $pf) { $v = (Get-Content $pf -Raw).Trim(); if ($v) { return $v } }
+    $cfg = Get-WorkConfig
+    if ($cfg -and $cfg.defaultProfile) { return [string]$cfg.defaultProfile }
+    return 'work'
+}
+
+function Set-WorkProfile {
+    [CmdletBinding()]
+    param([string]$Profile)
+    $script:Profile = Resolve-WorkProfile -Profile $Profile
+    $dataDir = Join-Path (Join-Path $script:DataRoot 'data') $script:Profile
+    if (-not (Test-Path $dataDir)) { New-Item -ItemType Directory -Path $dataDir -Force | Out-Null }
+    $script:StatePath = Join-Path $dataDir 'work-log.json'
+    $script:OutDir    = $dataDir
+    $script:Org       = ''
+    $cfg = Get-WorkConfig
+    if ($cfg -and $cfg.profiles -and ($cfg.profiles.PSObject.Properties.Name -contains $script:Profile)) {
+        $p = $cfg.profiles.$($script:Profile)
+        if ($p.PSObject.Properties.Name -contains 'org') { $script:Org = [string]$p.org }
+    }
+    [pscustomobject]@{ Profile = $script:Profile; State = $script:StatePath; OutDir = $script:OutDir; Org = $script:Org }
+}
+
+function Get-WorkProfile {
+    [pscustomobject]@{ Profile = $script:Profile; State = $script:StatePath; OutDir = $script:OutDir; Org = $script:Org }
+}
+
+function Set-WorkDefaultProfile {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Profile)
+    Set-Content -Path (Join-Path $script:ScriptDir '.profile') -Value $Profile.Trim() -NoNewline -Encoding UTF8
+    Set-WorkProfile -Profile $Profile
+}
+
+Set-WorkProfile | Out-Null
+
+# ---- Internal helpers ------------------------------------------------------
+function HtmlEnc([string]$s) { [System.Web.HttpUtility]::HtmlEncode($s) }
+function NowStr { (Get-Date).ToString($script:Fmt) }
+function ParseTs([string]$s) { [datetime]::ParseExact($s, $script:Fmt, [Globalization.CultureInfo]::InvariantCulture) }
+function FmtMin([int]$m) {
+    if ($m -le 0) { return '0m' }
+    if ($m -lt 60) { return "${m}m" }
+    return ('{0}h {1}m' -f [math]::Floor($m / 60), ($m % 60))
+}
+
+function ConvertTo-HashtableDeep {
+    param($obj)
+    if ($null -eq $obj) { return $null }
+    if ($obj -is [string]) { return $obj }
+    if ($obj.GetType().IsValueType) { return $obj }
+    if ($obj -is [System.Collections.IDictionary]) {
+        $h = @{}; foreach ($k in $obj.Keys) { $h["$k"] = ConvertTo-HashtableDeep $obj[$k] }; return $h
+    }
+    if ($obj -is [System.Collections.IEnumerable]) {
+        $a = New-Object System.Collections.ArrayList
+        foreach ($e in $obj) { [void]$a.Add((ConvertTo-HashtableDeep $e)) }
+        return , $a.ToArray()
+    }
+    if ($obj.PSObject) {
+        $h = @{}; foreach ($p in $obj.PSObject.Properties) { $h[$p.Name] = ConvertTo-HashtableDeep $p.Value }; return $h
+    }
+    return $obj
+}
+
+function Get-LogState {
+    if (Test-Path -LiteralPath $script:StatePath) {
+        $raw = Get-Content -Raw -LiteralPath $script:StatePath
+        if ($raw -and $raw.Trim()) {
+            $h = ConvertTo-HashtableDeep ($raw | ConvertFrom-Json)
+            if (-not $h.ContainsKey('sessions') -or $null -eq $h['sessions']) { $h['sessions'] = @() }
+            $h['sessions'] = @($h['sessions'])
+            if (-not $h.ContainsKey('nextId'))  { $h['nextId']  = ($h['sessions'].Count + 1) }
+            if (-not $h.ContainsKey('current')) { $h['current'] = $null }
+            return $h
+        }
+    }
+    return @{ current = $null; nextId = 1; sessions = @() }
+}
+
+function Save-LogState($state) {
+    $state['updated'] = NowStr
+    $state['sessions'] = @($state['sessions'])
+    $json = $state | ConvertTo-Json -Depth 12
+    if (-not (Test-Path -LiteralPath $script:OutDir)) { New-Item -ItemType Directory -Path $script:OutDir -Force | Out-Null }
+    [System.IO.File]::WriteAllText($script:StatePath, $json, (New-Object System.Text.UTF8Encoding $false))
+}
+
+function Find-Session($state, [int]$Id) {
+    $state['sessions'] | Where-Object { [int]$_['id'] -eq $Id } | Select-Object -First 1
+}
+
+# ---- Public: Start ---------------------------------------------------------
+function Start-Work {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Title,
+        [string]$AdoId = '',
+        [string]$Category = '',
+        [string[]]$Tags = @(),
+        [datetime]$At = (Get-Date)
+    )
+    $st = Get-LogState
+    $id = [int]$st['nextId']
+    $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
+    $s = @{
+        id = $id; kind = $kind; adoId = $AdoId; category = $Category; tags = @($Tags)
+        title = $Title; start = $At.ToString($script:Fmt); end = $null; durationMin = 0
+        status = 'in-progress'; accomplishment = ''; blocker = ''; notes = @()
+    }
+    $st['sessions'] = @($st['sessions']) + $s
+    $st['nextId']   = $id + 1
+    $st['current']  = $id    # switch focus to the new session; previous sessions stay OPEN
+    Save-LogState $st
+    $tag = if ($AdoId) { "[$AdoId] " } else { '' }
+    Write-Host ("> Started #{0}: {1}{2}  ({3})" -f $id, $tag, $Title, $At.ToString('HH:mm'))
+    return $s
+}
+
+# ---- Public: Switch (no close) --------------------------------------------
+function Switch-Work {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][int]$Id)
+    $st = Get-LogState
+    $s = Find-Session $st $Id
+    if (-not $s) { throw "No session #$Id." }
+    if ($s['end']) { throw "Session #$Id is already stopped." }
+    $st['current'] = $Id
+    Save-LogState $st
+    Write-Host ("~ Switched to #{0}: {1} (previous sessions left open)" -f $Id, $s['title'])
+}
+
+# ---- Public: Stop ----------------------------------------------------------
+function Stop-Work {
+    [CmdletBinding()]
+    param(
+        [int]$Id = 0,
+        [string]$Accomplishment = '',
+        [string]$Blocker = '',
+        [ValidateSet('done', 'paused', 'in-progress')][string]$Status = 'done',
+        [datetime]$At = (Get-Date)
+    )
+    $st = Get-LogState
+    if (-not $Id) { $Id = if ($st['current']) { [int]$st['current'] } else { 0 } }
+    if (-not $Id) { Write-Warning 'No current session. Specify -Id.'; return }
+    $s = Find-Session $st $Id
+    if (-not $s) { throw "No session #$Id." }
+    if ($s['end']) { Write-Warning "Session #$Id already stopped."; return }
+    $s['end'] = $At.ToString($script:Fmt)
+    $s['durationMin'] = [math]::Round((($At) - (ParseTs $s['start'])).TotalMinutes)
+    if ($Accomplishment) { $s['accomplishment'] = $Accomplishment }
+    if ($Blocker)        { $s['blocker'] = $Blocker }
+    $s['status'] = $Status
+    if ([int]$st['current'] -eq $Id) { $st['current'] = $null }
+    Save-LogState $st
+    Write-Host ("# Stopped #{0}: {1}  ({2})" -f $Id, $s['title'], (FmtMin $s['durationMin']))
+    return $s
+}
+
+# ---- Public: Note ----------------------------------------------------------
+function Add-WorkNote {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Text, [int]$Id = 0)
+    $st = Get-LogState
+    if (-not $Id) { $Id = if ($st['current']) { [int]$st['current'] } else { 0 } }
+    if (-not $Id) { Write-Warning 'No current session. Specify -Id.'; return }
+    $s = Find-Session $st $Id
+    if (-not $s) { throw "No session #$Id." }
+    $notes = [System.Collections.ArrayList]@($s['notes'])
+    [void]$notes.Add(@{ ts = NowStr; text = $Text })
+    $s['notes'] = $notes.ToArray()
+    Save-LogState $st
+    Write-Host ("* Note added to #{0} ({1} total)" -f $Id, $notes.Count)
+}
+
+# ---- Public: Edit ----------------------------------------------------------
+function Edit-Work {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][int]$Id,
+        [string]$Title,
+        [string]$Category,
+        [string]$AdoId,
+        [string[]]$Tags,
+        [string]$Accomplishment,
+        [string]$Blocker,
+        [ValidateSet('done', 'paused', 'in-progress')][string]$Status,
+        [datetime]$Start,
+        [datetime]$End,
+        [switch]$Reopen
+    )
+    $st = Get-LogState
+    $s = Find-Session $st $Id
+    if (-not $s) { throw "No session #$Id." }
+    $changed = @()
+    if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = $Title; $changed += 'title' }
+    if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = $Category; $changed += 'category' }
+    if ($PSBoundParameters.ContainsKey('AdoId'))         { $s['adoId'] = $AdoId; $s['kind'] = if ($AdoId) { 'ado' } else { 'adhoc' }; $changed += 'adoId' }
+    if ($PSBoundParameters.ContainsKey('Tags'))          { $s['tags'] = @($Tags); $changed += 'tags' }
+    if ($PSBoundParameters.ContainsKey('Accomplishment')){ $s['accomplishment'] = $Accomplishment; $changed += 'accomplishment' }
+    if ($PSBoundParameters.ContainsKey('Blocker'))       { $s['blocker'] = $Blocker; $changed += 'blocker' }
+    if ($PSBoundParameters.ContainsKey('Status'))        { $s['status'] = $Status; $changed += 'status' }
+    if ($PSBoundParameters.ContainsKey('Start'))         { $s['start'] = $Start.ToString($script:Fmt); $changed += 'start' }
+    if ($PSBoundParameters.ContainsKey('End'))           { $s['end'] = $End.ToString($script:Fmt); $changed += 'end' }
+    if ($Reopen) {
+        $s['end'] = $null; $s['durationMin'] = 0
+        if (-not $PSBoundParameters.ContainsKey('Status')) { $s['status'] = 'in-progress' }
+        $changed += 'reopened'
+    }
+    if (-not $changed) { Write-Warning "Nothing to change for #$Id. Pass a field, e.g. -Title, -Category, -Status."; return }
+    if ($s['end']) { $s['durationMin'] = [math]::Round(((ParseTs $s['end']) - (ParseTs $s['start'])).TotalMinutes) }
+    Save-LogState $st
+    Write-Host ("~ Edited #{0}: {1}  (updated: {2})" -f $Id, $s['title'], ($changed -join ', '))
+    return (ConvertTo-SessionView $s)
+}
+
+# ---- Public: Queries -------------------------------------------------------
+function ConvertTo-SessionView($s) {
+    [pscustomobject]@{
+        Id = [int]$s['id']; Title = $s['title']; Kind = $s['kind']; AdoId = $s['adoId']
+        Category = $s['category']; Tags = (@($s['tags']) -join ', ')
+        Start = (ParseTs $s['start']); End = $(if ($s['end']) { ParseTs $s['end'] } else { $null })
+        Min = [int]$s['durationMin']; Status = $s['status']
+        Accomplishment = $s['accomplishment']; Blocker = $s['blocker']; Notes = @($s['notes'])
+    }
+}
+
+function Get-OpenSessions {
+    $st = Get-LogState
+    $st['sessions'] | Where-Object { -not $_['end'] } | ForEach-Object { ConvertTo-SessionView $_ } | Sort-Object Start
+}
+
+function Get-WorkLog {
+    [CmdletBinding()]
+    param([datetime]$Since, [datetime]$Until)
+    $st = Get-LogState
+    $st['sessions'] | ForEach-Object { ConvertTo-SessionView $_ } | Where-Object {
+        (-not $Since -or $_.Start -ge $Since) -and (-not $Until -or $_.Start -le $Until)
+    } | Sort-Object Start
+}
+
+function Show-WorkStatus {
+    $st = Get-LogState
+    $open = @($st['sessions'] | Where-Object { -not $_['end'] } | ForEach-Object { ConvertTo-SessionView $_ } | Sort-Object Start)
+    $cur = $st['current']
+    $todayMin = (@(Get-WorkLog -Since (Get-Date).Date) | Measure-Object -Property Min -Sum).Sum
+    Write-Host ''
+    Write-Host ("Open sessions: {0}   Logged today: {1}" -f $open.Count, (FmtMin ([int]$todayMin))) -ForegroundColor Cyan
+    foreach ($s in $open) {
+        $mark = if ($cur -and [int]$cur -eq $s.Id) { '>' } else { ' ' }
+        $elapsed = FmtMin ([math]::Round(((Get-Date) - $s.Start).TotalMinutes))
+        $tag = if ($s.AdoId) { "[$($s.AdoId)] " } else { '' }
+        Write-Host ("  {0} #{1}  {2}{3}  (running {4})" -f $mark, $s.Id, $tag, $s.Title, $elapsed)
+    }
+    if (-not $open.Count) { Write-Host '  (nothing open)' }
+}
+
+# ---- Report building helpers ----------------------------------------------
+function Get-ItemLabel($s) { if ($s.AdoId) { "[$($s.AdoId)] $($s.Title)" } else { $s.Title } }
+function Get-ItemUrl($s)   { if ($s.AdoId -and $script:Org) { "$script:Org/_workitems/edit/$($s.AdoId)" } else { $null } }
+
+function Get-LineText($s) {
+    $t = if ($s.Accomplishment) { $s.Accomplishment } else { $s.Title }
+    if ($s.Accomplishment -and $s.AdoId) { "$(Get-ItemLabel $s) - $($s.Accomplishment)" }
+    elseif ($s.Accomplishment) { "$($s.Title) - $($s.Accomplishment)" }
+    else { Get-ItemLabel $s }
+}
+
+$script:BaseCss = @"
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&family=Roboto+Mono:wght@400;500&display=swap');
+:root{--bg:#0a0e1a;--card:#0f1524;--card2:#151c2d;--border:#1e2739;--text:#e9eef6;--muted:#7d8a9e;--accent:#4d8dff;--green:#33d685;--red:#ff5d5d;--mono:'Roboto Mono',Consolas,monospace;}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Roboto Flex',system-ui,sans-serif;font-optical-sizing:auto;margin:0;background:var(--bg);color:var(--text);line-height:1.55;}
+.page{max-width:none;margin:0;padding:26px 20% 80px;}
+a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
+.rpt-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:6px 2px 16px;border-bottom:1px solid var(--border);}
+.rpt-hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:0;}
+.meta{color:var(--muted);font-size:13px;margin-top:6px;}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:26px 0 10px;font-weight:600;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:0;padding:18px;}
+.muted{color:var(--muted);}.nowrap{white-space:nowrap;}.center{text-align:center;}
+.run{color:var(--green);font-weight:600;}
+.blk{color:var(--red);font-size:12px;margin-top:4px;}
+.cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.adoid{color:var(--muted);font-family:var(--mono);font-size:11.5px;font-weight:500;}
+.idnum{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);}
+.chip{display:inline-block;background:#4d8dff1a;color:#9cc2ff;border:1px solid #4d8dff33;border-radius:0;padding:3px 11px;font-size:12px;margin:0 6px 6px 0;}
+.ncount{display:inline-block;min-width:20px;text-align:center;background:#4d8dff33;color:#9cc2ff;border-radius:0;font-size:11px;padding:1px 7px;font-weight:600;cursor:default;}
+table.log{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--border);border-radius:0;overflow:hidden;}
+table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;}
+table.log td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:top;}
+table.log tbody tr:hover td{background:#161f30;}
+.callout{display:flex;gap:9px;background:#4d8dff12;border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
+.callout.warn{background:#ff5d5d1a;border-left-color:var(--red);}
+.top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin:18px 0 8px;}
+.sum-row{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:14px;}
+.stat .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
+.stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+.chips{margin-bottom:8px;}.scope{font-size:12.5px;color:var(--muted);}
+.daygrp{margin:0 0 18px;}
+.dayhdr{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px;padding:0 2px;}
+.dayhdr span:first-child{font-size:15px;font-weight:700;color:var(--accent);}
+.daytot{font-size:12px;color:var(--muted);}
+.empty{color:var(--muted);padding:34px;text-align:center;background:var(--card);border:1px solid var(--border);border-radius:0;}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.cal-title{font-size:14px;font-weight:700;}
+.cbtn{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;}
+.cbtn:hover{background:#161f30;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-grid .dow{font-size:9.5px;color:var(--muted);text-align:center;text-transform:uppercase;padding-bottom:3px;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:0;font-size:13px;color:#46505c;}
+.cal-day.in{color:var(--text);}
+.cal-day.has{background:#4d8dff22;cursor:pointer;font-weight:600;}
+.cal-day.has:hover{background:#4d8dff55;}
+.cal-day.today{outline:1.5px solid var(--accent);outline-offset:-1.5px;}
+.cal-day.sel{background:var(--accent);color:#06101f;}
+.cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:3px;}
+.cal-day.sel .dot{background:#06101f;}
+.cal-foot{margin-top:12px;text-align:center;}
+.pill{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;padding:5px 14px;font-size:12px;cursor:pointer;}
+.pill:hover{background:#161f30;}
+.nbtn{cursor:pointer;border:none;font-family:var(--mono);}
+.ncount.zero{background:transparent;color:var(--muted);}
+.modal{display:none;position:fixed;inset:0;background:rgba(4,7,14,.72);z-index:50;align-items:flex-start;justify-content:center;padding:8vh 16px;}
+.modal.show{display:flex;}
+.modal-box{background:var(--card);border:1px solid var(--border);width:min(680px,100%);max-height:80vh;display:flex;flex-direction:column;}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;}
+.modal-body{padding:16px 18px;overflow:auto;}
+@media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}
+"@
+
+function Get-ItemCell($s) {
+    $t = HtmlEnc $s.Title
+    $u = Get-ItemUrl $s
+    $title = if ($u) { "<a href='$u' target='_blank'>$t</a>" } else { $t }
+    if ($s.AdoId) { "<span class='adoid'>#$(HtmlEnc $s.AdoId)</span> $title" } else { $title }
+}
+
+function New-ReportHtml([string]$Title, [string]$Meta, [string]$Body) {
+    @"
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><title>$Title</title>
+<style>$script:BaseCss</style></head><body>
+<div class='page'>
+<header class='rpt-hero'><div><h1>$Title</h1><div class='meta'>$Meta</div></div></header>
+$Body
+</div></body></html>
+"@
+}
+
+function Write-Report([string]$BaseName, [string]$Html, [string]$Md, [switch]$NoOpen) {
+    $htmlPath = Join-Path $script:OutDir "$BaseName.html"
+    $mdPath   = Join-Path $script:OutDir "$BaseName.md"
+    $enc = New-Object System.Text.UTF8Encoding $false
+    [System.IO.File]::WriteAllText($htmlPath, $Html, $enc)
+    [System.IO.File]::WriteAllText($mdPath, $Md, $enc)
+    Write-Host "Wrote $htmlPath"
+    Write-Host "Wrote $mdPath"
+    if (-not $NoOpen) { Start-Process $htmlPath }
+    [pscustomobject]@{ Html = $htmlPath; Md = $mdPath }
+}
+
+# ---- Public: Daily standup -------------------------------------------------
+function New-Standup {
+    [CmdletBinding()]
+    param([datetime]$Date = (Get-Date), [switch]$NoOpen)
+
+    $today = $Date.Date
+    $yest = $today.AddDays(-1)
+    while ($yest.DayOfWeek -in 'Saturday', 'Sunday') { $yest = $yest.AddDays(-1) }
+
+    $all = @(Get-WorkLog)
+    $yItems = @($all | Where-Object { $_.Start.Date -eq $yest })
+    $tItems = @($all | Where-Object { $_.Start.Date -eq $today })
+    $blockers = @($all | Where-Object { $_.Blocker -and ($_.Start.Date -eq $yest -or $_.Start.Date -eq $today) })
+
+    # ---- Markdown ----
+    $md = New-Object System.Collections.ArrayList
+    [void]$md.Add("# Daily Standup - $($today.ToString('yyyy-MM-dd ddd'))")
+    [void]$md.Add('')
+    [void]$md.Add("## Yesterday ($($yest.ToString('yyyy-MM-dd ddd')))")
+    if ($yItems.Count) { foreach ($s in $yItems) { [void]$md.Add("- $(Get-LineText $s) ($(FmtMin $s.Min))") } }
+    else { [void]$md.Add('- _No logged work._') }
+    [void]$md.Add('')
+    [void]$md.Add("## Today ($($today.ToString('yyyy-MM-dd ddd')))")
+    if ($tItems.Count) {
+        foreach ($s in $tItems) {
+            $state = if (-not $s.End) { ' (in progress)' } elseif ($s.Status -eq 'done') { '' } else { " ($($s.Status))" }
+            [void]$md.Add("- $(Get-ItemLabel $s)$state")
+        }
+    } else { [void]$md.Add('- _Nothing logged yet._') }
+    [void]$md.Add('')
+    [void]$md.Add('## Blockers')
+    if ($blockers.Count) { foreach ($s in $blockers) { [void]$md.Add("- $(Get-ItemLabel $s): $($s.Blocker)") } }
+    else { [void]$md.Add('- None') }
+    $mdText = ($md -join "`n")
+
+    # ---- HTML (modern tables) ----
+    $yRows = if ($yItems.Count) {
+        ($yItems | ForEach-Object {
+            $acc = if ($_.Accomplishment) { HtmlEnc $_.Accomplishment } else { "<span class='muted'>&mdash;</span>" }
+            "<tr><td>$(Get-ItemCell $_)</td><td>$acc</td><td class='nowrap'>$(FmtMin $_.Min)</td></tr>"
+        }) -join "`n"
+    } else { "<tr><td colspan='3' class='muted'>No logged work.</td></tr>" }
+    $tRows = if ($tItems.Count) {
+        ($tItems | ForEach-Object {
+            $state = if (-not $_.End) { "<span class='run'>in progress</span>" } else { HtmlEnc $_.Status }
+            "<tr><td>$(Get-ItemCell $_)</td><td>$state</td></tr>"
+        }) -join "`n"
+    } else { "<tr><td colspan='2' class='muted'>Nothing logged yet.</td></tr>" }
+    $bBlock = if ($blockers.Count) {
+        ($blockers | ForEach-Object { "<div class='callout warn'>&#9888;<span><b>$(HtmlEnc (Get-ItemLabel $_)):</b> $(HtmlEnc $_.Blocker)</span></div>" }) -join "`n"
+    } else { "<div class='callout'>None</div>" }
+
+    $body = @"
+<h2>Yesterday &mdash; $($yest.ToString('dddd, MMM d'))</h2>
+<table class='log'><thead><tr><th>Item</th><th>Accomplishment</th><th class='nowrap'>Time</th></tr></thead><tbody>
+$yRows
+</tbody></table>
+<h2>Today &mdash; $($today.ToString('dddd, MMM d'))</h2>
+<table class='log'><thead><tr><th>Item</th><th>Status</th></tr></thead><tbody>
+$tRows
+</tbody></table>
+<h2>Blockers</h2>
+$bBlock
+"@
+    $html = New-ReportHtml "Daily Standup" "Generated $((Get-Date).ToString('yyyy-MM-dd HH:mm')) &bull; StarlightAgileBI" $body
+
+    Write-Report -BaseName 'standup' -Html $html -Md $mdText -NoOpen:$NoOpen | Out-Null
+    Write-Host ''
+    Write-Host $mdText
+}
+
+# ---- Public: Weekly summary ------------------------------------------------
+function New-WeeklySummary {
+    [CmdletBinding()]
+    param([datetime]$Date = (Get-Date), [switch]$NoOpen)
+
+    $ref = $Date.Date
+    $delta = ([int]$ref.DayOfWeek + 6) % 7   # Monday = 0
+    $mon = $ref.AddDays(-$delta)
+    $sun = $mon.AddDays(6)
+
+    $week = @(Get-WorkLog -Since $mon -Until $sun.AddDays(1).AddSeconds(-1))
+    $totalMin = (@($week) | Measure-Object -Property Min -Sum).Sum; if (-not $totalMin) { $totalMin = 0 }
+
+    # by category
+    $catGroups = $week | Group-Object { if ($_.Category) { $_.Category } elseif ($_.AdoId) { 'ADO' } else { 'Other' } }
+
+    # ---- Markdown ----
+    $md = New-Object System.Collections.ArrayList
+    [void]$md.Add("# Weekly Summary - Week of $($mon.ToString('yyyy-MM-dd')) to $($sun.ToString('yyyy-MM-dd'))")
+    [void]$md.Add('')
+    [void]$md.Add('## Accomplishments')
+    $any = $false
+    for ($d = $mon; $d -le $sun; $d = $d.AddDays(1)) {
+        $day = @($week | Where-Object { $_.Start.Date -eq $d })
+        if (-not $day.Count) { continue }
+        $any = $true
+        [void]$md.Add("### $($d.ToString('ddd MM-dd'))")
+        foreach ($s in $day) { [void]$md.Add("- $(Get-LineText $s) ($(FmtMin $s.Min))") }
+    }
+    if (-not $any) { [void]$md.Add('- _No logged work this week._') }
+    [void]$md.Add('')
+    [void]$md.Add('## Time')
+    [void]$md.Add("- Total: $(FmtMin ([int]$totalMin))")
+    foreach ($g in ($catGroups | Sort-Object { -(($_.Group | Measure-Object Min -Sum).Sum) })) {
+        $cm = ($g.Group | Measure-Object Min -Sum).Sum
+        [void]$md.Add("- $($g.Name): $(FmtMin ([int]$cm))")
+    }
+    [void]$md.Add('')
+    [void]$md.Add('## Blockers')
+    $wblk = @($week | Where-Object Blocker)
+    if ($wblk.Count) { foreach ($s in $wblk) { [void]$md.Add("- $(Get-ItemLabel $s): $($s.Blocker)") } } else { [void]$md.Add('- None') }
+    $mdText = ($md -join "`n")
+
+    # ---- HTML (modern tables) ----
+    $dayHtml = ''
+    for ($d = $mon; $d -le $sun; $d = $d.AddDays(1)) {
+        $day = @($week | Where-Object { $_.Start.Date -eq $d })
+        if (-not $day.Count) { continue }
+        $dayMin = ($day | Measure-Object Min -Sum).Sum
+        $rows = ($day | ForEach-Object {
+            $time = "$($_.Start.ToString('HH:mm'))" + $(if ($_.End) { " &ndash; $($_.End.ToString('HH:mm'))" } else { " <span class='run'>&bull; open</span>" })
+            $acc = if ($_.Accomplishment) { HtmlEnc $_.Accomplishment } else { "<span class='muted'>&mdash;</span>" }
+            if ($_.Blocker) { $acc += "<div class='blk'>&#9888; $(HtmlEnc $_.Blocker)</div>" }
+            $cat = if ($_.Category) { $_.Category } elseif ($_.AdoId) { 'ADO' } else { 'Other' }
+            "<tr><td class='nowrap'>$time</td><td class='nowrap'>$(FmtMin $_.Min)</td><td><span class='cat'>$(HtmlEnc $cat)</span></td><td>$(Get-ItemCell $_)</td><td>$acc</td></tr>"
+        }) -join "`n"
+        $dayHtml += @"
+<div class='daygrp'><div class='dayhdr'><span>$($d.ToString('dddd, MMM d'))</span><span class='daytot'>$(FmtMin ([int]$dayMin)) &bull; $($day.Count) session(s)</span></div>
+<table class='log'><thead><tr><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th></tr></thead><tbody>
+$rows
+</tbody></table></div>
+"@
+    }
+    if (-not $dayHtml) { $dayHtml = "<div class='empty'>No logged work this week.</div>" }
+
+    $catChips = ($catGroups | Sort-Object { -(($_.Group | Measure-Object Min -Sum).Sum) } | ForEach-Object {
+        $cm = ($_.Group | Measure-Object Min -Sum).Sum
+        "<span class='chip'>$(HtmlEnc $_.Name): $(FmtMin ([int]$cm))</span>"
+    }) -join ' '
+    $wblkBlock = if ($wblk.Count) {
+        ($wblk | ForEach-Object { "<div class='callout warn'>&#9888;<span><b>$(HtmlEnc (Get-ItemLabel $_)):</b> $(HtmlEnc $_.Blocker)</span></div>" }) -join "`n"
+    } else { "<div class='callout'>None</div>" }
+
+    $body = @"
+<div class='card'><div class='sum-row'>
+<div class='stat'><div class='big'>$(FmtMin ([int]$totalMin))</div><div class='lbl'>Total time</div></div>
+<div class='stat'><div class='big'>$($week.Count)</div><div class='lbl'>Sessions</div></div>
+<div class='stat'><div class='big'>$(@($catGroups).Count)</div><div class='lbl'>Categories</div></div>
+</div><div class='chips'>$catChips</div></div>
+<h2>Accomplishments</h2>
+$dayHtml
+<h2>Blockers</h2>
+$wblkBlock
+"@
+    $html = New-ReportHtml "Weekly Summary" "Week of $($mon.ToString('MMM d')) &ndash; $($sun.ToString('MMM d, yyyy')) &bull; Generated $((Get-Date).ToString('yyyy-MM-dd HH:mm'))" $body
+
+    Write-Report -BaseName 'weekly-summary' -Html $html -Md $mdText -NoOpen:$NoOpen | Out-Null
+    Write-Host ''
+    Write-Host $mdText
+}
+
+# ---- Public: Interactive calendar dashboard --------------------------------
+function New-WorkDashboard {
+    [CmdletBinding()]
+    param([switch]$NoOpen)
+
+    $data = @(Get-WorkLog | ForEach-Object {
+        [pscustomobject]@{
+            id    = $_.Id
+            date  = $_.Start.ToString('yyyy-MM-dd')
+            start = $_.Start.ToString('HH:mm')
+            end   = if ($_.End) { $_.End.ToString('HH:mm') } else { '' }
+            min   = $_.Min
+            category = if ($_.Category) { $_.Category } elseif ($_.AdoId) { 'ADO' } else { 'Other' }
+            adoId = $_.AdoId
+            url   = if ($_.AdoId -and $script:Org) { "$script:Org/_workitems/edit/$($_.AdoId)" } else { '' }
+            title = $_.Title
+            accomplishment = $_.Accomplishment
+            blocker = $_.Blocker
+            status = $_.Status
+            notes = @($_.Notes | ForEach-Object { @{ ts = $_.ts; text = $_.text } })
+        }
+    })
+    $json = $data | ConvertTo-Json -Depth 6 -AsArray
+    $json = $json.Replace('</', '<\/')
+    $count = $data.Count
+    $totalMin = (@($data) | Measure-Object min -Sum).Sum; if (-not $totalMin) { $totalMin = 0 }
+    $meta = "Generated $((Get-Date).ToString('yyyy-MM-dd HH:mm')) &bull; $count session(s) &bull; $(FmtMin ([int]$totalMin)) total &bull; click a highlighted day to filter"
+
+    $js = @'
+var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var calY, calM, sel=null;
+function fmtMin(m){ if(m<=0) return '0m'; if(m<60) return m+'m'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
+function esc(s){ s=(s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtTs(s){
+  if(!s) return '';
+  var m=String(s).match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+  if(!m) return esc(s);
+  return m[2]+'/'+m[3]+'/'+m[1]+' '+m[4]+':'+m[5];
+}
+function linkify(s){
+  var e=esc(s);
+  e=e.replace(/(https?:\/\/[^\s<]+)/g, function(u){ return "<a href='"+u+"' target='_blank' rel='noopener'>"+u+"</a>"; });
+  if(ADO_BASE){ e=e.replace(/\b(ADO(?:\s+item)?\s+#?)(\d{3,})\b/gi, function(m,p,n){ return p+"<a href='"+ADO_BASE+"/_workitems/edit/"+n+"' target='_blank' rel='noopener'>"+n+"</a>"; }); }
+  return e;
+}
+function pad(n){ return (n<10?'0':'')+n; }
+function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
+var DAYMAP={};
+SESSIONS.forEach(function(s){ if(!DAYMAP[s.date]) DAYMAP[s.date]={count:0,min:0}; DAYMAP[s.date].count++; DAYMAP[s.date].min+=s.min; });
+function renderCal(){
+  var first=new Date(calY,calM,1);
+  var startDow=(first.getDay()+6)%7;
+  var daysIn=new Date(calY,calM+1,0).getDate();
+  var now=new Date(); var tstr=ymd(now.getFullYear(),now.getMonth(),now.getDate());
+  var h="<div class='cal-head'><button class='cbtn' onclick='navMonth(-1)'>&#8249;</button><div class='cal-title'>"+MONTHS[calM]+' '+calY+"</div><button class='cbtn' onclick='navMonth(1)'>&#8250;</button></div><div class='cal-grid'>";
+  for(var i=0;i<7;i++){ h+="<div class='dow'>"+DOW[i]+"</div>"; }
+  for(var b=0;b<startDow;b++){ h+="<div class='cal-day'></div>"; }
+  for(var d=1;d<=daysIn;d++){
+    var ds=ymd(calY,calM,d);
+    var cls='cal-day in'; var dot='';
+    if(DAYMAP[ds]){ cls+=' has'; dot="<span class='dot'></span>"; }
+    if(ds===tstr){ cls+=' today'; }
+    if(ds===sel){ cls+=' sel'; }
+    var clk = DAYMAP[ds] ? (" onclick=\"selDay('"+ds+"')\" title=\""+fmtMin(DAYMAP[ds].min)+", "+DAYMAP[ds].count+" session(s)\"") : '';
+    h+="<div class='"+cls+"'"+clk+"><span>"+d+"</span>"+dot+"</div>";
+  }
+  h+="</div><div class='cal-foot'><button class='pill' onclick='clearSel()'>All dates</button></div>";
+  document.getElementById('cal').innerHTML=h;
+}
+function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
+function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
+function clearSel(){ sel=null; renderCal(); renderView(); }
+function curSet(){ return sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); }
+function renderSummary(){
+  var set=curSet(); var total=0; var cat={};
+  set.forEach(function(s){ total+=s.min; var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
+  var chips='';
+  Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
+  if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
+  var label = sel ? sel : 'All time';
+  document.getElementById('sum').innerHTML =
+    "<div class='sum-row'><div class='stat'><div class='big'>"+fmtMin(total)+"</div><div class='lbl'>Total time</div></div>"+
+    "<div class='stat'><div class='big'>"+set.length+"</div><div class='lbl'>Sessions</div></div>"+
+    "<div class='stat'><div class='big'>"+Object.keys(cat).length+"</div><div class='lbl'>Categories</div></div></div>"+
+    "<div class='chips'>"+chips+"</div><div class='scope'>Showing: <b>"+esc(label)+"</b></div>";
+}
+function renderTable(){
+  var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
+  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions for this selection.</div>"; return; }
+  var groups={}; var order=[];
+  set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
+  var h='';
+  order.forEach(function(dt){
+    var rows=groups[dt]; var dmin=0; rows.forEach(function(r){ dmin+=r.min; });
+    var o=new Date(dt+'T00:00:00');
+    var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
+    h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
+    h+="<table class='log'><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    rows.forEach(function(s){
+      var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
+      var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
+      if(s.adoId){ item="<span class='adoid'>#"+esc(s.adoId)+"</span> "+item; }
+      var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
+      if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
+      var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s.id+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
+      h+="<tr><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+    });
+    h+="</tbody></table></div>";
+  });
+  document.getElementById('log').innerHTML=h;
+}
+function renderView(){ renderSummary(); renderTable(); }
+function byId(id){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i].id===id) return SESSIONS[i]; } return null; }
+function openNotes(id){
+  var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
+  document.getElementById('mTitle').innerHTML=esc(s.title||'');
+  var b="<table class='log'><thead><tr><th class='nowrap'>When</th><th>Note</th></tr></thead><tbody>";
+  s.notes.forEach(function(n){ b+="<tr><td class='nowrap muted'>"+fmtTs(n.ts)+"</td><td>"+linkify(n.text)+"</td></tr>"; });
+  b+="</tbody></table>";
+  document.getElementById('mBody').innerHTML=b;
+  document.getElementById('modal').classList.add('show');
+}
+function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNotes(); });
+(function(){
+  if(SESSIONS.length){ var ds=SESSIONS.map(function(s){ return s.date; }).sort(); var last=ds[ds.length-1]; var o=new Date(last+'T00:00:00'); calY=o.getFullYear(); calM=o.getMonth(); }
+  else { var n=new Date(); calY=n.getFullYear(); calM=n.getMonth(); }
+  sel=null; renderCal(); renderView();
+})();
+'@
+
+    $html = @"
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width, initial-scale=1'><title>Work Log</title>
+<style>$script:BaseCss</style></head><body>
+<div class='page'>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>$meta</div></div></header>
+<div class='top'>
+  <div class='card'><div id='cal'></div></div>
+  <div class='card'><div id='sum'></div></div>
+</div>
+<div id='log'></div>
+</div>
+<div id='modal' class='modal' onclick='if(event.target===this)closeNotes()'>
+  <div class='modal-box'>
+    <div class='modal-head'><span id='mTitle'></span><button class='cbtn' onclick='closeNotes()'>&times;</button></div>
+    <div id='mBody' class='modal-body'></div>
+  </div>
+</div>
+<script>
+var SESSIONS = $json;
+var ADO_BASE = "$($script:Org)";
+$js
+</script>
+</body></html>
+"@
+
+    $outPath = Join-Path $script:OutDir 'work-dashboard.html'
+    [System.IO.File]::WriteAllText($outPath, $html, (New-Object System.Text.UTF8Encoding $false))
+    Write-Host "Wrote $outPath"
+    if (-not $NoOpen) { Start-Process $outPath }
+    [pscustomobject]@{ Html = $outPath }
+}
+
+Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Add-WorkNote, Edit-Work, `
+    Get-OpenSessions, Get-WorkLog, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, `
+    Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile

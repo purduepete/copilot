@@ -132,21 +132,22 @@
         <summary>
           <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
           <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Work Tracking
+          Time Tracking
         </summary>
 
         <details class="topic">
           <summary>
             <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
             <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
-            Time-Tracked Work Log
+            Time-Tracked Log
           </summary>
           <div class="links">
             <a href="#wl-use">1. How to use (via Copilot)</a>
             <a href="#wl-cli">2. CLI commands</a>
-            <a href="#wl-reports">3. Standup &amp; weekly reports</a>
+            <a href="#wl-reports">3. Standup, weekly &amp; dashboard</a>
             <a href="#wl-model">4. How it works</a>
-            <a href="#wl-locations">5. Locations at a glance</a>
+            <a href="#wl-profiles">5. Work vs personal profiles</a>
+            <a href="#wl-locations">6. Locations at a glance</a>
           </div>
         </details>
 
@@ -196,7 +197,7 @@
         <strong>About this hub</strong>
         <p>This is a living reference for things I want to remember how to do. Each <strong>subject</strong> (e.g. Azure DevOps)
         contains one or more <strong>topics</strong>, and each topic has its own sections. New subjects can be added over time.</p>
-        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Work Tracking</strong>. <span class="future">More to come…</span></p>
+        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Time Tracking</strong>. <span class="future">More to come…</span></p>
       </div>
     </section>
 
@@ -286,12 +287,12 @@
     <!-- ===================== SUBJECT: WORK TRACKING ===================== -->
     <div class="subject-banner">
       <span class="badge"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-      <h2>Work Tracking</h2>
+      <h2>Time Tracking</h2>
     </div>
 
     <div class="topic-head" id="wl-worklog">
       <svg class="icon" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg>
-      <h3>Topic: Time-Tracked Work Log</h3>
+      <h3>Topic: Time-Tracked Log</h3>
     </div>
     <p>A conversational, time-tracked work log. I tell Copilot when I <strong>start</strong> work (and what it is),
     when I <strong>switch</strong>, and when I <strong>finish</strong> (and what I accomplished). It records timestamped
@@ -314,27 +315,34 @@
 
     <h4 id="wl-cli">2. CLI commands</h4>
     <p>I can also drive it directly without Copilot:</p>
-    <pre><code>pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 start "Architecture review" -Category Meeting
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 switch -Id 1
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 note  "Found root cause in the view definition"
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 stop  "Patched view, validated counts" -Id 1 -Blocker "Need prod approval"
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 status
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 standup
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 week
-pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 log -Days 14</code></pre>
+    <pre><code>pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Architecture review" -Category Meeting
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 switch -Id 1
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 note  "Found root cause in the view definition"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop  "Patched view, validated counts" -Id 1 -Blocker "Need prod approval"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit  -Id 1 -Status paused -Category Dev
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 status
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 standup
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 week
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 log -Days 14
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile personal</code></pre>
     <ul>
       <li><code>start</code> opens a session (ad-hoc unless <code>-Ado &lt;id&gt;</code> is given). Other open sessions stay open.</li>
       <li><code>switch -Id &lt;n&gt;</code> moves focus &mdash; it never closes anything.</li>
       <li><code>stop</code> closes the current session (or <code>-Id &lt;n&gt;</code>) with an accomplishment and optional <code>-Blocker</code>.</li>
+      <li><code>edit -Id &lt;n&gt;</code> changes any field of a logged session after the fact (only the fields you pass); <code>-Reopen</code> clears the end time.</li>
       <li><code>-At &lt;datetime&gt;</code> on start/stop lets me back-date if I forgot to log in real time.</li>
     </ul>
 
-    <h4 id="wl-reports">3. Standup &amp; weekly reports</h4>
+    <h4 id="wl-reports">3. Standup, weekly &amp; dashboard reports</h4>
     <ul>
+      <li><strong>Work dashboard</strong> &rarr; <code>work-dashboard.html</code>: a modern, interactive view of the whole log with an
+        <strong>navigable month calendar</strong> &mdash; days with logged work are highlighted; click one to filter the table to that date.
+        Includes live summary stats (total time, sessions, time by category) and a sortable, grouped session table. Uses the Roboto&nbsp;Flex font.</li>
       <li><strong>Daily standup</strong> &rarr; <code>standup.html</code> + <code>standup.md</code>: Yesterday (accomplishments + time), Today (in progress / planned), Blockers.</li>
       <li><strong>Weekly summary</strong> &rarr; <code>weekly-summary.html</code> + <code>weekly-summary.md</code>: accomplishments grouped by day, total time, time by category, and blockers.</li>
-      <li>Each report is written as both a styled HTML file (to view) and Markdown (to paste). The HTML opens automatically unless I ask not to.</li>
+      <li>Standup &amp; weekly are written as both styled HTML (to view) and Markdown (to paste). The HTML opens automatically unless I ask not to.</li>
     </ul>
 
     <h4 id="wl-model">4. How it works</h4>
@@ -346,16 +354,48 @@ pwsh -File C:\Files\Dev\main\work\copilot\Work.ps1 log -Days 14</code></pre>
       <li><strong>State</strong> persists in <code>work-log.json</code>, so the log survives across sessions.</li>
     </ul>
 
-    <h4 id="wl-locations">5. Locations at a glance</h4>
+    <h4 id="wl-profiles">5. Work vs personal profiles</h4>
+    <p>The tool is <strong>portable</strong> (all paths resolve from its own folder, so it runs wherever the
+      <code>purduepete/copilot</code> repo is cloned) and <strong>profile-aware</strong> &mdash; each profile keeps its
+      own log and reports under <code>worklog\data\&lt;profile&gt;\</code>, so work and personal entries never mix.</p>
+    <ul>
+      <li><strong>Profiles</strong> are defined in <code>worklog.config.json</code> (e.g. <code>work</code> links ADO items; <code>personal</code> has no org).</li>
+      <li><strong>Which profile is active</strong> resolves in this order: <code>-Profile &lt;name&gt;</code> on a command
+        &rarr; <code>WORKLOG_PROFILE</code> env var &rarr; the git-ignored <code>.profile</code> file in the worklog folder &rarr; the config default &rarr; <code>work</code>.</li>
+      <li><code>Work.ps1 profile</code> shows the active profile; <code>Work.ps1 profile personal</code> sets <em>this machine's</em> default.</li>
+      <li><strong>On another computer:</strong> clone <code>purduepete/copilot</code>, run <code>worklog\Work.ps1 profile personal</code> once, then pull/push to sync the personal log.</li>
+    </ul>
+    <p style="margin-top:14px"><strong>Switching between work and personal</strong> &mdash; three ways, least to most permanent:</p>
+    <pre><code># 0. Which profile am I on?
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 profile
+
+# 1. One command only (-Profile wins over everything else):
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile personal
+
+# 2. This shell window only (env var):
+$env:WORKLOG_PROFILE = 'personal'
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 status
+$env:WORKLOG_PROFILE = ''          # back to machine default
+
+# 3. This computer's default (persists in the git-ignored .profile):
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 profile personal
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 profile work</code></pre>
+    <p class="muted">Typical setup: the work computer stays on <code>work</code>; the personal computer is set once to
+      <code>personal</code> so you never have to think about it. A <code>-Profile</code> flag always overrides the default for that one command.</p>
+
+    <h4 id="wl-locations">6. Locations at a glance</h4>
     <table>
       <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
       <tbody>
-        <tr><td><code>C:\Files\Dev\main\work\copilot\WorkLog.psm1</code></td><td>Core module (logic + report generators), in the <code>work</code> GitHub repo</td></tr>
-        <tr><td><code>C:\Files\Dev\main\work\copilot\Work.ps1</code></td><td>CLI wrapper (start / switch / stop / note / status / standup / week / log)</td></tr>
-        <tr><td><code>C:\Files\Dev\main\work\copilot\README-WorkLog.md</code></td><td>Usage docs</td></tr>
-        <tr><td><code>C:\Files\Dev\main\copilot\work-log.json</code></td><td>Persistent state (the log itself)</td></tr>
-        <tr><td><code>C:\Files\Dev\main\copilot\standup.{html,md}</code></td><td>Latest daily standup</td></tr>
-        <tr><td><code>C:\Files\Dev\main\copilot\weekly-summary.{html,md}</code></td><td>Latest weekly summary</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\WorkLog.psm1</code></td><td>Core module (logic + report generators)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\Work.ps1</code></td><td>CLI wrapper (start / switch / stop / note / edit / status / standup / week / dashboard / log / profile)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\worklog.config.json</code></td><td>Profiles + per-profile settings (ADO org, etc.)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\.profile</code></td><td>This machine's default profile (git-ignored)</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\README-WorkLog.md</code></td><td>Usage docs</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\data\&lt;profile&gt;\work-log.json</code></td><td>Persistent state (the log) per profile</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\data\&lt;profile&gt;\work-dashboard.html</code></td><td>Interactive calendar dashboard</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\data\&lt;profile&gt;\standup.{html,md}</code></td><td>Latest daily standup</td></tr>
+        <tr><td><code>C:\Files\Dev\main\copilot\worklog\data\&lt;profile&gt;\weekly-summary.{html,md}</code></td><td>Latest weekly summary</td></tr>
       </tbody>
     </table>
 
