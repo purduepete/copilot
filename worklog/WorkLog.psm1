@@ -91,6 +91,12 @@ Set-WorkProfile | Out-Null
 
 # ---- Internal helpers ------------------------------------------------------
 function HtmlEnc([string]$s) { [System.Web.HttpUtility]::HtmlEncode($s) }
+function ConvertTo-TitleCaseCategory([string]$s) {
+    if ([string]::IsNullOrWhiteSpace($s)) { return $s }
+    ($s.Trim() -split '\s+' | ForEach-Object {
+        if ($_.Length -gt 0) { $_.Substring(0, 1).ToUpperInvariant() + $_.Substring(1) } else { $_ }
+    }) -join ' '
+}
 function NowStr { (Get-Date).ToString($script:Fmt) }
 function ParseTs([string]$s) { [datetime]::ParseExact($s, $script:Fmt, [Globalization.CultureInfo]::InvariantCulture) }
 function FmtMin([int]$m) {
@@ -163,6 +169,7 @@ function Start-Work {
     $st = Get-LogState
     $id = [int]$st['nextId']
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
+    $Category = ConvertTo-TitleCaseCategory $Category
     $s = @{
         id = $id; kind = $kind; adoId = $AdoId; category = $Category; project = $Project; tags = @($Tags)
         title = $Title; start = $At.ToString($script:Fmt); end = $null; durationMin = 0
@@ -268,7 +275,7 @@ function Edit-Work {
     if (-not $s) { throw "No session #$Id." }
     $changed = @()
     if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = $Title; $changed += 'title' }
-    if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = $Category; $changed += 'category' }
+    if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = ConvertTo-TitleCaseCategory $Category; $changed += 'category' }
     if ($PSBoundParameters.ContainsKey('Project'))       { $s['project'] = $Project; $changed += 'project' }
     if ($PSBoundParameters.ContainsKey('AdoId'))         { $s['adoId'] = $AdoId; $s['kind'] = if ($AdoId) { 'ado' } else { 'adhoc' }; $changed += 'adoId' }
     if ($PSBoundParameters.ContainsKey('Tags'))          { $s['tags'] = @($Tags); $changed += 'tags' }
@@ -710,12 +717,31 @@ function urlLabel(u){
   if(seg.length) return seg[seg.length-1];
   return raw.replace(/^https?:\/\//,'').split('/')[0];
 }
-function linkify(s){
-  var e=esc(s);
+function mdInline(e){
   e=e.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, function(m,name,u){ return "<a href='"+u+"' target='_blank' rel='noopener'>"+name+"</a>"; });
   e=e.replace(/(^|[^'(>])(https?:\/\/[^\s<]+)/g, function(m,pre,u){ return pre+"<a href='"+u+"' target='_blank' rel='noopener'>"+urlLabel(u)+"</a>"; });
+  e=e.replace(/`([^`]+)`/g, function(m,c){ return "<code>"+c+"</code>"; });
+  e=e.replace(/\*\*([^*]+)\*\*/g, function(m,b){ return "<b>"+b+"</b>"; });
   if(ADO_BASE){ e=e.replace(/\b(ADO(?:\s+item)?\s+#?)(\d{3,})\b/gi, function(m,p,n){ return p+"<a href='"+ADO_BASE+"/_workitems/edit/"+n+"' target='_blank' rel='noopener'>"+n+"</a>"; }); }
   return e;
+}
+function linkify(s){ return mdInline(esc(s)); }
+function mdNote(s){
+  var lines=String(s==null?'':s).split(/\r?\n/);
+  var html=''; var inList=false;
+  function closeList(){ if(inList){ html+='</ul>'; inList=false; } }
+  lines.forEach(function(ln){
+    var t=ln.replace(/\s+$/,'');
+    var li=t.match(/^\s*[-*]\s+(.*)$/);
+    if(li){ if(!inList){ html+="<ul class='nlist'>"; inList=true; } html+='<li>'+mdInline(esc(li[1]))+'</li>'; return; }
+    closeList();
+    if(t.trim()===''){ return; }
+    var h=t.match(/^\s*(#{1,6})\s+(.*)$/);
+    if(h){ html+="<div class='nh'>"+mdInline(esc(h[2]))+"</div>"; return; }
+    html+="<div class='np'>"+mdInline(esc(t))+"</div>";
+  });
+  closeList();
+  return html;
 }
 function pad(n){ return (n<10?'0':'')+n; }
 function ymd(y,m,d){ return y+'-'+pad(m+1)+'-'+pad(d); }
@@ -825,7 +851,7 @@ function openNotes(id){
   var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
   document.getElementById('mTitle').innerHTML=esc(s.title||'');
   var b="<table class='log'><thead><tr><th class='nowrap'>When</th><th>Note</th></tr></thead><tbody>";
-  s.notes.forEach(function(n){ b+="<tr><td class='nowrap muted'>"+fmtTs(n.ts)+"</td><td>"+linkify(n.text)+"</td></tr>"; });
+  s.notes.forEach(function(n){ b+="<tr><td class='nowrap muted'>"+fmtTs(n.ts)+"</td><td>"+mdNote(n.text)+"</td></tr>"; });
   b+="</tbody></table>";
   document.getElementById('mBody').innerHTML=b;
   document.getElementById('modal').classList.add('show');
@@ -848,6 +874,11 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
 .searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(77,141,255,.25);}
 .searchbar button{padding:.55rem 1rem;font-size:.9rem;line-height:1;color:var(--muted);transition:background .15s,border-color .15s,color .15s;}
 .searchbar button:hover{background:var(--card2);border-color:var(--accent);color:var(--text);}
+.nh{font-weight:700;margin:.5rem 0 .25rem;}
+.np{margin:.25rem 0;}
+.nlist{margin:.25rem 0 .25rem 1.1rem;padding:0;}
+.nlist li{margin:.15rem 0;}
+.modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
 <header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>$meta</div></div></header>
