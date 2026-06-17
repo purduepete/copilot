@@ -153,6 +153,20 @@
           </div>
         </details>
 
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Mining VS Code Chats
+          </summary>
+          <div class="links">
+            <a href="#vc-what">1. What this is</a>
+            <a href="#vc-locations">2. Where chats live on disk</a>
+            <a href="#vc-read">3. How to read them</a>
+            <a href="#vc-tasks">4. Turning chats into tasks</a>
+          </div>
+        </details>
+
       </details>
 
       <!-- ============================================================
@@ -444,6 +458,60 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 profile work</code></pre>
         <tr><td><code>C:\Files\Dev\main\copilot\worklog\data\&lt;profile&gt;\weekly-summary.{html,md}</code></td><td>Latest weekly summary</td></tr>
       </tbody>
     </table>
+
+    <div class="topic-head" id="vc-chats">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <h3>Topic: Mining VS Code Chats for Tasks</h3>
+    </div>
+    <p>VS Code stores Copilot Chat history as plain files on disk. Copilot (CLI) can read those transcripts
+    to reconstruct what I worked on and roll it up into <strong>high-level tasks</strong> &mdash; useful at the end of a
+    coding session when I didn't log work as I went.</p>
+
+    <h4 id="vc-what">1. What this is</h4>
+    <p>Every Copilot Chat session in VS Code is persisted locally (no cloud fetch needed). Because the files are on
+    disk, Copilot CLI can open them, parse the user prompts and assistant turns, and summarize the work into
+    time-tracked log entries or a standup.</p>
+
+    <h4 id="vc-locations">2. Where chats live on disk</h4>
+    <table>
+      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>%APPDATA%\Code\User\workspaceStorage\&lt;hash&gt;\chatSessions\*.jsonl</code></td><td>Per-workspace chat sessions (incremental-patch JSONL)</td></tr>
+        <tr><td><code>%APPDATA%\Code\User\workspaceStorage\&lt;hash&gt;\GitHub.copilot-chat\transcripts\*.jsonl</code></td><td>Cleaner mirror transcript (one JSON event per line: <code>session.start</code>, <code>user.message</code>, <code>assistant.turn_start</code>&hellip;)</td></tr>
+        <tr><td><code>%APPDATA%\Code\User\workspaceStorage\&lt;hash&gt;\chatEditingSessions\</code></td><td>Edit-session state for chats that changed files</td></tr>
+        <tr><td><code>%APPDATA%\Code\User\globalStorage\emptyWindowChatSessions\*.jsonl</code></td><td>Chats from a window with no folder open</td></tr>
+        <tr><td><code>%APPDATA%\Code\User\workspaceStorage\&lt;hash&gt;\workspace.json</code></td><td>Maps the <code>&lt;hash&gt;</code> folder back to the actual project path</td></tr>
+      </tbody>
+    </table>
+    <p class="muted">Insiders builds use <code>%APPDATA%\Code - Insiders\</code> instead of <code>%APPDATA%\Code\</code>.</p>
+
+    <h4 id="vc-read">3. How to read them</h4>
+    <p>The <code>transcripts\*.jsonl</code> mirror is the easiest to parse &mdash; each line is a JSON event with a
+    <code>type</code> and <code>data</code>. To find which session a message belongs to, search across all chat files
+    for the text, then resolve the workspace via <code>workspace.json</code>:</p>
+    <pre><code># Find a chat by remembered text, with its workspace folder
+$root = "$env:APPDATA\Code\User\workspaceStorage"
+Get-ChildItem $root -Recurse -File -Include *.jsonl |
+  Select-String -SimpleMatch 'hello again' -List |
+  ForEach-Object {
+    $hash = ($_.Path -replace [regex]::Escape($root+'\'),'').Split('\')[0]
+    $ws = Get-Content "$root\$hash\workspace.json" -Raw | ConvertFrom-Json
+    "{0}`n  -> {1}" -f $_.Path, $ws.folder
+  }</code></pre>
+    <p>The richer <code>chatSessions\*.jsonl</code> uses an incremental-patch format (line 0 is the base object;
+    later lines patch it), so for quick reads prefer the <code>transcripts</code> mirror.</p>
+
+    <h4 id="vc-tasks">4. Turning chats into tasks</h4>
+    <p>Once parsed, I ask Copilot to summarize a coding session into high-level tasks and, optionally, log them:</p>
+    <div class="callout">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+      <div>
+        <strong>Parse my VS Code chats from today and create high-level tasks for what I worked on.</strong><br>
+        <strong>Read the chat for the &lt;project&gt; workspace and log it as a work session.</strong>
+      </div>
+    </div>
+    <p>Copilot reads the transcripts, groups the work into themed high-level tasks, and can write them straight into
+    the time-tracked log (<code>start</code>/<code>stop</code>) and regenerate the dashboard.</p>
 
     <!-- ===================== ADD FUTURE SUBJECTS BELOW ===================== -->
 
