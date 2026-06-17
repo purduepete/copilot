@@ -97,6 +97,13 @@ function ConvertTo-TitleCaseCategory([string]$s) {
         if ($_.Length -gt 0) { $_.Substring(0, 1).ToUpperInvariant() + $_.Substring(1) } else { $_ }
     }) -join ' '
 }
+function ConvertTo-FirstCapital([string]$s) {
+    if ([string]::IsNullOrWhiteSpace($s)) { return $s }
+    $i = 0
+    while ($i -lt $s.Length -and [char]::IsWhiteSpace($s[$i])) { $i++ }
+    if ($i -ge $s.Length) { return $s }
+    $s.Substring(0, $i) + $s.Substring($i, 1).ToUpperInvariant() + $s.Substring($i + 1)
+}
 function NowStr { (Get-Date).ToString($script:Fmt) }
 function ParseTs([string]$s) { [datetime]::ParseExact($s, $script:Fmt, [Globalization.CultureInfo]::InvariantCulture) }
 function FmtMin([int]$m) {
@@ -180,6 +187,7 @@ function Start-Work {
     $id = [int]$st['nextId']
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
     $Category = ConvertTo-TitleCaseCategory $Category
+    $Title = ConvertTo-FirstCapital $Title
     $s = @{
         id = $id; kind = $kind; adoId = $AdoId; category = $Category; project = $Project; tags = @($Tags)
         title = $Title; start = $At.ToString($script:Fmt); end = $null; durationMin = 0
@@ -225,8 +233,8 @@ function Stop-Work {
     if ($s['end']) { Write-Warning "Session #$Id already stopped."; return }
     $s['end'] = $At.ToString($script:Fmt)
     $s['durationMin'] = [math]::Round((($At) - (ParseTs $s['start'])).TotalMinutes)
-    if ($Accomplishment) { $s['accomplishment'] = $Accomplishment }
-    if ($Blocker)        { $s['blocker'] = $Blocker }
+    if ($Accomplishment) { $s['accomplishment'] = ConvertTo-FirstCapital $Accomplishment }
+    if ($Blocker)        { $s['blocker'] = ConvertTo-FirstCapital $Blocker }
     $s['status'] = $Status
     if ([int]$st['current'] -eq $Id) { $st['current'] = $null }
     Save-LogState $st
@@ -241,7 +249,7 @@ function Set-DayCommentary {
     $st = Get-LogState
     $key = $Date.ToString('yyyy-MM-dd')
     $map = if ($st.ContainsKey('commentary') -and $st['commentary']) { $st['commentary'] } else { @{} }
-    if ($Text.Trim()) { $map[$key] = $Text.Trim() } else { $map.Remove($key) | Out-Null }
+    if ($Text.Trim()) { $map[$key] = (ConvertTo-FirstCapital $Text.Trim()) } else { $map.Remove($key) | Out-Null }
     $st['commentary'] = $map
     Save-LogState $st
     Write-Host ("* Commentary set for {0}" -f $key)
@@ -257,7 +265,7 @@ function Add-WorkNote {
     $s = Find-Session $st $Id
     if (-not $s) { throw "No session #$Id." }
     $notes = [System.Collections.ArrayList]@($s['notes'])
-    [void]$notes.Add(@{ ts = NowStr; text = $Text })
+    [void]$notes.Add(@{ ts = NowStr; text = (ConvertTo-FirstCapital $Text) })
     $s['notes'] = $notes.ToArray()
     Save-LogState $st
     Write-Host ("* Note added to #{0} ({1} total)" -f $Id, $notes.Count)
@@ -284,13 +292,13 @@ function Edit-Work {
     $s = Find-Session $st $Id
     if (-not $s) { throw "No session #$Id." }
     $changed = @()
-    if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = $Title; $changed += 'title' }
+    if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = ConvertTo-FirstCapital $Title; $changed += 'title' }
     if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = ConvertTo-TitleCaseCategory $Category; $changed += 'category' }
     if ($PSBoundParameters.ContainsKey('Project'))       { $s['project'] = $Project; $changed += 'project' }
     if ($PSBoundParameters.ContainsKey('AdoId'))         { $s['adoId'] = $AdoId; $s['kind'] = if ($AdoId) { 'ado' } else { 'adhoc' }; $changed += 'adoId' }
     if ($PSBoundParameters.ContainsKey('Tags'))          { $s['tags'] = @($Tags); $changed += 'tags' }
-    if ($PSBoundParameters.ContainsKey('Accomplishment')){ $s['accomplishment'] = $Accomplishment; $changed += 'accomplishment' }
-    if ($PSBoundParameters.ContainsKey('Blocker'))       { $s['blocker'] = $Blocker; $changed += 'blocker' }
+    if ($PSBoundParameters.ContainsKey('Accomplishment')){ $s['accomplishment'] = ConvertTo-FirstCapital $Accomplishment; $changed += 'accomplishment' }
+    if ($PSBoundParameters.ContainsKey('Blocker'))       { $s['blocker'] = ConvertTo-FirstCapital $Blocker; $changed += 'blocker' }
     if ($PSBoundParameters.ContainsKey('Status'))        { $s['status'] = $Status; $changed += 'status' }
     if ($PSBoundParameters.ContainsKey('Start'))         { $s['start'] = $Start.ToString($script:Fmt); $changed += 'start' }
     if ($PSBoundParameters.ContainsKey('End'))           { $s['end'] = $End.ToString($script:Fmt); $changed += 'end' }

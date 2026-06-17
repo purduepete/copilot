@@ -1,92 +1,99 @@
 {
-  "nextId": 12,
+  "nextId": 13,
+  "current": null,
+  "updated": "2026-06-17 15:06:02",
+  "commentary": {
+    "2026-06-16": "A build-and-align day: stood up a personal work-tracking framework and dashboard, moved Copilot assets into a private repo, and synced with the team on the Bedrock data-platform architecture."
+  },
   "sessions": [
     {
+      "category": "Reporting",
+      "adoId": "",
       "notes": [
         {
           "text": "Now is the time for all good men",
           "ts": "2026-06-16 14:41:01"
         }
       ],
-      "adoId": "",
+      "tags": [],
+      "kind": "adhoc",
       "project": "personal",
-      "blocker": "",
-      "title": "Regenerate ADO work item list",
-      "id": 1,
       "status": "done",
+      "id": 1,
+      "blocker": "",
+      "accomplishment": "Ran Generate-OpenWorkItems.ps1 - 439 assigned, 9 open; regenerated open-work-items.html",
       "start": "2026-06-16 13:29:00",
       "durationMin": 2.0,
-      "category": "Reporting",
-      "kind": "adhoc",
-      "end": "2026-06-16 13:31:00",
-      "accomplishment": "Ran Generate-OpenWorkItems.ps1 - 439 assigned, 9 open; regenerated open-work-items.html",
-      "tags": []
+      "title": "Regenerate ADO work item list",
+      "end": "2026-06-16 13:31:00"
     },
     {
-      "notes": [],
+      "category": "Dev",
       "adoId": "",
+      "notes": [],
+      "tags": [],
+      "kind": "adhoc",
       "project": "personal",
-      "blocker": "",
-      "title": "Build work tracking framework",
-      "id": 2,
       "status": "done",
+      "id": 2,
+      "blocker": "",
+      "accomplishment": "Created WorkLog.psm1 (parallel time-tracked sessions + standup/weekly reports in HTML & Markdown), Work.ps1 CLI, and README; tested full flow end-to-end",
       "start": "2026-06-16 13:31:00",
       "durationMin": 25.0,
-      "category": "Dev",
-      "kind": "adhoc",
-      "end": "2026-06-16 13:56:00",
-      "accomplishment": "Created WorkLog.psm1 (parallel time-tracked sessions + standup/weekly reports in HTML & Markdown), Work.ps1 CLI, and README; tested full flow end-to-end",
-      "tags": []
+      "title": "Build work tracking framework",
+      "end": "2026-06-16 13:56:00"
     },
     {
-      "notes": [],
+      "category": "Review",
       "adoId": "",
+      "notes": [],
+      "tags": [],
+      "kind": "adhoc",
       "project": "personal",
-      "blocker": "",
-      "title": "Document framework in Copilot reference hub",
-      "id": 3,
       "status": "done",
+      "id": 3,
+      "blocker": "",
+      "accomplishment": "Added Work Tracking subject/topic (5 sections) to instructions.html; validated all anchors resolve and tags balance",
       "start": "2026-06-16 13:56:00",
       "durationMin": 3.0,
-      "category": "Review",
-      "kind": "adhoc",
-      "end": "2026-06-16 13:59:00",
-      "accomplishment": "Added Work Tracking subject/topic (5 sections) to instructions.html; validated all anchors resolve and tags balance",
-      "tags": []
+      "title": "Document framework in Copilot reference hub",
+      "end": "2026-06-16 13:59:00"
     },
     {
-      "notes": [],
+      "category": "DevOps",
       "adoId": "",
+      "notes": [],
+      "tags": [],
+      "kind": "adhoc",
       "project": "personal",
-      "blocker": "",
-      "title": "Move copilot assets to a git repo and publish",
-      "id": 4,
       "status": "done",
+      "id": 4,
+      "blocker": "",
+      "accomplishment": "Moved copilot folder under main, repointed all script/doc paths, git init + commit, created & pushed private repo purduepete/copilot",
       "start": "2026-06-16 14:01:00",
       "durationMin": 5.0,
-      "category": "DevOps",
-      "kind": "adhoc",
-      "end": "2026-06-16 14:06:00",
-      "accomplishment": "Moved copilot folder under main, repointed all script/doc paths, git init + commit, created & pushed private repo purduepete/copilot",
-      "tags": []
+      "title": "Move copilot assets to a git repo and publish",
+      "end": "2026-06-16 14:06:00"
     },
     {
-      "notes": [],
+      "category": "Dev",
       "adoId": "",
+      "notes": [],
+      "tags": [],
+      "kind": "adhoc",
       "project": "personal",
-      "blocker": "",
-      "title": "Time-tracked log development",
-      "id": 5,
       "status": "done",
+      "id": 5,
+      "blocker": "",
+      "accomplishment": "Navy theme + square edges + wider layout; note modals; row IDs; portable + work/personal profiles; docs & hub updates",
       "start": "2026-06-16 14:25:00",
       "durationMin": 43.0,
-      "category": "Dev",
-      "kind": "adhoc",
-      "end": "2026-06-16 15:07:31",
-      "accomplishment": "Navy theme + square edges + wider layout; note modals; row IDs; portable + work/personal profiles; docs & hub updates",
-      "tags": []
+      "title": "Time-tracked log development",
+      "end": "2026-06-16 15:07:31"
     },
     {
+      "category": "Meeting",
+      "adoId": "",
       "notes": [
         {
           "text": "Priority is to work on ADO item 445704",
@@ -97,119 +104,128 @@
           "ts": "2026-06-16 16:59:53"
         }
       ],
-      "adoId": "",
+      "tags": [],
+      "kind": "adhoc",
       "project": "bedrock",
-      "blocker": "",
-      "title": "Daily standup",
-      "id": 6,
       "status": "done",
+      "id": 6,
+      "blocker": "",
+      "accomplishment": "Attended daily standup",
       "start": "2026-06-16 15:07:31",
       "durationMin": 52.0,
-      "category": "Meeting",
-      "kind": "adhoc",
-      "end": "2026-06-16 16:00:00",
-      "accomplishment": "Attended daily standup",
-      "tags": []
+      "title": "Daily standup",
+      "end": "2026-06-16 16:00:00"
     },
     {
-      "notes": [],
+      "category": "Meeting",
       "adoId": "",
+      "notes": [],
+      "tags": [],
+      "kind": "adhoc",
       "project": "bedrock",
-      "blocker": "",
-      "title": "Data Platform Architecture with Jesus",
-      "id": 7,
       "status": "done",
+      "id": 7,
+      "blocker": "",
+      "accomplishment": "Alignment on Bedrock Lakeshouse structure",
       "start": "2026-06-16 16:00:00",
       "durationMin": 23.0,
-      "category": "Meeting",
-      "kind": "adhoc",
-      "end": "2026-06-16 16:23:00",
-      "accomplishment": "Alignment on Bedrock Lakeshouse structure",
-      "tags": []
+      "title": "Data Platform Architecture with Jesus",
+      "end": "2026-06-16 16:23:00"
     },
     {
+      "category": "Housekeeping",
+      "adoId": "",
       "notes": [
         {
           "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)",
           "ts": "2026-06-16 17:38:25"
         }
       ],
-      "adoId": "",
+      "tags": [],
+      "kind": "adhoc",
       "project": "personal",
-      "blocker": "",
-      "title": "Workflow cleanup",
-      "id": 8,
       "status": "done",
+      "id": 8,
+      "blocker": "",
+      "accomplishment": "Developing a workflow for tracking work",
       "start": "2026-06-16 16:43:00",
       "durationMin": 92.0,
-      "category": "Housekeeping",
-      "kind": "adhoc",
-      "end": "2026-06-16 18:14:51",
-      "accomplishment": "Developing a workflow for tracking work",
-      "tags": []
+      "title": "Workflow cleanup",
+      "end": "2026-06-16 18:14:51"
     },
     {
-      "tags": [],
+      "category": "Meeting",
       "adoId": "",
+      "notes": [],
+      "tags": [],
+      "kind": "adhoc",
       "project": "fde",
-      "blocker": "",
-      "title": "FD&E All Team Connection (June)",
-      "id": 9,
       "status": "done",
+      "id": 9,
+      "blocker": "",
+      "accomplishment": "Attended FD&E all-team connection",
       "start": "2026-06-17 10:05:00",
       "durationMin": 65,
-      "category": "Meeting",
-      "notes": [],
-      "kind": "adhoc",
-      "end": "2026-06-17 11:10:00",
-      "accomplishment": "Attended FD&E all-team connection"
+      "title": "FD&E All Team Connection (June)",
+      "end": "2026-06-17 11:10:00"
     },
     {
+      "category": "Meeting",
+      "adoId": "",
       "notes": [
         {
-          "text": "Learned about Fabric CLI \u2014 a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first).",
+          "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first).",
           "ts": "2026-06-17 12:33:00"
         }
       ],
-      "adoId": "",
       "tags": [],
+      "kind": "adhoc",
       "project": "ai",
-      "blocker": "",
-      "title": "AI In-the-middle",
-      "id": 10,
       "status": "done",
+      "id": 10,
+      "blocker": "",
+      "accomplishment": "",
       "start": "2026-06-17 12:00:00",
       "durationMin": 33,
-      "category": "Meeting",
-      "kind": "adhoc",
-      "end": "2026-06-17 12:33:00",
-      "accomplishment": ""
+      "title": "AI In-the-middle",
+      "end": "2026-06-17 12:33:00"
     },
     {
+      "category": "Review",
+      "adoId": "",
       "notes": [
         {
-          "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) \u2014 UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti \u00b7 `users/srvoru/UIDev` \u2192 `main` \u00b7 ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell \u2192 microfrontend modules \u2192 GraphQL BFF \u2192 Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet.",
+          "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) — UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti · `users/srvoru/UIDev` → `main` · ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell → microfrontend modules → GraphQL BFF → Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet.",
           "ts": "2026-06-17 12:55:00"
         }
       ],
-      "adoId": "",
       "tags": [],
+      "kind": "adhoc",
       "project": "bedrock",
-      "blocker": "",
-      "title": "Review PR #206931 - UI Shell & Tenant Scaffolding",
-      "id": 11,
       "status": "done",
+      "id": 11,
+      "blocker": "",
+      "accomplishment": "Reviewed and summarized PR #206931 (UI Shell, Tenant App Scaffolding, ModernWork App)",
       "start": "2026-06-17 12:51:00",
       "durationMin": 5,
-      "category": "Review",
+      "title": "Review PR #206931 - UI Shell & Tenant Scaffolding",
+      "end": "2026-06-17 12:56:00"
+    },
+    {
+      "category": "Data",
+      "adoId": "",
+      "notes": [],
+      "tags": [],
       "kind": "adhoc",
-      "end": "2026-06-17 12:56:00",
-      "accomplishment": "Reviewed and summarized PR #206931 (UI Shell, Tenant App Scaffolding, ModernWork App)"
+      "project": "fy27 budget",
+      "status": "done",
+      "id": 12,
+      "blocker": "",
+      "accomplishment": "Next steps, investigate data issues for surface business",
+      "start": "2026-06-17 14:10:00",
+      "durationMin": 54.0,
+      "title": "Debug Budget FDL data issues",
+      "end": "2026-06-17 15:03:51"
     }
-  ],
-  "updated": "2026-06-17 12:59:54",
-  "commentary": {
-    "2026-06-16": "A build-and-align day: stood up a personal work-tracking framework and dashboard, moved Copilot assets into a private repo, and synced with the team on the Bedrock data-platform architecture."
-  },
-  "current": null
+  ]
 }
