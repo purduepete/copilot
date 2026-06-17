@@ -314,6 +314,51 @@ function Get-WorkLog {
     } | Sort-Object Start
 }
 
+function Find-WorkLog {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory, Position = 0)][string]$Query,
+        [datetime]$Since,
+        [datetime]$Until
+    )
+    $sp = @{}
+    if ($PSBoundParameters.ContainsKey('Since')) { $sp.Since = $Since }
+    if ($PSBoundParameters.ContainsKey('Until')) { $sp.Until = $Until }
+    $sessions = Get-WorkLog @sp
+    $needle = $Query.Trim()
+    if (-not $needle) { return @() }
+    $sessions | Where-Object {
+        $s = $_
+        $hay = @(
+            $s.Title, $s.Accomplishment, $s.Blocker, $s.Project,
+            $s.Category, $s.Tags, [string]$s.AdoId
+        )
+        $hay += @($s.Notes | ForEach-Object { $_.text })
+        ($hay -join "`n") -match [regex]::Escape($needle)
+    }
+}
+
+function Show-WorkSearch {
+    [CmdletBinding()]
+    param([Parameter(Mandatory, Position = 0)][string]$Query, [int]$Days = 0)
+    $p = @{ Query = $Query }
+    if ($Days -gt 0) { $p.Since = (Get-Date).Date.AddDays(-$Days) }
+    $hits = @(Find-WorkLog @p | Sort-Object Start)
+    Write-Host ''
+    Write-Host ("{0} match(es) for '{1}'{2}" -f $hits.Count, $Query, $(if ($Days -gt 0) { " in last $Days day(s)" } else { '' })) -ForegroundColor Cyan
+    foreach ($s in $hits) {
+        $tag = if ($s.AdoId) { "[$($s.AdoId)] " } else { '' }
+        Write-Host ("  #{0}  {1}  {2}{3}  ({4})" -f $s.Id, $s.Start.ToString('yyyy-MM-dd HH:mm'), $tag, $s.Title, (FmtMin $s.Min))
+        $why = @()
+        if ($s.Accomplishment) { $why += "  acc: $($s.Accomplishment)" }
+        if ($s.Project)        { $why += "  project: $($s.Project)" }
+        $noteHit = @($s.Notes | Where-Object { $_.text -match [regex]::Escape($Query.Trim()) })
+        foreach ($n in $noteHit) { $why += "  note: $($n.text)" }
+        foreach ($w in $why) { Write-Host $w -ForegroundColor DarkGray }
+    }
+    if (-not $hits.Count) { Write-Host '  (no matches)' }
+}
+
 function Show-WorkStatus {
     $st = Get-LogState
     $open = @($st['sessions'] | Where-Object { -not $_['end'] } | ForEach-Object { ConvertTo-SessionView $_ } | Sort-Object Start)
@@ -700,7 +745,16 @@ function renderCal(){
 function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
 function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
 function clearSel(){ sel=null; renderCal(); renderView(); }
-function curSet(){ return sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); }
+var SEARCH='';
+function matchQ(s,q){
+  if(!q) return true;
+  var hay=[s.title,s.accomplishment,s.blocker,s.project,s.category,s.adoId].join('\n');
+  if(s.notes){ s.notes.forEach(function(n){ hay+='\n'+(n.text||''); }); }
+  return hay.toLowerCase().indexOf(q)!==-1;
+}
+function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
+function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; } onSearch(''); }
+function curSet(){ var base = sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
 function autoSummary(set){
   if(!set.length) return '';
   var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -723,6 +777,7 @@ function renderSummary(){
   Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
   if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
   var label = sel ? sel : 'All time';
+  if(SEARCH){ label += ' \u2022 \u201C'+SEARCH+'\u201D'; }
   var comm = dayCommentary(set);
   document.getElementById('sum').innerHTML =
     "<div class='sum-row'><div class='stat'><div class='big'>"+fmtMin(total)+"</div><div class='lbl'>Total time</div></div>"+
@@ -733,7 +788,7 @@ function renderSummary(){
 }
 function renderTable(){
   var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
-  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions for this selection.</div>"; return; }
+  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions"+(SEARCH?" matching \u201C"+esc(SEARCH)+"\u201D":"")+" for this selection.</div>"; return; }
   var groups={}; var order=[];
   set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
   var h='';
@@ -787,12 +842,22 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
     $html = @"
 <!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'><title>Work Log</title>
-<style>$script:BaseCss</style></head><body>
+<style>$script:BaseCss
+.searchbar{display:flex;gap:.5rem;align-items:center;margin:0 0 .75rem 0;}
+.searchbar input{flex:1;padding:.55rem .8rem;border-radius:0;border:1px solid var(--bd,#d0d7de);background:var(--card,#fff);color:inherit;font-size:.95rem;outline:none;}
+.searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(77,141,255,.25);}
+.searchbar button{padding:.55rem 1rem;font-size:.9rem;line-height:1;color:var(--muted);transition:background .15s,border-color .15s,color .15s;}
+.searchbar button:hover{background:var(--card2);border-color:var(--accent);color:var(--text);}
+</style></head><body>
 <div class='page'>
 <header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>$meta</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
+</div>
+<div class='searchbar'>
+  <input id='q' type='search' placeholder='Search title, notes, project, accomplishment&hellip;' oninput='onSearch(this.value)' autocomplete='off'>
+  <button class='pill' onclick='clearSearch()'>Clear</button>
 </div>
 <div id='log'></div>
 </div>
@@ -819,5 +884,5 @@ $js
 }
 
 Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Add-WorkNote, Edit-Work, Set-DayCommentary, `
-    Get-OpenSessions, Get-WorkLog, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, `
+    Get-OpenSessions, Get-WorkLog, Find-WorkLog, Show-WorkSearch, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, `
     Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile

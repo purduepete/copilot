@@ -72,12 +72,22 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-box{background:var(--card);border:1px solid var(--border);width:min(680px,100%);max-height:80vh;display:flex;flex-direction:column;}
 .modal-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;}
 .modal-body{padding:16px 18px;overflow:auto;}
-@media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}</style></head><body>
+@media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}
+.searchbar{display:flex;gap:.5rem;align-items:center;margin:0 0 .75rem 0;}
+.searchbar input{flex:1;padding:.55rem .8rem;border-radius:0;border:1px solid var(--bd,#d0d7de);background:var(--card,#fff);color:inherit;font-size:.95rem;outline:none;}
+.searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(77,141,255,.25);}
+.searchbar button{padding:.55rem 1rem;font-size:.9rem;line-height:1;color:var(--muted);transition:background .15s,border-color .15s,color .15s;}
+.searchbar button:hover{background:var(--card2);border-color:var(--accent);color:var(--text);}
+</style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 11:25 &bull; 9 session(s) &bull; 5h 10m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 12:53 &bull; 10 session(s) &bull; 5h 43m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
+</div>
+<div class='searchbar'>
+  <input id='q' type='search' placeholder='Search title, notes, project, accomplishment&hellip;' oninput='onSearch(this.value)' autocomplete='off'>
+  <button class='pill' onclick='clearSearch()'>Clear</button>
 </div>
 <div id='log'></div>
 </div>
@@ -251,6 +261,27 @@ var SESSIONS = [
     "blocker": "",
     "status": "done",
     "notes": []
+  },
+  {
+    "id": 2,
+    "date": "2026-06-17",
+    "start": "12:00",
+    "end": "12:33",
+    "min": 33,
+    "category": "Meeting",
+    "project": "ai",
+    "adoId": "",
+    "url": "",
+    "title": "AI In-the-middle",
+    "accomplishment": "",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-17 12:33:00",
+        "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first)."
+      }
+    ]
   }
 ];
 var COMMENTARY = {
@@ -312,7 +343,16 @@ function renderCal(){
 function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
 function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
 function clearSel(){ sel=null; renderCal(); renderView(); }
-function curSet(){ return sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); }
+var SEARCH='';
+function matchQ(s,q){
+  if(!q) return true;
+  var hay=[s.title,s.accomplishment,s.blocker,s.project,s.category,s.adoId].join('\n');
+  if(s.notes){ s.notes.forEach(function(n){ hay+='\n'+(n.text||''); }); }
+  return hay.toLowerCase().indexOf(q)!==-1;
+}
+function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
+function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; } onSearch(''); }
+function curSet(){ var base = sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
 function autoSummary(set){
   if(!set.length) return '';
   var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -335,6 +375,7 @@ function renderSummary(){
   Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
   if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
   var label = sel ? sel : 'All time';
+  if(SEARCH){ label += ' \u2022 \u201C'+SEARCH+'\u201D'; }
   var comm = dayCommentary(set);
   document.getElementById('sum').innerHTML =
     "<div class='sum-row'><div class='stat'><div class='big'>"+fmtMin(total)+"</div><div class='lbl'>Total time</div></div>"+
@@ -345,7 +386,7 @@ function renderSummary(){
 }
 function renderTable(){
   var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
-  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions for this selection.</div>"; return; }
+  if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions"+(SEARCH?" matching \u201C"+esc(SEARCH)+"\u201D":"")+" for this selection.</div>"; return; }
   var groups={}; var order=[];
   set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
   var h='';

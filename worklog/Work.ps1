@@ -10,6 +10,8 @@
   pwsh -File Work.ps1 summary "High-level recap of the day's accomplishments"
   pwsh -File Work.ps1 stop "Patched view, validated row counts" -Id 1
   pwsh -File Work.ps1 status
+  pwsh -File Work.ps1 search "fabric"            # search all sessions (title, notes, project, etc.)
+  pwsh -File Work.ps1 search "fabric" -Days 14   # limit search to last 14 days
   pwsh -File Work.ps1 standup
   pwsh -File Work.ps1 week
   pwsh -File Work.ps1 log -Days 14
@@ -22,7 +24,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)]
-    [ValidateSet('start', 'switch', 'stop', 'note', 'edit', 'summary', 'commentary', 'status', 'standup', 'week', 'dashboard', 'log', 'profile')]
+    [ValidateSet('start', 'switch', 'stop', 'note', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'log', 'profile')]
     [string]$Command,
 
     [Parameter(Position = 1)][string]$Text,
@@ -71,6 +73,7 @@ switch ($Command) {
         Edit-Work @p | Out-Null
     }
     'status'  { Show-WorkStatus }
+    'search'  { $sd = if ($PSBoundParameters.ContainsKey('Days')) { $Days } else { 0 }; Show-WorkSearch -Query $Text -Days $sd }
     'standup' { New-Standup -NoOpen:$NoOpen }
     'week'    { New-WeeklySummary -NoOpen:$NoOpen }
     'dashboard' { New-WorkDashboard -NoOpen:$NoOpen }

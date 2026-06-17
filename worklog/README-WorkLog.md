@@ -20,7 +20,7 @@ and `personal`, that never mix.
 | `worklog.config.json` | Profiles + per-profile settings (e.g. ADO org) |
 | `.profile` | This machine's default profile (git-ignored, not synced) |
 | `data\<profile>\work-log.json` | Persistent state (the log) for that profile |
-| `data\<profile>\work-dashboard.html` | Interactive calendar dashboard |
+| `data\<profile>\work-dashboard.html` | Interactive calendar dashboard (with live search box) |
 | `data\<profile>\standup.{html,md}` | Latest daily standup |
 | `data\<profile>\weekly-summary.{html,md}` | Latest weekly summary |
 
@@ -105,6 +105,8 @@ pwsh -File Work.ps1 start "Architecture review" -Category Meeting -At "2026-06-1
 pwsh -File Work.ps1 stop  "Aligned on structure" -Id 7 -At "2026-06-16 16:23"
 
 pwsh -File Work.ps1 status                  # all open sessions + time logged today
+pwsh -File Work.ps1 search "fabric"         # search title/notes/project/accomplishment (all time)
+pwsh -File Work.ps1 search "meeting" -Days 14 # limit search to the last 14 days
 pwsh -File Work.ps1 standup                 # build + open daily standup (html), print md
 pwsh -File Work.ps1 week                    # build + open weekly summary
 pwsh -File Work.ps1 dashboard               # build + open interactive calendar dashboard
@@ -126,6 +128,7 @@ Edit-Work -Id <n> [-Title ..] [-Category ..] [-AdoId ..] [-Tags a,b] [-Accomplis
 Stop-Work [-Id <n>] -Accomplishment "..." [-Blocker "..."] [-Status done|paused|in-progress] [-At <datetime>]
 Get-OpenSessions
 Get-WorkLog [-Since <dt>] [-Until <dt>]
+Find-WorkLog -Query "..." [-Since <dt>] [-Until <dt>]   # search sessions (title/notes/project/etc.)
 Show-WorkStatus
 New-Standup [-Date <dt>] [-NoOpen]
 New-WeeklySummary [-Date <dt>] [-NoOpen]
