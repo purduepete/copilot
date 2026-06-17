@@ -340,7 +340,7 @@ function Get-LineText($s) {
 
 $script:BaseCss = @"
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&family=Roboto+Mono:wght@400;500&display=swap');
-:root{--bg:#0a0e1a;--card:#0f1524;--card2:#151c2d;--border:#1e2739;--text:#e9eef6;--muted:#7d8a9e;--accent:#4d8dff;--green:#33d685;--red:#ff5d5d;--mono:'Roboto Mono',Consolas,monospace;}
+:root{--bg:#0a0e1a;--card:#0f1524;--card2:#151c2d;--border:#1e2739;--text:#e9eef6;--muted:#7d8a9e;--accent:#4d8dff;--green:#33d685;--red:#ff5d5d;--amber:#ffb648;--mono:'Roboto Mono',Consolas,monospace;}
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Roboto Flex',system-ui,sans-serif;font-optical-sizing:auto;margin:0;background:var(--bg);color:var(--text);line-height:1.55;}
@@ -355,6 +355,12 @@ h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted
 .run{color:var(--green);font-weight:600;}
 .blk{color:var(--red);font-size:12px;margin-top:4px;}
 .cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.sbadge{display:inline-block;border-radius:0;padding:1px 8px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-left:8px;vertical-align:middle;white-space:nowrap;border:1px solid transparent;}
+.sbadge.open{background:#33d68522;color:var(--green);border-color:#33d68555;}
+.sbadge.paused{background:#ffb64822;color:var(--amber);border-color:#ffb64855;}
+.sbadge.inprogress{background:#4d8dff22;color:#9cc2ff;border-color:#4d8dff55;}
+tr.unstopped td{background:#ffb6480d;}
+tr.unstopped td:first-child{box-shadow:inset 3px 0 0 var(--amber);}
 .adoid{color:var(--muted);font-family:var(--mono);font-size:11.5px;font-weight:500;}
 .idnum{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);}
 .chip{display:inline-block;background:#4d8dff1a;color:#9cc2ff;border:1px solid #4d8dff33;border-radius:0;padding:3px 11px;font-size:12px;margin:0 6px 6px 0;}
@@ -729,13 +735,20 @@ function renderTable(){
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
     h+="<table class='log'><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
     rows.forEach(function(s){
+      var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
       var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
       if(s.adoId){ item="<span class='adoid'>#"+esc(s.adoId)+"</span> "+item; }
+      if(!stopped){
+        var st=(s.status||(s.end?'':'open'));
+        var lab = !s.end ? 'open' : st;
+        var cls = (lab==='open')?'open':(lab==='paused'?'paused':'inprogress');
+        item+="<span class='sbadge "+cls+"' title='Not stopped'>"+esc(lab)+"</span>";
+      }
       var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
       var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s.id+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
-      h+="<tr><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum'>"+s.id+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
