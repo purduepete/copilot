@@ -16,6 +16,7 @@ and `personal`, that never mix.
 | --- | --- |
 | `WorkLog.psm1` | Core module (all logic + report generators) |
 | `Work.ps1` | Thin CLI wrapper (verbs) |
+| `Get-VSCodeWork.ps1` | Parse VS Code Copilot chat transcripts into work blocks (exact times + commits) |
 | `vscode\` | VS Code integration template (`tasks.json`, `keybindings.jsonc`, `README.md`) |
 | `worklog.config.json` | Profiles + per-profile settings (e.g. ADO org) |
 | `.profile` | This machine's default profile (git-ignored, not synced) |
@@ -149,3 +150,33 @@ Get-WorkProfile                            # current profile + resolved paths
 >                                                      → `Stop-Work` with accomplishment + blocker
 > "Give me my standup."                               → `New-Standup`
 > "Wrap up the week."                                 → `New-WeeklySummary`
+
+## Logging work from VS Code chat history
+
+`Get-VSCodeWork.ps1` turns "what did I work on?" into one command. It maps the repo
+folder to its VS Code `workspaceStorage` hash, reads the Copilot chat transcript(s),
+converts the UTC event timestamps to **local time**, and groups your prompts into
+**work blocks** separated by idle gaps. For each block it prints the exact start/end
+time, duration, first/last message, any git commits in that window, and a ready-to-run
+`Work.ps1 start` command.
+
+```powershell
+# Today's work blocks for the current repo (run from the repo, or pass -Folder):
+pwsh -File worklog\Get-VSCodeWork.ps1 -Folder C:\Files\Dev\main\webportfolio
+
+# A specific date / idle-gap threshold (minutes that separate one block from the next):
+pwsh -File worklog\Get-VSCodeWork.ps1 -Folder C:\path\to\repo -Date 2026-06-18 -GapMinutes 60
+
+# Machine-readable (for piping into a create-item step):
+pwsh -File worklog\Get-VSCodeWork.ps1 -Json
+```
+
+Then create the item with the exact start time it reports, e.g.:
+
+```powershell
+pwsh -File worklog\Work.ps1 start "<title>" -Category Dev -Project webportfolio -At '2026-06-18 22:44:51'
+```
+
+Notes:
+- Terminal-notification messages are filtered out by default (use `-IncludeTerminal` to keep them).
+- Times use the machine's local offset via `.ToLocalTime()`, so DST is handled automatically.
