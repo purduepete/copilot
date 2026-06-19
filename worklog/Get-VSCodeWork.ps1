@@ -16,6 +16,10 @@
   # A specific folder / date / idle-gap threshold:
   pwsh -File Get-VSCodeWork.ps1 -Folder C:\Files\Dev\main\webportfolio -Date 2026-06-18 -GapMinutes 60
 
+  # Fuzzy "what was I just doing" window (last 60 min), and create an item from it:
+  pwsh -File Get-VSCodeWork.ps1 -LastMinutes 60
+  pwsh -File Get-VSCodeWork.ps1 -LastMinutes 60 -Create
+
   # Machine-readable output:
   pwsh -File Get-VSCodeWork.ps1 -Json
 #>
@@ -23,6 +27,7 @@
 param(
     [string]$Folder = (Get-Location).Path,
     [datetime]$Date = (Get-Date).Date,
+    [int]$LastMinutes = 0,
     [int]$GapMinutes = 90,
     [int]$Snippet = 80,
     [switch]$IncludeTerminal,
@@ -59,8 +64,17 @@ if (-not $ws) { throw "No VS Code workspace storage found for folder: $Folder" }
 $tdir = Join-Path $ws.FullName 'GitHub.copilot-chat\transcripts'
 if (-not (Test-Path $tdir)) { throw "No transcripts dir for this workspace: $tdir" }
 
-$dayStart = $Date.Date
-$dayEnd = $dayStart.AddDays(1)
+# Time window: a fuzzy "last N minutes" takes precedence over the whole -Date day.
+if ($LastMinutes -gt 0) {
+    $dayStart = (Get-Date).AddMinutes(-$LastMinutes)
+    $dayEnd   = (Get-Date).AddMinutes(1)   # small buffer so the just-typed message is included
+    $rangeLabel = "last $LastMinutes min (since $($dayStart.ToString('HH:mm')))"
+}
+else {
+    $dayStart = $Date.Date
+    $dayEnd   = $dayStart.AddDays(1)
+    $rangeLabel = $Date.ToString('yyyy-MM-dd')
+}
 
 # Collect user.message events across transcripts, converting UTC -> local.
 $events = foreach ($file in Get-ChildItem $tdir -Filter '*.jsonl') {
@@ -77,7 +91,7 @@ $events = foreach ($file in Get-ChildItem $tdir -Filter '*.jsonl') {
 }
 $events = $events | Sort-Object Time
 if (-not $events) {
-    Write-Host "No user messages found for $($Date.ToString('yyyy-MM-dd')) in workspace $($ws.Name.Substring(0,8))." -ForegroundColor Yellow
+    Write-Host "No user messages found for $rangeLabel in workspace $($ws.Name.Substring(0,8))." -ForegroundColor Yellow
     return
 }
 
@@ -115,7 +129,7 @@ if ($Json) {
 Write-Host ""
 Write-Host "Workspace : $Folder" -ForegroundColor Cyan
 Write-Host "Hash      : $($ws.Name)"
-Write-Host "Date      : $($Date.ToString('yyyy-MM-dd'))   GapMinutes: $GapMinutes"
+Write-Host "Range     : $rangeLabel   GapMinutes: $GapMinutes"
 Write-Host ("=" * 78)
 
 $i = 0

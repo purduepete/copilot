@@ -85,7 +85,7 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 16:50 &bull; 24 session(s) &bull; 20h 11m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-18 23:48 &bull; 29 session(s) &bull; 22h 0m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -440,8 +440,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f.",
-        "ts": "2026-06-17 08:29:58"
+        "ts": "2026-06-17 08:29:58",
+        "text": "GitHub issue: [#259 Fix deep-link URL handling in Rebalance and SYMNBOL typo in bulk sell](https://github.com/jimlertech/webportfolio/issues/259) (v3.2, closed). Committed as 7a9337f."
       }
     ]
   },
@@ -461,8 +461,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production.",
-        "ts": "2026-06-17 08:43:30"
+        "ts": "2026-06-17 08:43:30",
+        "text": "GitHub issue: [#260 Add ITM bucket to Strike % grouping on Cash Secured Puts page](https://github.com/jimlertech/webportfolio/issues/260) (v3.2, closed). Committed as 4d6a843 and deployed to production."
       }
     ]
   },
@@ -482,8 +482,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "text": "GitHub issue: [#261 Restore Edit action for option positions on Stock Performance page](https://github.com/jimlertech/webportfolio/issues/261) (v3.2, closed). Committed as 09c76cb.",
-        "ts": "2026-06-17 09:59:00"
+        "ts": "2026-06-17 09:59:00",
+        "text": "GitHub issue: [#261 Restore Edit action for option positions on Stock Performance page](https://github.com/jimlertech/webportfolio/issues/261) (v3.2, closed). Committed as 09c76cb."
       }
     ]
   },
@@ -503,13 +503,115 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "text": "GitHub issue: [#262 Stock Performance Cash Only: fix sorting, show Strategy column, fix column alignment](https://github.com/jimlertech/webportfolio/issues/262) (v3.2, closed). Committed as 7eb0281.",
-        "ts": "2026-06-17 10:16:00"
+        "ts": "2026-06-17 10:16:00",
+        "text": "GitHub issue: [#262 Stock Performance Cash Only: fix sorting, show Strategy column, fix column alignment](https://github.com/jimlertech/webportfolio/issues/262) (v3.2, closed). Committed as 7eb0281."
       }
     ]
+  },
+  {
+    "id": 25,
+    "date": "2026-06-18",
+    "start": "07:34",
+    "end": "07:45",
+    "min": 11,
+    "category": "Dev",
+    "project": "webbookmarks",
+    "adoId": "",
+    "url": "",
+    "title": "Fix WebBookmarks palette Esc-close and Ctrl+Enter new-tab close",
+    "accomplishment": "Fixed the WebBookmarks command-palette userscript (v4.9.18): Esc now closes the palette via a document-level capture keydown handler even when the host page steals focus/stops propagation (and hides the cheatsheet first if open, refocusing input); the palette now also closes after a Ctrl+Enter new-tab open. Committed af202b1.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-18 08:35:25",
+        "text": "GitHub issue: [#5 Tampermonkey palette: Esc not closing + Ctrl+Enter should close after new-tab open](https://github.com/purduepete/webbookmarks/issues/5) (no milestone, closed). Committed as af202b1 (v4.9.18)."
+      }
+    ]
+  },
+  {
+    "id": 26,
+    "date": "2026-06-18",
+    "start": "08:15",
+    "end": "08:26",
+    "min": 11,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Fix #264: Buy to Close Audit amber highlight when limit prices match to the cent",
+    "accomplishment": "Buy to Close Audit overlay highlighted F Limit / P Limit in amber whenever raw values differed by >= 0.005, so prices matching when rounded to the cent (e.g. 0.30 vs 0.295) were wrongly amber; fixed to compare displayed values via toFixed(2). Bumped userscript to v2.20, updated gist; committed 4add219.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-18 08:39:00",
+        "text": "GitHub issue: [#264 Buy to Close Audit: amber highlight when limit prices match to the cent](https://github.com/jimlertech/webportfolio/issues/264) (v3.2, closed; duplicate #263 also closed). Committed as 4add219."
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "date": "2026-06-18",
+    "start": "17:15",
+    "end": "17:38",
+    "min": 23,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Add option income recognition method setting",
+    "accomplishment": "Added user-preference setting to recognize option income by open vs closed month",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-18 17:42:51",
+        "text": "[#265 Add option income recognition method (open vs closed month) to User Preferences](https://github.com/jimlertech/webportfolio/issues/265) — Milestone: **v3.2** · State: **Closed** · Commit: `09a882b`"
+      }
+    ]
+  },
+  {
+    "id": 28,
+    "date": "2026-06-18",
+    "start": "22:44",
+    "end": "23:18",
+    "min": 34,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Move Options Income recognition control to page as pill toggle; fix Win/Loss chart label clipping",
+    "accomplishment": "Moved Options Income recognition control from User Preferences to the Options Income page as a pill toggle; fixed Win/Loss chart label clipping and moved percentages into the legend (GH #266, commits aaf4f33, 11f2595). Committed, pushed, deployed.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "ts": "2026-06-18 23:13:28",
+        "text": "[#266 Move Options Income recognition control to page as pill toggle; fix Win/Loss chart label clipping](https://github.com/jimlertech/webportfolio/issues/266) - milestone v3.2, state CLOSED, commit aaf4f33"
+      }
+    ]
+  },
+  {
+    "id": 31,
+    "date": "2026-06-18",
+    "start": "23:18",
+    "end": "23:48",
+    "min": 30,
+    "category": "Dev",
+    "project": "copilot",
+    "adoId": "",
+    "url": "",
+    "title": "WorkLog one-shot close + VS Code chat fuzzy logging; Copilot Reference Hub docs",
+    "accomplishment": "Added one-shot Work.ps1 'close' (gh note + stop + single dashboard rebuild) and Get-VSCodeWork.ps1 -LastMinutes fuzzy window with -Create; documented all new commands in the Copilot Reference Hub (grouped the phrases table, create-from-chat, fuzzy-window logging) and set today's highlights.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
   }
 ];
-var COMMENTARY = {};
+var COMMENTARY = {
+  "2026-06-18": "Shipped webportfolio fixes: Buy-to-Close audit 2-decimal match, cash/margin URL selection (committed + deployed), and moved GH #265's setting to the Options Income page.\nSped up WorkLog 'close' into a one-shot command (gh note + stop + single dashboard rebuild) and documented the new close + VS Code chat table commands in the Copilot Reference Hub."
+};
 var ADO_BASE = "";
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];

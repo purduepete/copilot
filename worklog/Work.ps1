@@ -9,6 +9,7 @@
   pwsh -File Work.ps1 note "Found root cause in view definition"
   pwsh -File Work.ps1 summary "High-level recap of the day's accomplishments"
   pwsh -File Work.ps1 stop "Patched view, validated row counts" -Id 1
+  pwsh -File Work.ps1 close "Fixed comma formatting" -Id 1 -Issue 17 -RepoPath C:\Files\Dev\main\webportfolio -CloseIssue
   pwsh -File Work.ps1 status
   pwsh -File Work.ps1 search "fabric"            # search all sessions (title, notes, project, etc.)
   pwsh -File Work.ps1 search "fabric" -Days 14   # limit search to last 14 days
@@ -24,7 +25,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)]
-    [ValidateSet('start', 'switch', 'stop', 'note', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'log', 'profile')]
+    [ValidateSet('start', 'switch', 'stop', 'close', 'note', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'log', 'profile')]
     [string]$Command,
 
     [Parameter(Position = 1)][string]$Text,
@@ -42,6 +43,10 @@ param(
     [datetime]$Start,
     [datetime]$End,
     [datetime]$At,
+    [int]$Issue = 0,
+    [string]$RepoPath = '',
+    [string]$Commit = '',
+    [switch]$CloseIssue,
     [switch]$Reopen,
     [switch]$NoOpen
 )
@@ -53,6 +58,15 @@ switch ($Command) {
     'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Project = $Project; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Start-Work @sp | Out-Null }
     'switch'  { Switch-Work -Id $Id }
     'stop'    { $sp = @{ Id = $Id; Accomplishment = $Text; Blocker = $Blocker; Status = $Status }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Stop-Work @sp | Out-Null }
+    'close'   {
+        $sp = @{ Id = $Id; Accomplishment = $Text; Blocker = $Blocker; Status = $Status }
+        if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }
+        if ($Issue)    { $sp.Issue = $Issue }
+        if ($RepoPath) { $sp.RepoPath = $RepoPath }
+        if ($Commit)   { $sp.Commit = $Commit }
+        if ($CloseIssue) { $sp.CloseIssue = $true }
+        Complete-Work @sp | Out-Null
+    }
     'note'    { Add-WorkNote -Text $Text -Id $Id }
     'summary'    { Set-DayCommentary -Text $Text }
     'commentary' { Set-DayCommentary -Text $Text }

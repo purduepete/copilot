@@ -79,6 +79,7 @@
   th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;}
   th{background:var(--code);color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.5px;}
   td code{font-size:12px;}
+  tr.grp td{background:#1f6feb14;color:var(--accent);font-weight:600;text-transform:uppercase;font-size:11px;letter-spacing:.4px;}
   .future{color:var(--muted);font-style:italic;font-size:13px;}
 
   @media (max-width:760px){
@@ -334,13 +335,24 @@
     <table class="ref">
       <thead><tr><th>What I say</th><th>What Copilot runs</th></tr></thead>
       <tbody>
+        <tr class="grp"><td colspan="2">Start &middot; switch &middot; finish</td></tr>
         <tr><td>&ldquo;Starting work on &lt;thing&gt;&rdquo; / &ldquo;Now on the MS Sales pull, ADO 435324&rdquo;</td><td><code>start</code></td></tr>
         <tr><td>&ldquo;Switching to item 3&rdquo; / &ldquo;Back on the pull&rdquo;</td><td><code>switch -Id 3</code></td></tr>
         <tr><td>&ldquo;Done with item 3 &mdash; &lt;accomplishment&gt;&rdquo; / &ldquo;Stop item 3&rdquo;</td><td><code>stop</code></td></tr>
+        <tr><td>&ldquo;Close item 3 against gh issue 17&rdquo; / &ldquo;Finish item 3 and close the issue&rdquo;</td><td><code>close -Issue 17 [-CloseIssue]</code> (gh note + stop + dashboard, one shot)</td></tr>
+
+        <tr class="grp"><td colspan="2">Annotate &amp; adjust</td></tr>
         <tr><td>&ldquo;Add a note to item 5: &lt;text&gt;&rdquo;</td><td><code>note</code></td></tr>
         <tr><td>&ldquo;Add a link to item 5 named &lt;X&gt;: &lt;url&gt;&rdquo;</td><td><code>note</code> as <code>[X](url)</code></td></tr>
         <tr><td>&ldquo;Edit item 5: category Dev / retitle / reopen&rdquo;</td><td><code>edit</code></td></tr>
         <tr><td>&ldquo;Starting on the rebalance fix, project webportfolio&rdquo; / &ldquo;Set item 5's project to webbookmarks&rdquo;</td><td><code>start</code> / <code>edit</code> with <code>-Project</code></td></tr>
+
+        <tr class="grp"><td colspan="2">Log from VS Code chat</td></tr>
+        <tr><td>&ldquo;Show today's work from VS Code chat&rdquo; (then pick an ID to log/close)</td><td><code>Get-VSCodeWork.ps1 -Json</code> &rarr; selectable table</td></tr>
+        <tr><td>&ldquo;Create / log item 2 from today's chat&rdquo; / &ldquo;Log block 2 as a work session&rdquo;</td><td><code>Get-VSCodeWork.ps1 -Create -Block 2</code> (back-dated to the block's start; or <code>start -At &lt;block start&gt;</code>)</td></tr>
+        <tr><td>&ldquo;Log what I worked on in the last hour&rdquo; / &ldquo;Create an item from the past 60 minutes&rdquo; (fuzzy window)</td><td><code>Get-VSCodeWork.ps1 -LastMinutes 60 [-Create]</code> &mdash; window of <em>now &minus; N min</em>, back-dated to the first message</td></tr>
+
+        <tr class="grp"><td colspan="2">Recaps, reports &amp; profiles</td></tr>
         <tr><td>&ldquo;Daily summary: &lt;high-level recap&gt;&rdquo;</td><td><code>summary</code></td></tr>
         <tr><td>&ldquo;What's open?&rdquo; / &ldquo;Status&rdquo;</td><td><code>status</code></td></tr>
         <tr><td>&ldquo;Give me my standup&rdquo;</td><td><code>standup</code></td></tr>
@@ -362,6 +374,7 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop  "Patched view, valid
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit  -Id 1 -Status paused -Category Dev -Project webportfolio
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit  -Id 1 -Start "2026-06-16 14:00" -End "2026-06-16 15:30"
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop  "Aligned on structure" -Id 7 -At "2026-06-16 16:23"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 close "Fixed comma formatting" -Id 1 -Issue 17 -RepoPath C:\Files\Dev\main\webportfolio -CloseIssue
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 status
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 standup
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 week
@@ -373,6 +386,7 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile persona
       <li><code>-Category</code> classifies the kind of work (Dev, Meeting, Review&hellip;); <code>-Project</code> tags which product/app it belongs to (e.g. <code>webportfolio</code>, <code>webbookmarks</code>). Both show as their own dashboard columns.</li>
       <li><code>switch -Id &lt;n&gt;</code> moves focus &mdash; it never closes anything.</li>
       <li><code>stop</code> closes the current session (or <code>-Id &lt;n&gt;</code>) with an accomplishment and optional <code>-Blocker</code>.</li>
+      <li><strong><code>close</code> &mdash; one-shot finish (new):</strong> bundles the whole &ldquo;close a work item&rdquo; flow into a <em>single</em> process: optional GitHub-issue note + <code>stop</code> + one dashboard rebuild (instead of separate <code>note</code>/<code>stop</code>/<code>dashboard</code> calls). Pass <code>-Issue &lt;n&gt;</code> to fetch the issue once and attach the standard note <code>[#N Title](url) - milestone | state | commit</code>, <code>-RepoPath &lt;dir&gt;</code> to resolve the repo for the gh/commit lookup, and <code>-CloseIssue</code> to also <code>gh issue close</code> it. Runs in &lt;2s; supports <code>-At</code>, <code>-Blocker</code>, <code>-Status</code> like <code>stop</code>. <em>Note: the dashboard already auto-rebuilds on every change, so a separate <code>dashboard</code> call after a mutation is redundant.</em></li>
       <li><code>summary "&lt;text&gt;"</code> sets the day's high-level, fuzzy recap shown under the dashboard summary stats (below &ldquo;Showing&rdquo;).</li>
       <li><code>edit -Id &lt;n&gt;</code> changes any field of a logged session after the fact (only the fields you pass); <code>-Reopen</code> clears the end time.</li>
       <li><strong>Back-dating</strong> &mdash; forgot to log in real time? <code>-At &lt;datetime&gt;</code> on <code>start</code>/<code>stop</code>, or <code>edit -Id &lt;n&gt; -Start &lt;dt&gt; -End &lt;dt&gt;</code> to fix an existing session's times. Or just tell Copilot &ldquo;I forgot to log 2&ndash;3pm, I was doing X in Dev&rdquo; and it inserts the session.</li>
@@ -517,6 +531,26 @@ Get-ChildItem $root -Recurse -File -Include *.jsonl |
     </div>
     <p>Copilot reads the transcripts, groups the work into themed high-level tasks, and can write them straight into
     the time-tracked log (<code>start</code>/<code>stop</code>) and regenerate the dashboard.</p>
+
+    <p><strong>Selectable work-block table (new):</strong> when I say <em>&ldquo;show me work completed today&rdquo;</em>, Copilot runs
+    <code>Get-VSCodeWork.ps1 -Json</code> for the workspace and presents a numbered table &mdash; <strong>ID&nbsp;|&nbsp;work performed&nbsp;|&nbsp;start&nbsp;|&nbsp;end</strong>.
+    I then just pick an ID and Copilot creates or closes a work item against that exact block (using its real start/end times):</p>
+    <pre><code># Today's blocks for a workspace, machine-readable
+pwsh -File C:\Files\Dev\main\copilot\worklog\Get-VSCodeWork.ps1 -Folder C:\Files\Dev\main\webportfolio -Json
+
+# Or a specific date / idle-gap threshold (blocks split on gaps &gt; GapMinutes, default 90)
+pwsh -File C:\Files\Dev\main\copilot\worklog\Get-VSCodeWork.ps1 -Folder C:\Files\Dev\main\webportfolio -Date 2026-06-18 -GapMinutes 60
+
+# Fuzzy "what was I just doing" window (last 60 min) &mdash; and log it straight away
+pwsh -File C:\Files\Dev\main\copilot\worklog\Get-VSCodeWork.ps1 -LastMinutes 60
+pwsh -File C:\Files\Dev\main\copilot\worklog\Get-VSCodeWork.ps1 -LastMinutes 60 -Create</code></pre>
+    <div class="callout">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+      <div>
+        <strong>Show me the work I completed today (table: ID, work, start, end), then I'll pick one to log.</strong><br>
+        <strong>Create / close item &lt;ID&gt; against gh issue &lt;n&gt;.</strong>
+      </div>
+    </div>
 
     <!-- ===================== ADD FUTURE SUBJECTS BELOW ===================== -->
 

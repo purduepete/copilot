@@ -242,6 +242,78 @@ function Stop-Work {
     return $s
 }
 
+# ---- Helper: build a GitHub-issue note line --------------------------------
+# Fetches the issue once and returns the standard markdown note:
+#   [#N Title](url) - milestone: X | state: Y | commit: abc1234
+function New-GhIssueNote {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][int]$Issue, [string]$RepoPath = '', [string]$Commit = '')
+    $loc = if ($RepoPath) { $RepoPath } else { (Get-Location).Path }
+    Push-Location $loc
+    try {
+        $j = $null
+        try { $j = (gh issue view $Issue --json number,title,url,milestone,state 2>$null | ConvertFrom-Json) } catch { $j = $null }
+        if (-not $j) { Write-Warning "Could not fetch gh issue #$Issue from $loc."; return $null }
+        $ms = if ($j.milestone) { $j.milestone.title } else { 'none' }
+        if (-not $Commit) { try { $Commit = (git rev-parse --short HEAD 2>$null) } catch { $Commit = '' } }
+        $note = ('[#{0} {1}]({2}) - milestone: {3} | state: {4}' -f $j.number, $j.title, $j.url, $ms, $j.state)
+        if ($Commit) { $note += " | commit: $Commit" }
+        return $note
+    }
+    finally { Pop-Location }
+}
+
+# ---- Public: Close (one-shot: gh note + stop + single dashboard rebuild) ----
+# Collapses the whole "close a work item" workflow into ONE process so the
+# agent makes a single call instead of separate note/stop/dashboard round-trips.
+function Complete-Work {
+    [CmdletBinding()]
+    param(
+        [int]$Id = 0,
+        [string]$Accomplishment = '',
+        [string]$Blocker = '',
+        [ValidateSet('done', 'paused', 'in-progress')][string]$Status = 'done',
+        [datetime]$At = (Get-Date),
+        [int]$Issue = 0,
+        [string]$RepoPath = '',
+        [string]$Commit = '',
+        [switch]$CloseIssue
+    )
+    $s = $null
+    $script:SuppressDashboard = $true
+    try {
+        $st = Get-LogState
+        if (-not $Id) { $Id = if ($st['current']) { [int]$st['current'] } else { 0 } }
+        if (-not $Id) { Write-Warning 'No current session. Specify -Id.'; return }
+
+        if ($Issue -gt 0) {
+            $note = New-GhIssueNote -Issue $Issue -RepoPath $RepoPath -Commit $Commit
+            if ($note) { Add-WorkNote -Text $note -Id $Id }
+        }
+
+        $sp = @{ Id = $Id; Accomplishment = $Accomplishment; Blocker = $Blocker; Status = $Status; At = $At }
+        $s = Stop-Work @sp
+
+        if ($Issue -gt 0 -and $CloseIssue) {
+            $loc = if ($RepoPath) { $RepoPath } else { (Get-Location).Path }
+            Push-Location $loc
+            try {
+                $cmt = if ($Accomplishment) { "Completed: $Accomplishment" } else { 'Completed.' }
+                gh issue close $Issue --comment $cmt 2>$null | Out-Null
+                Write-Host "# Closed gh issue #$Issue"
+            }
+            catch { Write-Warning "gh issue close failed: $($_.Exception.Message)" }
+            finally { Pop-Location }
+        }
+    }
+    finally { $script:SuppressDashboard = $false }
+
+    # One dashboard rebuild for the whole close (instead of one per mutation).
+    try { New-WorkDashboard -NoOpen | Out-Null }
+    catch { Write-Warning "Dashboard rebuild failed: $($_.Exception.Message)" }
+    return $s
+}
+
 # ---- Public: Day commentary -----------------------------------------------
 function Set-DayCommentary {
     [CmdletBinding()]
@@ -932,6 +1004,6 @@ $js
     [pscustomobject]@{ Html = $outPath }
 }
 
-Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Add-WorkNote, Edit-Work, Set-DayCommentary, `
+Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Complete-Work, New-GhIssueNote, Add-WorkNote, Edit-Work, Set-DayCommentary, `
     Get-OpenSessions, Get-WorkLog, Find-WorkLog, Show-WorkSearch, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, `
     Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile
