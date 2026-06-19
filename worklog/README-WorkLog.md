@@ -169,6 +169,10 @@ pwsh -File worklog\Get-VSCodeWork.ps1 -Folder C:\path\to\repo -Date 2026-06-18 -
 
 # Machine-readable (for piping into a create-item step):
 pwsh -File worklog\Get-VSCodeWork.ps1 -Json
+
+# One-shot: parse AND create the work item for a block (default: last/most-recent block):
+pwsh -File worklog\Get-VSCodeWork.ps1 -Folder C:\path\to\repo -Create
+pwsh -File worklog\Get-VSCodeWork.ps1 -Create -Block 2 -Title "Custom title"
 ```
 
 Then create the item with the exact start time it reports, e.g.:

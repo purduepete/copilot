@@ -26,7 +26,11 @@ param(
     [int]$GapMinutes = 90,
     [int]$Snippet = 80,
     [switch]$IncludeTerminal,
-    [switch]$Json
+    [switch]$Json,
+    [switch]$Create,
+    [int]$Block = 0,
+    [string]$Title = '',
+    [string]$Category = 'Dev'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -141,6 +145,20 @@ foreach ($b in $blocks) {
     $titleGuess = ($b.Msgs[0].Content -replace '"', "'")
     if ($titleGuess.Length -gt 90) { $titleGuess = $titleGuess.Substring(0, 90) }
     $proj = Split-Path $Folder -Leaf
-    Write-Host "  -> pwsh -File Work.ps1 start `"$titleGuess`" -Category Dev -Project $proj -At '$($b.Start.ToString('yyyy-MM-dd HH:mm:ss'))'" -ForegroundColor DarkGray
+    Write-Host "  -> pwsh -File Work.ps1 start `"$titleGuess`" -Category $Category -Project $proj -At '$($b.Start.ToString('yyyy-MM-dd HH:mm:ss'))'" -ForegroundColor DarkGray
 }
 Write-Host ""
+
+if ($Create) {
+    $target = if ($Block -gt 0) { $Block } else { $blocks.Count }  # default: last (most recent) block
+    if ($target -lt 1 -or $target -gt $blocks.Count) { throw "Block $target out of range (1..$($blocks.Count))." }
+    $b = $blocks[$target - 1]
+    $proj = Split-Path $Folder -Leaf
+    $itemTitle = if ($Title) { $Title } else {
+        $t = ($b.Msgs[0].Content -replace '"', "'"); if ($t.Length -gt 90) { $t = $t.Substring(0, 90) }; $t
+    }
+    $at = $b.Start.ToString('yyyy-MM-dd HH:mm:ss')
+    Write-Host "Creating work item for block $target (start $at)..." -ForegroundColor Cyan
+    & (Join-Path $PSScriptRoot 'Work.ps1') start $itemTitle -Category $Category -Project $proj -At $at
+}
+
