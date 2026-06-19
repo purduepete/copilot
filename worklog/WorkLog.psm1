@@ -181,9 +181,19 @@ function Start-Work {
         [string]$Category = '',
         [string]$Project = '',
         [string[]]$Tags = @(),
-        [datetime]$At = (Get-Date)
+        [datetime]$At = (Get-Date),
+        [switch]$AfterLast
     )
     $st = Get-LogState
+    # -AfterLast: back-date the start to the most recent session's end (no overlaps),
+    # so "log work since my last item" needs no separate lookups.
+    if ($AfterLast -and -not $PSBoundParameters.ContainsKey('At')) {
+        $ends = @($st['sessions'] | Where-Object { $_['end'] } | ForEach-Object { ParseTs $_['end'] })
+        if ($ends.Count) {
+            $last = ($ends | Sort-Object)[-1]
+            if ($last -lt (Get-Date)) { $At = $last }
+        }
+    }
     $id = [int]$st['nextId']
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
     $Category = ConvertTo-TitleCaseCategory $Category

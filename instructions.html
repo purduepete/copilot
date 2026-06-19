@@ -337,6 +337,7 @@
       <tbody>
         <tr class="grp"><td colspan="2">Start &middot; switch &middot; finish</td></tr>
         <tr><td>&ldquo;Starting work on &lt;thing&gt;&rdquo; / &ldquo;Now on the MS Sales pull, ADO 435324&rdquo;</td><td><code>start</code></td></tr>
+        <tr><td>&ldquo;Log my work since the last item&rdquo; (no overlap, back to back)</td><td><code>start -AfterLast</code> (auto start = the most recent session's end)</td></tr>
         <tr><td>&ldquo;Switching to item 3&rdquo; / &ldquo;Back on the pull&rdquo;</td><td><code>switch -Id 3</code></td></tr>
         <tr><td>&ldquo;Done with item 3 &mdash; &lt;accomplishment&gt;&rdquo; / &ldquo;Stop item 3&rdquo;</td><td><code>stop</code></td></tr>
         <tr><td>&ldquo;Close item 3 against gh issue 17&rdquo; / &ldquo;Finish item 3 and close the issue&rdquo;</td><td><code>close -Issue 17 [-CloseIssue]</code> (gh note + stop + dashboard, one shot)</td></tr>
@@ -390,6 +391,7 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 dashboard -Profile persona
       <li><code>summary "&lt;text&gt;"</code> sets the day's high-level, fuzzy recap shown under the dashboard summary stats (below &ldquo;Showing&rdquo;).</li>
       <li><code>edit -Id &lt;n&gt;</code> changes any field of a logged session after the fact (only the fields you pass); <code>-Reopen</code> clears the end time.</li>
       <li><strong>Back-dating</strong> &mdash; forgot to log in real time? <code>-At &lt;datetime&gt;</code> on <code>start</code>/<code>stop</code>, or <code>edit -Id &lt;n&gt; -Start &lt;dt&gt; -End &lt;dt&gt;</code> to fix an existing session's times. Or just tell Copilot &ldquo;I forgot to log 2&ndash;3pm, I was doing X in Dev&rdquo; and it inserts the session.</li>
+      <li><strong><code>start -AfterLast</code> (new):</strong> back-dates the new session's start to the <em>most recent session's end</em> &mdash; perfect for &ldquo;log my work since the last item&rdquo; with no overlaps and no manual lookup of the previous end time.</li>
     </ul>
 
     <h4 id="wl-reports">4. Standup, weekly &amp; dashboard reports</h4>

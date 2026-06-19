@@ -47,6 +47,7 @@ param(
     [string]$RepoPath = '',
     [string]$Commit = '',
     [switch]$CloseIssue,
+    [switch]$AfterLast,
     [switch]$Reopen,
     [switch]$NoOpen
 )
@@ -55,7 +56,7 @@ Import-Module (Join-Path $PSScriptRoot 'WorkLog.psm1') -Force
 if ($Profile) { Set-WorkProfile -Profile $Profile | Out-Null }
 
 switch ($Command) {
-    'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Project = $Project; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Start-Work @sp | Out-Null }
+    'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Project = $Project; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; if ($AfterLast) { $sp.AfterLast = $true }; Start-Work @sp | Out-Null }
     'switch'  { Switch-Work -Id $Id }
     'stop'    { $sp = @{ Id = $Id; Accomplishment = $Text; Blocker = $Blocker; Status = $Status }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Stop-Work @sp | Out-Null }
     'close'   {
