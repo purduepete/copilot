@@ -470,7 +470,9 @@ function Show-WorkStatus {
     $st = Get-LogState
     $open = @($st['sessions'] | Where-Object { -not $_['end'] } | ForEach-Object { ConvertTo-SessionView $_ } | Sort-Object Start)
     $cur = $st['current']
-    $todayMin = (@(Get-WorkLog -Since (Get-Date).Date) | Measure-Object -Property Min -Sum).Sum
+    $todayMeasure = @(Get-WorkLog -Since (Get-Date).Date) | Measure-Object -Property Min -Sum
+    $todayMin = 0
+    if ($todayMeasure -and ($todayMeasure | Get-Member -Name Sum)) { $todayMin = $todayMeasure.Sum }
     Write-Host ''
     Write-Host ("Open sessions: {0}   Logged today: {1}" -f $open.Count, (FmtMin ([int]$todayMin))) -ForegroundColor Cyan
     foreach ($s in $open) {
@@ -800,7 +802,8 @@ function New-WorkDashboard {
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-var calY, calM, sel=null;
+var calY, calM, sel=[];
+function isSel(ds){ return sel.indexOf(ds)!==-1; }
 function fmtMin(m){ if(m<=0) return '0m'; if(m<60) return m+'m'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
 function esc(s){ s=(s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtTs(s){
@@ -861,16 +864,26 @@ function renderCal(){
     var cls='cal-day in'; var dot='';
     if(DAYMAP[ds]){ cls+=' has'; dot="<span class='dot'></span>"; }
     if(ds===tstr){ cls+=' today'; }
-    if(ds===sel){ cls+=' sel'; }
-    var clk = DAYMAP[ds] ? (" onclick=\"selDay('"+ds+"')\" title=\""+fmtMin(DAYMAP[ds].min)+", "+DAYMAP[ds].count+" session(s)\"") : '';
+    if(isSel(ds)){ cls+=' sel'; }
+    var clk = DAYMAP[ds] ? (" onclick=\"selDay('"+ds+"',event)\" title=\""+fmtMin(DAYMAP[ds].min)+", "+DAYMAP[ds].count+" session(s)\"") : '';
     h+="<div class='"+cls+"'"+clk+"><span>"+d+"</span>"+dot+"</div>";
   }
   h+="</div><div class='cal-foot'><button class='pill' onclick='clearSel()'>All dates</button></div>";
   document.getElementById('cal').innerHTML=h;
 }
 function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
-function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
-function clearSel(){ sel=null; renderCal(); renderView(); }
+function selDay(ds,ev){
+  var multi = ev && (ev.ctrlKey || ev.metaKey);
+  if(multi){
+    var i=sel.indexOf(ds);
+    if(i===-1){ sel.push(ds); } else { sel.splice(i,1); }
+  } else {
+    sel=(sel.length===1 && sel[0]===ds) ? [] : [ds];
+  }
+  renderCal(); renderView();
+  if(!multi){ document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+function clearSel(){ sel=[]; renderCal(); renderView(); }
 var SEARCH='';
 function matchQ(s,q){
   if(!q) return true;
@@ -880,7 +893,7 @@ function matchQ(s,q){
 }
 function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
 function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; } onSearch(''); }
-function curSet(){ var base = sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
+function curSet(){ var base = sel.length ? SESSIONS.filter(function(s){ return isSel(s.date); }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
 function autoSummary(set){
   if(!set.length) return '';
   var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -902,7 +915,7 @@ function renderSummary(){
   var chips='';
   Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
   if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
-  var label = sel ? sel : 'All time';
+  var label = sel.length ? (sel.length===1 ? sel[0] : (sel.length+' dates: '+sel.slice().sort().join(', '))) : 'All time';
   if(SEARCH){ label += ' \u2022 \u201C'+SEARCH+'\u201D'; }
   var comm = dayCommentary(set);
   document.getElementById('sum').innerHTML =
@@ -961,7 +974,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
 (function(){
   var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
   calY=n.getFullYear(); calM=n.getMonth();
-  sel=today; renderCal(); renderView();
+  sel=[today]; renderCal(); renderView();
 })();
 '@
 

@@ -85,7 +85,7 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-17 16:30 &bull; 14 session(s) &bull; 8h 2m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-20 08:52 &bull; 20 session(s) &bull; 14h 3m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -366,6 +366,107 @@ var SESSIONS = [
         "ts": "2026-06-17 16:26:00"
       }
     ]
+  },
+  {
+    "id": 15,
+    "date": "2026-06-18",
+    "start": "09:00",
+    "end": "10:30",
+    "min": 90,
+    "category": "Data",
+    "project": "fy27 budget",
+    "adoId": "",
+    "url": "",
+    "title": "Resolve nulls in Mercury data",
+    "accomplishment": "Update notebook to handle nulls in data",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "Updated Synapse notebook **Fusion_FDL_Budget_Fact_Load** to resolve null values in Mercury budget data.\n\nCommit: [1e7d2e0f — Updating notebook: Fusion_FDL_Budget_Fact_Load](https://starlightagilebi.visualstudio.com/FDnE%20-%20Kanban/_git/FDnE_EPM_Planning_MCAPS/commit/1e7d2e0fa2a721a1bdae58f3618adcb0ec602390) (repo FDnE_EPM_Planning_MCAPS)\n\nChanges:\n- Added `df_get_nulls` null-validation checks across Sell-In, Sell-Thru, GLAttribute/Alt, and ManagementReporting/Alt datasets\n- Mercury curation now backfills default codes via `.fillna()` (ProfitCenter `P10195499`, ExternalSegment `0000`, ESAB5 `AAAA`, CostElement `510005`)\n- New cell validates curated Mercury data for nulls and raises if any remain",
+        "ts": "2026-06-18 11:11:56"
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "date": "2026-06-18",
+    "start": "10:35",
+    "end": "11:35",
+    "min": 60,
+    "category": "Meeting",
+    "project": "bedrock",
+    "adoId": "",
+    "url": "",
+    "title": "[Bedrock] Weekly Sync",
+    "accomplishment": "Attended Bedrock weekly sync",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 17,
+    "date": "2026-06-18",
+    "start": "15:22",
+    "end": "16:23",
+    "min": 61,
+    "category": "Data",
+    "project": "fy27 budget",
+    "adoId": "",
+    "url": "",
+    "title": "Investigating ESA5 problems",
+    "accomplishment": "Identified a change in dimension ID's (MSSales related), which caused the breakage",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 18,
+    "date": "2026-06-19",
+    "start": "09:30",
+    "end": "10:00",
+    "min": 30,
+    "category": "Data",
+    "project": "fy27 budget",
+    "adoId": "",
+    "url": "",
+    "title": "FY27 Budget work",
+    "accomplishment": "FY27 Budget work",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 19,
+    "date": "2026-06-19",
+    "start": "10:00",
+    "end": "11:00",
+    "min": 60,
+    "category": "Meeting",
+    "project": "acrtonet",
+    "adoId": "",
+    "url": "",
+    "title": "ACRToNet KT",
+    "accomplishment": "ACRToNet KT",
+    "blocker": "",
+    "status": "done",
+    "notes": []
+  },
+  {
+    "id": 20,
+    "date": "2026-06-19",
+    "start": "11:00",
+    "end": "12:00",
+    "min": 60,
+    "category": "Admin",
+    "project": "bedrock",
+    "adoId": "",
+    "url": "",
+    "title": "Administrative",
+    "accomplishment": "Administrative",
+    "blocker": "",
+    "status": "done",
+    "notes": []
   }
 ];
 var COMMENTARY = {
@@ -375,7 +476,8 @@ var ADO_BASE = "https://dev.azure.com/StarlightAgileBI";
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-var calY, calM, sel=null;
+var calY, calM, sel=[];
+function isSel(ds){ return sel.indexOf(ds)!==-1; }
 function fmtMin(m){ if(m<=0) return '0m'; if(m<60) return m+'m'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
 function esc(s){ s=(s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtTs(s){
@@ -436,16 +538,26 @@ function renderCal(){
     var cls='cal-day in'; var dot='';
     if(DAYMAP[ds]){ cls+=' has'; dot="<span class='dot'></span>"; }
     if(ds===tstr){ cls+=' today'; }
-    if(ds===sel){ cls+=' sel'; }
-    var clk = DAYMAP[ds] ? (" onclick=\"selDay('"+ds+"')\" title=\""+fmtMin(DAYMAP[ds].min)+", "+DAYMAP[ds].count+" session(s)\"") : '';
+    if(isSel(ds)){ cls+=' sel'; }
+    var clk = DAYMAP[ds] ? (" onclick=\"selDay('"+ds+"',event)\" title=\""+fmtMin(DAYMAP[ds].min)+", "+DAYMAP[ds].count+" session(s)\"") : '';
     h+="<div class='"+cls+"'"+clk+"><span>"+d+"</span>"+dot+"</div>";
   }
   h+="</div><div class='cal-foot'><button class='pill' onclick='clearSel()'>All dates</button></div>";
   document.getElementById('cal').innerHTML=h;
 }
 function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
-function selDay(ds){ sel=(sel===ds?null:ds); renderCal(); renderView(); document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
-function clearSel(){ sel=null; renderCal(); renderView(); }
+function selDay(ds,ev){
+  var multi = ev && (ev.ctrlKey || ev.metaKey);
+  if(multi){
+    var i=sel.indexOf(ds);
+    if(i===-1){ sel.push(ds); } else { sel.splice(i,1); }
+  } else {
+    sel=(sel.length===1 && sel[0]===ds) ? [] : [ds];
+  }
+  renderCal(); renderView();
+  if(!multi){ document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+function clearSel(){ sel=[]; renderCal(); renderView(); }
 var SEARCH='';
 function matchQ(s,q){
   if(!q) return true;
@@ -455,7 +567,7 @@ function matchQ(s,q){
 }
 function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
 function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; } onSearch(''); }
-function curSet(){ var base = sel ? SESSIONS.filter(function(s){ return s.date===sel; }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
+function curSet(){ var base = sel.length ? SESSIONS.filter(function(s){ return isSel(s.date); }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
 function autoSummary(set){
   if(!set.length) return '';
   var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -477,7 +589,7 @@ function renderSummary(){
   var chips='';
   Object.keys(cat).sort(function(a,b){ return cat[b]-cat[a]; }).forEach(function(c){ chips+="<span class='chip'>"+esc(c)+': '+fmtMin(cat[c])+"</span>"; });
   if(!chips){ chips="<span class='muted'>No work logged.</span>"; }
-  var label = sel ? sel : 'All time';
+  var label = sel.length ? (sel.length===1 ? sel[0] : (sel.length+' dates: '+sel.slice().sort().join(', '))) : 'All time';
   if(SEARCH){ label += ' \u2022 \u201C'+SEARCH+'\u201D'; }
   var comm = dayCommentary(set);
   document.getElementById('sum').innerHTML =
@@ -536,7 +648,7 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
 (function(){
   var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
   calY=n.getFullYear(); calM=n.getMonth();
-  sel=today; renderCal(); renderView();
+  sel=[today]; renderCal(); renderView();
 })();
 </script>
 </body></html>
