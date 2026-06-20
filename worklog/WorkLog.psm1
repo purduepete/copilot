@@ -801,7 +801,7 @@ function New-WorkDashboard {
     $js = @'
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-var DOW=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 var calY, calM, sel=[];
 function isSel(ds){ return sel.indexOf(ds)!==-1; }
 function fmtMin(m){ if(m<=0) return '0m'; if(m<60) return m+'m'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
@@ -853,7 +853,7 @@ SESSIONS.forEach(function(s,i){ s._uid=i; });
 SESSIONS.forEach(function(s){ if(!DAYMAP[s.date]) DAYMAP[s.date]={count:0,min:0}; DAYMAP[s.date].count++; DAYMAP[s.date].min+=s.min; });
 function renderCal(){
   var first=new Date(calY,calM,1);
-  var startDow=(first.getDay()+6)%7;
+  var startDow=first.getDay();
   var daysIn=new Date(calY,calM+1,0).getDate();
   var now=new Date(); var tstr=ymd(now.getFullYear(),now.getMonth(),now.getDate());
   var h="<div class='cal-head'><button class='cbtn' onclick='navMonth(-1)'>&#8249;</button><div class='cal-title'>"+MONTHS[calM]+' '+calY+"</div><button class='cbtn' onclick='navMonth(1)'>&#8250;</button></div><div class='cal-grid'>";
