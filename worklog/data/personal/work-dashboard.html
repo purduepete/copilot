@@ -85,7 +85,7 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-20 09:02 &bull; 30 session(s) &bull; 29h 42m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-23 15:32 &bull; 34 session(s) &bull; 33h 31m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -628,6 +628,85 @@ var SESSIONS = [
         "ts": "2026-06-19 19:14:17"
       }
     ]
+  },
+  {
+    "id": 36,
+    "date": "2026-06-22",
+    "start": "08:07",
+    "end": "08:18",
+    "min": 12,
+    "category": "Dev",
+    "project": "",
+    "adoId": "",
+    "url": "",
+    "title": "Fix #281: stop alert dismiss page flash; inclusive DTE on cash-secured-puts",
+    "accomplishment": "Fixed alert dismiss page flash/reload and switched cash-secured-puts to inclusive DTE counting; committed, pushed and deployed.",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "[#281 Fix alert dismiss page flash and use inclusive DTE counting on cash-secured-puts](https://github.com/jimlertech/webportfolio/issues/281) - milestone: v3.2 | state: CLOSED | commit: c0c5fc2",
+        "ts": "2026-06-22 08:32:47"
+      }
+    ]
+  },
+  {
+    "id": 37,
+    "date": "2026-06-23",
+    "start": "10:18",
+    "end": "12:08",
+    "min": 110,
+    "category": "Dev",
+    "project": "webportfolio",
+    "adoId": "",
+    "url": "",
+    "title": "Option Positions reset-sort fix + option delta restoration",
+    "accomplishment": "Fixed Option Positions reset to default sort (% gain high->low) + Command Palette arrow nav; restored option deltas (TastyTrade DXLink auth) and fixed null-delta warm-worker endpoint",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "**GitHub issues (jimlertech/webportfolio, milestone v3.2, all CLOSED):**\n\n- [#282 UI fixes: Option Positions reset sort + Command Palette arrow navigation](https://github.com/jimlertech/webportfolio/issues/282) — duplicate of #283\n- [#283 UI fixes: Option Positions reset sort + Command Palette arrow navigation](https://github.com/jimlertech/webportfolio/issues/283) — commit `0ff2c79`\n- [#284 Fix missing option deltas: TastyTrade DXLink streamer auth failure](https://github.com/jimlertech/webportfolio/issues/284) — commit `88b5924`\n- [#285 get_option_quote single-contract endpoint returns null delta on warm workers](https://github.com/jimlertech/webportfolio/issues/285) — commits `e511e51`, `c3085b3`, `17d8cf4`, `b9fb824`",
+        "ts": "2026-06-23 12:31:51"
+      }
+    ]
+  },
+  {
+    "id": 38,
+    "date": "2026-06-23",
+    "start": "11:50",
+    "end": "12:23",
+    "min": 32,
+    "category": "Dev",
+    "project": "utility",
+    "adoId": "",
+    "url": "",
+    "title": "Taskbar computer-name overlay",
+    "accomplishment": "Added taskbar overlay showing computer name (enabled by default); committed, pushed and re-republished",
+    "blocker": "",
+    "status": "done",
+    "notes": [
+      {
+        "text": "**Commit:** [`201407d` Add taskbar computer-name overlay (on by default)](https://github.com/jimlertech/utility/commit/201407d)\n\nNo GitHub issue created for this work.",
+        "ts": "2026-06-23 12:31:52"
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "date": "2026-06-23",
+    "start": "14:08",
+    "end": "15:23",
+    "min": 75,
+    "category": "Dev",
+    "project": "",
+    "adoId": "",
+    "url": "",
+    "title": "Fix computername taskbar overlay: center on Surface + hide for full-screen apps (RDP)",
+    "accomplishment": "Fixed the computer-name taskbar overlay: centered it properly on the Surface taskbar and suppressed it for full-screen apps (e.g. RDP). Committed, pushed, and published.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
   }
 ];
 var COMMENTARY = {
