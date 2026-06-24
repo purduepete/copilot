@@ -212,6 +212,42 @@ function Start-Work {
     return $s
 }
 
+# ---- Public: Add a complete (already-finished) session ---------------------
+# Create a session in one shot with explicit start/end (used by the dashboard's
+# "New item" button and `Work.ps1 add`). If no end is given it stays in-progress.
+function New-WorkSession {
+    [CmdletBinding()]
+    param(
+        [datetime]$Start = (Get-Date),
+        [datetime]$End,
+        [string]$Title = '',
+        [string]$Category = '',
+        [string]$Project = '',
+        [string]$AdoId = '',
+        [string[]]$Tags = @(),
+        [string]$Accomplishment = ''
+    )
+    $st = Get-LogState
+    $id = [int]$st['nextId']
+    $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
+    $hasEnd = $PSBoundParameters.ContainsKey('End') -and $End
+    $dur = if ($hasEnd) { [math]::Round((($End) - $Start).TotalMinutes) } else { 0 }
+    $s = @{
+        id = $id; kind = $kind; adoId = $AdoId
+        category = ConvertTo-TitleCaseCategory $Category; project = $Project; tags = @($Tags)
+        title = ConvertTo-FirstCapital $Title; start = $Start.ToString($script:Fmt)
+        end = $(if ($hasEnd) { $End.ToString($script:Fmt) } else { $null })
+        durationMin = $dur
+        status = $(if ($hasEnd) { 'done' } else { 'in-progress' })
+        accomplishment = ConvertTo-FirstCapital $Accomplishment; blocker = ''; notes = @()
+    }
+    $st['sessions'] = @($st['sessions']) + $s
+    $st['nextId']   = $id + 1
+    Save-LogState $st
+    Write-Host ("+ Added #{0}: {1}" -f $id, $s['title'])
+    return (ConvertTo-SessionView $s)
+}
+
 # ---- Public: Switch (no close) --------------------------------------------
 function Switch-Work {
     [CmdletBinding()]
@@ -383,7 +419,14 @@ function Edit-Work {
     if ($PSBoundParameters.ContainsKey('Blocker'))       { $s['blocker'] = ConvertTo-FirstCapital $Blocker; $changed += 'blocker' }
     if ($PSBoundParameters.ContainsKey('Status'))        { $s['status'] = $Status; $changed += 'status' }
     if ($PSBoundParameters.ContainsKey('Start'))         { $s['start'] = $Start.ToString($script:Fmt); $changed += 'start' }
-    if ($PSBoundParameters.ContainsKey('End'))           { $s['end'] = $End.ToString($script:Fmt); $changed += 'end' }
+    if ($PSBoundParameters.ContainsKey('End'))           {
+        $s['end'] = $End.ToString($script:Fmt); $changed += 'end'
+        # Adding an end time to an open session closes it; mark done unless the
+        # caller explicitly set a status (mirrors Stop-Work's default).
+        if (-not $PSBoundParameters.ContainsKey('Status') -and $s['status'] -eq 'in-progress') {
+            $s['status'] = 'done'; $changed += 'status'
+        }
+    }
     if ($Reopen) {
         $s['end'] = $null; $s['durationMin'] = 0
         if (-not $PSBoundParameters.ContainsKey('Status')) { $s['status'] = 'in-progress' }
@@ -501,7 +544,7 @@ $script:BaseCss = @"
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
 body{font-family:'Roboto Flex',system-ui,sans-serif;font-optical-sizing:auto;margin:0;background:var(--bg);color:var(--text);line-height:1.55;}
-.page{max-width:none;margin:0;padding:26px 20% 80px;}
+.page{max-width:none;margin:0;padding:26px 15% 80px;}
 a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
 .rpt-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:6px 2px 16px;border-bottom:1px solid var(--border);}
 .rpt-hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:0;}
@@ -888,12 +931,13 @@ var SEARCH='';
 function matchQ(s,q){
   if(!q) return true;
   var hay=[s.title,s.accomplishment,s.blocker,s.project,s.category,s.adoId].join('\n');
+  hay+='\n'+(s.end ? (s.status||'done') : ('open in-progress '+(s.status||'')));
   if(s.notes){ s.notes.forEach(function(n){ hay+='\n'+(n.text||''); }); }
   return hay.toLowerCase().indexOf(q)!==-1;
 }
 function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
 function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; } onSearch(''); }
-function curSet(){ var base = sel.length ? SESSIONS.filter(function(s){ return isSel(s.date); }) : SESSIONS.slice(); return SEARCH ? base.filter(function(s){ return matchQ(s,SEARCH); }) : base; }
+function curSet(){ if(SEARCH){ return SESSIONS.filter(function(s){ return matchQ(s,SEARCH); }); } return sel.length ? SESSIONS.filter(function(s){ return isSel(s.date); }) : SESSIONS.slice(); }
 function autoSummary(set){
   if(!set.length) return '';
   var cat={}; set.forEach(function(s){ var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
@@ -936,7 +980,7 @@ function renderTable(){
     var o=new Date(dt+'T00:00:00');
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
     h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
-    h+="<table class='log day'><colgroup><col style='width:4%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:24%'><col style='width:32%'><col style='width:4%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    h+="<table class='log day'><colgroup><col style='width:7%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:22%'><col style='width:30%'><col style='width:5%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
     rows.forEach(function(s,ri){
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
@@ -951,8 +995,9 @@ function renderTable(){
       var acc = s.accomplishment ? esc(s.accomplishment) : "<span class='muted'>&mdash;</span>";
       if(s.blocker){ acc+="<div class='blk'>&#9888; "+esc(s.blocker)+"</div>"; }
       var notes=(s.notes && s.notes.length)?"<button class='ncount nbtn' onclick='openNotes("+s._uid+")' title='View notes'>"+s.notes.length+"</button>":"<span class='muted'>0</span>";
+      var edit="<button class='nbtn ebtn' onclick='openEdit("+s._uid+")' title='Edit session'>&#9998;</button>";
       var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center'><span class='idnum' title='id "+s.id+"'>"+(ri+1)+"</span></td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center nowrap'><span class='idnum' title='id "+s.id+"'>"+(ri+1)+"</span>"+edit+"</td><td class='nowrap'>"+time+"</td><td class='nowrap'>"+fmtMin(s.min)+"</td><td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
@@ -970,7 +1015,119 @@ function openNotes(id){
   document.getElementById('modal').classList.add('show');
 }
 function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNotes(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeNotes(); closeEdit(); } });
+// ---- Inline editing -------------------------------------------------------
+var LIVE = (location.protocol==='http:' || location.protocol==='https:');
+var EDIT_UID=null;
+var EDIT_MODE='edit';
+function nowLocal(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); }
+function uniqVals(key){
+  var seen={}, out=[];
+  SESSIONS.forEach(function(s){ var v=String(s[key]==null?'':s[key]).trim(); if(v && !seen[v.toLowerCase()]){ seen[v.toLowerCase()]=1; out.push(v); } });
+  out.sort(function(a,b){ return a.toLowerCase()<b.toLowerCase()?-1:1; });
+  return out;
+}
+function fillSelect(selId, vals, cur){
+  var sel=document.getElementById(selId); sel.innerHTML='';
+  if(cur && vals.indexOf(cur)===-1){ vals=[cur].concat(vals); }
+  vals.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  var on=document.createElement('option'); on.value='__new__'; on.textContent='+ New\u2026'; sel.appendChild(on);
+  sel.value = cur ? cur : (vals.length ? vals[0] : '__new__');
+}
+function onSelChange(pfx){
+  var sel=document.getElementById(pfx+'Sel'), nw=document.getElementById(pfx+'New');
+  if(sel.value==='__new__'){ nw.style.display=''; nw.focus(); } else { nw.style.display='none'; }
+}
+function selVal(pfx){
+  var sel=document.getElementById(pfx+'Sel');
+  if(sel.value==='__new__'){ return document.getElementById(pfx+'New').value.trim(); }
+  return sel.value;
+}
+function dtLocal(date,hm){ return (date&&hm) ? date+'T'+hm : ''; }
+function dtStamp(v){ return v ? v.replace('T',' ')+':00' : ''; }
+function openEdit(uid){
+  var s=byId(uid); if(!s) return; EDIT_UID=uid; EDIT_MODE='edit';
+  document.getElementById('eHdr').textContent='Edit session #'+s.id;
+  document.getElementById('eStart').value = dtLocal(s.date, s.start);
+  var endDate=s.date;
+  if(s.end && s.start && s.end < s.start){ var d=new Date(s.date+'T00:00:00'); d.setDate(d.getDate()+1); endDate=ymd(d.getFullYear(),d.getMonth(),d.getDate()); }
+  document.getElementById('eEnd').value = s.end ? dtLocal(endDate, s.end) : '';
+  document.getElementById('eCatNew').value=''; document.getElementById('eProjNew').value='';
+  fillSelect('eCatSel', uniqVals('category'), s.category||'');
+  fillSelect('eProjSel', uniqVals('project'), s.project||'');
+  onSelChange('eCat'); onSelChange('eProj');
+  document.getElementById('eItem').value = s.title||'';
+  document.getElementById('eAcc').value = s.accomplishment||'';
+  setEMsg('', '');
+  document.getElementById('emodal').classList.add('show');
+}
+function openNew(){
+  EDIT_UID=null; EDIT_MODE='new';
+  document.getElementById('eHdr').textContent='New session';
+  document.getElementById('eStart').value = nowLocal();
+  document.getElementById('eEnd').value = '';
+  document.getElementById('eCatNew').value=''; document.getElementById('eProjNew').value='';
+  fillSelect('eCatSel', uniqVals('category'), '');
+  fillSelect('eProjSel', uniqVals('project'), '');
+  onSelChange('eCat'); onSelChange('eProj');
+  document.getElementById('eItem').value = '';
+  document.getElementById('eAcc').value = '';
+  setEMsg('', '');
+  document.getElementById('emodal').classList.add('show');
+  document.getElementById('eItem').focus();
+}
+function closeEdit(){ var m=document.getElementById('emodal'); if(m) m.classList.remove('show'); EDIT_UID=null; }
+function setEMsg(t, cls){ var m=document.getElementById('eMsg'); if(!m) return; m.className='emsg'+(cls?' '+cls:''); m.textContent=t; }
+function qarg(v){ return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'; }
+function buildEditCmd(p){
+  var parts;
+  if(EDIT_MODE==='new'){
+    parts=['pwsh','-File',qarg(SCRIPT_DIR+'\\Work.ps1'),'add','-Profile',qarg(PROFILE)];
+  } else {
+    parts=['pwsh','-File',qarg(SCRIPT_DIR+'\\Work.ps1'),'edit','-Id',p.id,'-Profile',qarg(PROFILE)];
+  }
+  parts.push('-Start',qarg(dtStamp(p.start)));
+  if(p.end){ parts.push('-End',qarg(dtStamp(p.end))); }
+  parts.push('-Category',qarg(p.category));
+  parts.push('-Project',qarg(p.project));
+  parts.push('-Title',qarg(p.title));
+  parts.push('-Accomplishment',qarg(p.accomplishment));
+  return parts.join(' ');
+}
+function showEditCmd(cmd){
+  var m=document.getElementById('eMsg'); m.className='emsg';
+  m.innerHTML="Run this in your terminal to apply (auto-rebuilds the dashboard):<br><textarea class='ecmd' readonly rows='3'></textarea>";
+  var ta=m.querySelector('textarea'); ta.value=cmd; ta.focus(); ta.select();
+}
+function saveEdit(){
+  var newMode=(EDIT_MODE==='new');
+  var s = newMode ? null : byId(EDIT_UID);
+  if(!newMode && !s) return;
+  var payload={ id: newMode ? null : s.id,
+    start: document.getElementById('eStart').value,
+    end: document.getElementById('eEnd').value,
+    category: selVal('eCat'),
+    project: selVal('eProj'),
+    title: document.getElementById('eItem').value,
+    accomplishment: document.getElementById('eAcc').value };
+  if(!payload.start){ setEMsg('Start time is required.','err'); return; }
+  if(newMode && !payload.title.trim()){ setEMsg('Item (title) is required.','err'); return; }
+  var endpoint = newMode ? '/api/new' : '/api/edit';
+  if(LIVE){
+    setEMsg('Saving\u2026','');
+    fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.ok){ location.reload(); } else { setEMsg('Error: '+((j&&j.error)||'save failed'),'err'); } })
+      .catch(function(e){ setEMsg('Error: '+e,'err'); });
+  } else {
+    var cmd=buildEditCmd(payload);
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(cmd).then(
+        function(){ setEMsg('Command copied to clipboard \u2014 paste it into your terminal to apply.','ok'); setTimeout(closeEdit, 3000); },
+        function(){ showEditCmd(cmd); });
+    } else { showEditCmd(cmd); }
+  }
+}
 (function(){
   var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
   calY=n.getFullYear(); calM=n.getMonth();
@@ -992,6 +1149,25 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
 .nlist{margin:.25rem 0 .25rem 1.1rem;padding:0;}
 .nlist li{margin:.15rem 0;}
 .modal-body code{background:var(--card2,rgba(127,127,127,.18));padding:.05rem .35rem;border-radius:3px;font-size:.86em;}
+.ebtn{background:#3fb95022;color:#7ee787;border:1px solid #3fb95033;margin-left:16px;}
+.ebtn:hover{background:#3fb95044;}
+.eform{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;}
+.eform label{display:flex;flex-direction:column;gap:4px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);font-weight:600;}
+.eform label.wide{grid-column:1 / -1;}
+.eform input,.eform select,.eform textarea{background:var(--card2);border:1px solid var(--border);color:var(--text);padding:.5rem .6rem;font-size:13.5px;font-family:inherit;border-radius:0;outline:none;}
+.eform input[type=datetime-local]{color-scheme:dark;}
+.eform input:focus,.eform select:focus,.eform textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(77,141,255,.25);}
+.eform .enew{margin-top:6px;}
+.eform textarea{resize:vertical;}
+.eactions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
+.pill.save{background:var(--accent);color:#06101f;border-color:var(--accent);font-weight:700;}
+.pill.save:hover{background:#3b7df0;}
+.emsg{margin-top:12px;font-size:12.5px;min-height:1em;}
+.emsg.ok{color:var(--green);}
+.emsg.err{color:var(--red);}
+.ecmd{width:100%;margin-top:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px;border-radius:0;}
+.newbtn,.searchbar button.newbtn{background:transparent;color:var(--accent);border:1px solid var(--accent);font-weight:700;}
+.newbtn:hover,.searchbar button.newbtn:hover{background:#4d8dff1a;border-color:var(--accent);color:var(--accent);}
 </style></head><body>
 <div class='page'>
 <header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>$meta</div></div></header>
@@ -1000,8 +1176,9 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
   <div class='card'><div id='sum'></div></div>
 </div>
 <div class='searchbar'>
-  <input id='q' type='search' placeholder='Search title, notes, project, accomplishment&hellip;' oninput='onSearch(this.value)' autocomplete='off'>
+  <input id='q' type='search' placeholder='Search title, notes, project, status (e.g. open)&hellip;' oninput='onSearch(this.value)' autocomplete='off'>
   <button class='pill' onclick='clearSearch()'>Clear</button>
+  <button class='pill newbtn' onclick='openNew()'>+ New item</button>
 </div>
 <div id='log'></div>
 </div>
@@ -1011,10 +1188,38 @@ document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeNote
     <div id='mBody' class='modal-body'></div>
   </div>
 </div>
+<div id='emodal' class='modal' onclick='if(event.target===this)closeEdit()'>
+  <div class='modal-box'>
+    <div class='modal-head'><span id='eHdr'>Edit session</span><button class='cbtn' onclick='closeEdit()'>&times;</button></div>
+    <div class='modal-body'>
+      <div class='eform'>
+        <label>Start time<input type='datetime-local' id='eStart'></label>
+        <label>End time<input type='datetime-local' id='eEnd'></label>
+        <label>Category
+          <select id='eCatSel' onchange="onSelChange('eCat')"></select>
+          <input type='text' id='eCatNew' class='enew' placeholder='New category&hellip;' style='display:none'>
+        </label>
+        <label>Project
+          <select id='eProjSel' onchange="onSelChange('eProj')"></select>
+          <input type='text' id='eProjNew' class='enew' placeholder='New project&hellip;' style='display:none'>
+        </label>
+        <label class='wide'>Item<input type='text' id='eItem'></label>
+        <label class='wide'>Accomplishment<textarea id='eAcc' rows='3'></textarea></label>
+      </div>
+      <div id='eMsg' class='emsg'></div>
+      <div class='eactions'>
+        <button class='pill save' onclick='saveEdit()'>Save</button>
+        <button class='pill' onclick='closeEdit()'>Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 var SESSIONS = $json;
 var COMMENTARY = $commentaryJson;
 var ADO_BASE = "$($script:Org)";
+var SCRIPT_DIR = $($script:ScriptDir | ConvertTo-Json);
+var PROFILE = $($script:Profile | ConvertTo-Json);
 $js
 </script>
 </body></html>
@@ -1027,6 +1232,97 @@ $js
     [pscustomobject]@{ Html = $outPath }
 }
 
-Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Complete-Work, New-GhIssueNote, Add-WorkNote, Edit-Work, Set-DayCommentary, `
-    Get-OpenSessions, Get-WorkLog, Find-WorkLog, Show-WorkSearch, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, `
+# ---- Public: Live-edit server ---------------------------------------------
+# Serves the dashboard over http://localhost:<port> so the in-page Edit button
+# can POST changes back and persist them via Edit-Work (single-user, local-only).
+function Write-WorkServerJson($res, [int]$code, $obj) {
+    $res.StatusCode = $code
+    $res.ContentType = 'application/json'
+    $bytes = [System.Text.Encoding]::UTF8.GetBytes(($obj | ConvertTo-Json -Compress))
+    $res.OutputStream.Write($bytes, 0, $bytes.Length)
+}
+
+function Invoke-WorkEditRequest {
+    param($ctx)
+    $req = $ctx.Request
+    $res = $ctx.Response
+    try {
+        $path = $req.Url.AbsolutePath
+        if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/edit') {
+            $reader = New-Object System.IO.StreamReader($req.InputStream, $req.ContentEncoding)
+            $body = $reader.ReadToEnd(); $reader.Close()
+            $d = $body | ConvertFrom-Json
+            $names = $d.PSObject.Properties.Name
+            $p = @{ Id = [int]$d.id }
+            if (($names -contains 'start')          -and $d.start) { $p.Start = [datetime]$d.start }
+            if (($names -contains 'end')            -and $d.end)   { $p.End   = [datetime]$d.end }
+            if  ($names -contains 'category')        { $p.Category       = [string]$d.category }
+            if  ($names -contains 'project')         { $p.Project        = [string]$d.project }
+            if  ($names -contains 'title')           { $p.Title          = [string]$d.title }
+            if  ($names -contains 'accomplishment')  { $p.Accomplishment  = [string]$d.accomplishment }
+            $script:SuppressDashboard = $false
+            Edit-Work @p | Out-Null   # persists state and rebuilds the dashboard
+            Write-Host ("~ Live edit applied to #{0}" -f $p.Id)
+            Write-WorkServerJson $res 200 @{ ok = $true }
+            return
+        }
+        if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/new') {
+            $reader = New-Object System.IO.StreamReader($req.InputStream, $req.ContentEncoding)
+            $body = $reader.ReadToEnd(); $reader.Close()
+            $d = $body | ConvertFrom-Json
+            $names = $d.PSObject.Properties.Name
+            $p = @{}
+            if (($names -contains 'start') -and $d.start) { $p.Start = [datetime]$d.start }
+            if (($names -contains 'end')   -and $d.end)   { $p.End   = [datetime]$d.end }
+            if  ($names -contains 'category')        { $p.Category       = [string]$d.category }
+            if  ($names -contains 'project')         { $p.Project        = [string]$d.project }
+            if  ($names -contains 'title')           { $p.Title          = [string]$d.title }
+            if  ($names -contains 'accomplishment')  { $p.Accomplishment  = [string]$d.accomplishment }
+            $script:SuppressDashboard = $false
+            New-WorkSession @p | Out-Null   # persists state and rebuilds the dashboard
+            Write-Host '+ Live add applied'
+            Write-WorkServerJson $res 200 @{ ok = $true }
+            return
+        }
+        $file = Join-Path $script:OutDir 'work-dashboard.html'
+        if (-not (Test-Path -LiteralPath $file)) { $script:SuppressDashboard = $false; New-WorkDashboard -NoOpen | Out-Null }
+        $bytes = [System.IO.File]::ReadAllBytes($file)
+        $res.ContentType = 'text/html; charset=utf-8'
+        $res.OutputStream.Write($bytes, 0, $bytes.Length)
+    }
+    catch {
+        try { Write-WorkServerJson $res 500 @{ ok = $false; error = $_.Exception.Message } } catch {}
+    }
+    finally {
+        try { $res.OutputStream.Close() } catch {}
+    }
+}
+
+function Start-WorkServer {
+    [CmdletBinding()]
+    param([int]$Port = 8787, [switch]$NoOpen)
+    $script:SuppressDashboard = $false
+    New-WorkDashboard -NoOpen | Out-Null
+    $listener = New-Object System.Net.HttpListener
+    $prefix = "http://localhost:$Port/"
+    $listener.Prefixes.Add($prefix)
+    try { $listener.Start() }
+    catch { throw "Could not start WorkLog server on $prefix - $($_.Exception.Message)" }
+    Write-Host "WorkLog live-edit server running at $prefix"
+    Write-Host "Profile: $script:Profile  |  Edit sessions in the page; changes save instantly. Press Ctrl+C to stop."
+    if (-not $NoOpen) { Start-Process $prefix }
+    try {
+        while ($listener.IsListening) {
+            $ctx = $listener.GetContext()
+            Invoke-WorkEditRequest -ctx $ctx
+        }
+    }
+    finally {
+        $listener.Stop(); $listener.Close()
+        Write-Host 'WorkLog server stopped.'
+    }
+}
+
+Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Complete-Work, New-WorkSession, New-GhIssueNote, Add-WorkNote, Edit-Work, Set-DayCommentary, `
+    Get-OpenSessions, Get-WorkLog, Find-WorkLog, Show-WorkSearch, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, Start-WorkServer, `
     Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile

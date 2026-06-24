@@ -5,6 +5,7 @@
 .EXAMPLES
   pwsh -File Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
   pwsh -File Work.ps1 start "Standup meeting" -Category Meeting
+  pwsh -File Work.ps1 add "Reviewed PR feedback" -Start "2026-06-16 14:00" -End "2026-06-16 14:45" -Category Review -Project bedrock
   pwsh -File Work.ps1 switch -Id 1
   pwsh -File Work.ps1 note "Found root cause in view definition"
   pwsh -File Work.ps1 summary "High-level recap of the day's accomplishments"
@@ -15,6 +16,9 @@
   pwsh -File Work.ps1 search "fabric" -Days 14   # limit search to last 14 days
   pwsh -File Work.ps1 standup
   pwsh -File Work.ps1 week
+  pwsh -File Work.ps1 dashboard
+  pwsh -File Work.ps1 serve                          # live-edit dashboard at http://localhost:8787 (Ctrl+C to stop)
+  pwsh -File Work.ps1 serve -Port 9000               # use a custom port
   pwsh -File Work.ps1 log -Days 14
 
   # Profiles (keep work and personal logs separate):
@@ -25,7 +29,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)]
-    [ValidateSet('start', 'switch', 'stop', 'close', 'note', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'log', 'profile')]
+    [ValidateSet('start', 'switch', 'stop', 'close', 'add', 'note', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'serve', 'log', 'profile')]
     [string]$Command,
 
     [Parameter(Position = 1)][string]$Text,
@@ -39,6 +43,7 @@ param(
     [string]$Blocker = '',
     [ValidateSet('done', 'paused', 'in-progress')][string]$Status = 'done',
     [int]$Days = 7,
+    [int]$Port = 8787,
     [string]$Profile = '',
     [datetime]$Start,
     [datetime]$End,
@@ -68,6 +73,19 @@ switch ($Command) {
         if ($CloseIssue) { $sp.CloseIssue = $true }
         Complete-Work @sp | Out-Null
     }
+    'add'     {
+        $p = @{}
+        if ($PSBoundParameters.ContainsKey('Start')) { $p.Start = $Start } else { $p.Start = Get-Date }
+        if ($PSBoundParameters.ContainsKey('End'))            { $p.End   = $End }
+        if     ($PSBoundParameters.ContainsKey('Title'))      { $p.Title = $Title }
+        elseif ($PSBoundParameters.ContainsKey('Text'))       { $p.Title = $Text }
+        if ($PSBoundParameters.ContainsKey('Category'))       { $p.Category = $Category }
+        if ($PSBoundParameters.ContainsKey('Project'))        { $p.Project = $Project }
+        if ($PSBoundParameters.ContainsKey('Ado'))            { $p.AdoId = $Ado }
+        if ($PSBoundParameters.ContainsKey('Tags'))           { $p.Tags = $Tags }
+        if ($PSBoundParameters.ContainsKey('Accomplishment')) { $p.Accomplishment = $Accomplishment }
+        New-WorkSession @p | Out-Null
+    }
     'note'    { Add-WorkNote -Text $Text -Id $Id }
     'summary'    { Set-DayCommentary -Text $Text }
     'commentary' { Set-DayCommentary -Text $Text }
@@ -92,6 +110,7 @@ switch ($Command) {
     'standup' { New-Standup -NoOpen:$NoOpen }
     'week'    { New-WeeklySummary -NoOpen:$NoOpen }
     'dashboard' { New-WorkDashboard -NoOpen:$NoOpen }
+    'serve'     { Start-WorkServer -Port $Port -NoOpen:$NoOpen }
     'log'     { Get-WorkLog -Since (Get-Date).AddDays(-$Days) | Format-Table Id, Start, Min, Status, Kind, AdoId, Title -AutoSize }
     'profile' {
         if ($Text) { $r = Set-WorkDefaultProfile -Profile $Text; Write-Host "* Default profile for this machine set to '$($r.Profile)'" }

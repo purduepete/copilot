@@ -16,6 +16,7 @@ and `personal`, that never mix.
 | --- | --- |
 | `WorkLog.psm1` | Core module (all logic + report generators) |
 | `Work.ps1` | Thin CLI wrapper (verbs) |
+| `Edit-Dashboard.ps1` | Start/stop the live-edit dashboard server (`start` \| `stop` \| `status` \| `restart`) |
 | `Get-VSCodeWork.ps1` | Parse VS Code Copilot chat transcripts into work blocks (exact times + commits) |
 | `vscode\` | VS Code integration template (`tasks.json`, `keybindings.jsonc`, `README.md`) |
 | `worklog.config.json` | Profiles + per-profile settings (e.g. ADO org) |
@@ -111,6 +112,8 @@ pwsh -File Work.ps1 search "meeting" -Days 14 # limit search to the last 14 days
 pwsh -File Work.ps1 standup                 # build + open daily standup (html), print md
 pwsh -File Work.ps1 week                    # build + open weekly summary
 pwsh -File Work.ps1 dashboard               # build + open interactive calendar dashboard
+pwsh -File Work.ps1 add "Reviewed PR" -Start "2026-06-16 14:00" -End "2026-06-16 14:45" -Category Review  # log a finished session
+pwsh -File Work.ps1 serve                   # live-edit dashboard at http://localhost:8787 (Ctrl+C to stop)
 pwsh -File Work.ps1 log -Days 14            # recent sessions as a table
 
 # add -Profile <name> to any command to target a specific profile, e.g.:
@@ -122,6 +125,7 @@ pwsh -File Work.ps1 dashboard -Profile personal
 ```powershell
 Import-Module .\WorkLog.psm1 -Force
 Start-Work -Title "..." [-AdoId 123] [-Category Dev] [-Tags a,b] [-At <datetime>]
+New-WorkSession -Start <dt> [-End <dt>] [-Title ..] [-Category ..] [-Project ..] [-AdoId ..] [-Accomplishment ..]   # add a complete session
 Switch-Work -Id <n>
 Add-WorkNote -Text "..." [-Id <n>]
 Set-DayCommentary -Text "..." [-Date <dt>]     # high-level daily summary on the dashboard
@@ -134,12 +138,43 @@ Show-WorkStatus
 New-Standup [-Date <dt>] [-NoOpen]
 New-WeeklySummary [-Date <dt>] [-NoOpen]
 New-WorkDashboard [-NoOpen]
+Start-WorkServer [-Port 8787] [-NoOpen]    # serve dashboard with in-page editing of sessions
 Set-WorkProfile [-Profile <name>]          # switch profile for this session
 Set-WorkDefaultProfile -Profile <name>     # persist this machine's default (.profile)
 Get-WorkProfile                            # current profile + resolved paths
 ```
 
 `-At` lets you back-date a start/stop if you forgot to log it in real time.
+
+## Editing sessions from the dashboard
+
+Click **+ New item** (top-right, by the search box) to log a brand-new session, or the
+**&#9998; Edit** button next to any row's number to change an existing one. Either opens a
+form for the **start time**, **end time**, **category** (pick an existing one or choose
+**+ New…** to type a new one), **project** (same dropdown-or-new), **item** (title), and
+**accomplishment**.
+
+Two ways to save:
+
+- **Live editing (recommended):** start the dashboard server, then edit in the browser
+  tab it opens. Clicking **Save** writes the change immediately (via `Edit-Work`, or
+  `New-WorkSession` for a new item), rebuilds the dashboard, and reloads the page.
+
+  ```powershell
+  pwsh -File Edit-Dashboard.ps1 start     # launch server (background) + open browser
+  pwsh -File Edit-Dashboard.ps1 stop      # shut it down
+  pwsh -File Edit-Dashboard.ps1 status    # is it running?
+  # options: -Port <n> -Profile <name> -NoOpen
+  ```
+
+  (Equivalent foreground server: `pwsh -File Work.ps1 serve` — runs until Ctrl+C.)
+- **Plain file:// fallback:** if you opened `work-dashboard.html` directly (not served),
+  **Save** copies the equivalent `Work.ps1 edit …` (or `Work.ps1 add …`) command to your
+  clipboard — paste it into a terminal to apply. The log and dashboard update automatically.
+
+Either way, the usual normalization applies (categories title-cased, first word of text
+fields capitalized).
+
 
 ## Typical day, via Copilot
 
