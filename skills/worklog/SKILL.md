@@ -5,11 +5,12 @@ description: >-
   task, back-fill completed tasks, edit entries, add notes, and regenerate the
   dashboard. Times map to WorkLog (NOT Outlook). WHEN: start work, stop work,
   switch task, log time, track time, add a task, "create task ending at HH:MM",
-  back-date a task, "I worked on X", recreate/rebuild the worklog html, dashboard,
+  back-date a task, "I worked on X", start/end of work day, "learning about X",
+  "prepare for work day", "since my last item", recreate/rebuild the worklog html, dashboard,
   standup, weekly summary, start work log / serve the live-edit dashboard, set
   category/project/ADO id, lunch, commute to campus, create a note, jot a note,
   date-bound note, remember this, notes dashboard.
-argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category Dev")
+argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category development")
 ---
 
 # WorkLog
@@ -29,6 +30,7 @@ to any command to target the personal log.
 | Command | Purpose | Key args |
 |---|---|---|
 | `start "<title>"` | Begin a new running task | `-Category -Project -Ado -Tags -At <when> -AfterLast` |
+| `startday` / `endday` | Mark the start/end of the work day (**0-minute marker** task) | `-At <when>` |
 | `stop "<accomplishment>"` | Close the open task | `-Id -Blocker -Status <done\|paused\|in-progress> -At <when>` |
 | `switch -Id <n>` | Switch active task to id n | |
 | `add "<title>"` | Back-fill a **completed** task | `-Start <when> -End <when> -Category -Project -Ado -Tags -Accomplishment` |
@@ -52,6 +54,10 @@ to any command to target the personal log.
 
 1. **Capitalize the first word** of every free-text field (title, accomplishment,
    blocker, task-note, standalone note, commentary). The module enforces this, but write it capitalized anyway.
+   **Category and project are the exception: store them lowercase** (e.g. `development`,
+   `webportfolio`) **unless the user explicitly asks for other casing** (e.g. `AI`).
+   The module already lowercases these (with `ai`→`AI`); write them lowercase anyway.
+   **Aliases:** `dev` means **`development`** — normalize it.
 2. **`add` needs a Start.** If the user gives only an end time ("ending at HH:MM"),
    default the start to the **end of the last logged entry today** (check `log -Days 1`)
    so tasks chain without gaps. Confirm if the gap is large or ambiguous.
@@ -69,6 +75,39 @@ to any command to target the personal log.
    start-time order — not the WorkLog id. Resolve it by listing the day's entries
    (`log -Days 1`, filter to the target date, sort by start) and mapping position N
    to its id, then act on that id. E.g. today's 5th entry → its actual id for `edit`.
+
+## Phrase triggers
+
+Natural-language phrases that map to specific actions:
+
+- **"start of work day"** → `startday` (0-min marker). **"end of work day"** → `endday`
+  (pass `-At "<yyyy-MM-dd HH:mm>"` to set a specific time). These bound the work day for
+  untracked-gap detection and render as divider rows on the dashboard.
+- **"learning about &lt;x>"** → `start "Learning about <x>" -Category education -Project personal`.
+- **"prepare for work day"** → morning routine: show today's **calendar** (only on the
+  work computer — see below), surface overnight items to address, then `start` a prep task
+  (`-Category admin -Project work`).
+- **"since my last item" / "after my last task"** → use `start … -AfterLast` (auto-sets the
+  start to the most recent session's end, so no overlap). Don't look up the prior end time manually.
+
+## Operational conventions
+
+- **Closing a task is one call.** Use `close "<accomplishment>" [-Id N] [-Issue G -RepoPath <repo> -CloseIssue]`
+  — it bundles the gh-issue note + stop + a single dashboard rebuild. Don't call note/stop/dashboard separately.
+- **GitHub-issue note format.** When a task maps to a GitHub issue, add a note with a markdown
+  link `[#N Title](url)` plus **milestone, state, and commit hash**.
+- **Prefer a single Markdown note** over many small notes — the dashboard note modal renders
+  basic Markdown (bold, `code`, bullet lists, line breaks, links).
+- **Logging from VS Code chat.** For "log my work from chat" / "what did I do in the last hour":
+  run `worklog\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-Json]`, present a
+  numbered table (ID | work | start | end), let the user pick an ID, then `start -At "<exact start>"`
+  (or `-Create`). Don't parse transcripts manually.
+- **Dashboard stays in sync.** `Save-LogState` auto-regenerates the HTML on any data change; if
+  you edit state out-of-band, run `dashboard -NoOpen` so `work-dashboard.html` reflects it.
+- **Data caveat.** In `work-log.json`, `current` must be a **scalar session id or `null`**, never
+  `[]` — an empty array breaks `Stop-Work`.
+- **Calendar (work machine only).** Only read the Outlook calendar when `$env:COMPUTERNAME`
+  starts with `xfinjimb` (the work computer); otherwise skip it. See the `calendar` skill.
 
 ## Common recurring tasks
 
@@ -122,13 +161,13 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 notes
 
 ```powershell
 # Begin a task now, linked to an ADO item
-pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category development
 
 # Stop the open task with an accomplishment
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop "Patched view, validated row counts"
 
 # Back-fill a finished meeting, chaining from the last entry's end time
-pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 add "AI In-the-middle weekly open session" -Start "2026-06-24 12:00" -End "2026-06-24 12:30" -Category Meeting -Project AI
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 add "AI In-the-middle weekly open session" -Start "2026-06-24 12:00" -End "2026-06-24 12:30" -Category meeting -Project AI
 
 # Fix a field on an existing entry
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit -Id 38 -Project AI

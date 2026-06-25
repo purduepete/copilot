@@ -12,6 +12,10 @@ argument-hint: Optionally a time window (defaults to the whole day; e.g. "next h
 
 # Calendar (Outlook, local COM)
 
+> **Machine gate:** Only attempt a calendar read when `$env:COMPUTERNAME` starts with
+> `xfinjimb` (the work computer). On any other machine, Outlook COM is unavailable —
+> report that calendar access isn't available here instead of trying (it will hang).
+
 Reads the local Outlook desktop client's default calendar. Works offline against
 the installed profile — **no Microsoft Graph, no separate auth**.
 
