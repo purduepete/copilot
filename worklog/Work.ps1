@@ -5,6 +5,9 @@
 .EXAMPLES
   pwsh -File Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev
   pwsh -File Work.ps1 start "Standup meeting" -Category Meeting
+  pwsh -File Work.ps1 startday                        # mark the start of the work day (0-min marker)
+  pwsh -File Work.ps1 startday -At "2026-06-25 08:00" # set/move the start-of-day marker
+  pwsh -File Work.ps1 endday                          # mark the end of the work day (0-min marker)
   pwsh -File Work.ps1 add "Reviewed PR feedback" -Start "2026-06-16 14:00" -End "2026-06-16 14:45" -Category Review -Project bedrock
   pwsh -File Work.ps1 switch -Id 1
   pwsh -File Work.ps1 note "Found root cause in view definition"
@@ -29,7 +32,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)]
-    [ValidateSet('start', 'switch', 'stop', 'close', 'add', 'note', 'tasknote', 'notes', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'serve', 'log', 'profile')]
+    [ValidateSet('start', 'startday', 'endday', 'switch', 'stop', 'close', 'add', 'note', 'tasknote', 'notes', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'serve', 'log', 'profile')]
     [string]$Command,
 
     [Parameter(Position = 1)][string]$Text,
@@ -64,6 +67,8 @@ if ($Profile) { Set-WorkProfile -Profile $Profile | Out-Null }
 
 switch ($Command) {
     'start'   { $sp = @{ Title = $Text; AdoId = $Ado; Category = $Category; Project = $Project; Tags = $Tags }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; if ($AfterLast) { $sp.AfterLast = $true }; Start-Work @sp | Out-Null }
+    'startday' { $p = @{ Type = 'start' }; if ($PSBoundParameters.ContainsKey('At')) { $p.At = $At }; Add-DayMarker @p | Out-Null }
+    'endday'   { $p = @{ Type = 'end' };   if ($PSBoundParameters.ContainsKey('At')) { $p.At = $At }; Add-DayMarker @p | Out-Null }
     'switch'  { Switch-Work -Id $Id }
     'stop'    { $sp = @{ Id = $Id; Accomplishment = $Text; Blocker = $Blocker; Status = $Status }; if ($PSBoundParameters.ContainsKey('At')) { $sp.At = $At }; Stop-Work @sp | Out-Null }
     'close'   {

@@ -251,6 +251,42 @@ function New-WorkSession {
     return (ConvertTo-SessionView $s)
 }
 
+# ---- Public: Day markers (0-minute start/end-of-workday markers) -----------
+function Add-DayMarker {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][ValidateSet('start', 'end')][string]$Type,
+        [datetime]$At = (Get-Date)
+    )
+    $st    = Get-LogState
+    $kind  = "marker-$Type"
+    $day   = $At.ToString('yyyy-MM-dd')
+    $title = if ($Type -eq 'start') { 'Start work day' } else { 'End work day' }
+    # If a marker of this type already exists for the day, just move its time.
+    $existing = @($st['sessions'] | Where-Object { $_['kind'] -eq $kind -and (ParseTs $_['start']).ToString('yyyy-MM-dd') -eq $day })
+    if ($existing.Count) {
+        $m = $existing[0]
+        $m['start'] = $At.ToString($script:Fmt)
+        $m['end']   = $At.ToString($script:Fmt)
+        $m['durationMin'] = 0
+        Save-LogState $st
+        Write-Host ("~ Updated {0} #{1} to {2}" -f $title, [int]$m['id'], $At.ToString('HH:mm'))
+        return (ConvertTo-SessionView $m)
+    }
+    $id = [int]$st['nextId']
+    $s = @{
+        id = $id; kind = $kind; adoId = ''
+        category = 'Day'; project = ''; tags = @()
+        title = $title; start = $At.ToString($script:Fmt); end = $At.ToString($script:Fmt)
+        durationMin = 0; status = 'done'; accomplishment = ''; blocker = ''; notes = @()
+    }
+    $st['sessions'] = @($st['sessions']) + $s
+    $st['nextId']   = $id + 1
+    Save-LogState $st
+    Write-Host ("> {0} #{1} at {2}" -f $title, $id, $At.ToString('HH:mm'))
+    return (ConvertTo-SessionView $s)
+}
+
 # ---- Public: Switch (no close) --------------------------------------------
 function Switch-Work {
     [CmdletBinding()]
@@ -950,6 +986,7 @@ function New-WorkDashboard {
             category = if ($_.Category) { $_.Category } elseif ($_.AdoId) { 'ADO' } else { 'Other' }
             project = $_.Project
             adoId = $_.AdoId
+            kind  = $_.Kind
             url   = if ($_.AdoId -and $script:Org) { "$script:Org/_workitems/edit/$($_.AdoId)" } else { '' }
             title = $_.Title
             accomplishment = $_.Accomplishment
@@ -1148,7 +1185,7 @@ function renderSummary(){
     document.getElementById('sum').innerHTML="<div class='sum-row'><div class='stat'><div class='big'>"+NOTES.length+"</div><div class='lbl'>Notes</div></div></div><div class='scope'>Showing: <b>notes only</b></div>";
     return;
   }
-  var set=curSet(); var total=0; var cat={};
+  var set=curSet().filter(function(s){ return !isMarker(s); }); var total=0; var cat={};
   set.forEach(function(s){ total+=liveMin(s); var c=s.category||'Other'; cat[c]=(cat[c]||0)+liveMin(s); });
   var label = sel.length ? (sel.length===1 ? sel[0] : (sel.length+' dates: '+sel.slice().sort().join(', '))) : 'All time';
   if(SEARCH){ label += ' \u2022 \u201C'+SEARCH+'\u201D'; }
@@ -1170,13 +1207,21 @@ function renderTable(){
   set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
   var h='';
   order.forEach(function(dt){
-    var rows=groups[dt]; var dmin=0; rows.forEach(function(r){ dmin+=r.min; });
+    var rows=groups[dt]; var dmin=0; var rcount=0; rows.forEach(function(r){ dmin+=r.min; if(!isMarker(r)) rcount++; });
     var o=new Date(dt+'T00:00:00');
     var dl=WEEKDAYS[(o.getDay()+6)%7]+', '+MONTHS[o.getMonth()]+' '+o.getDate()+', '+o.getFullYear();
-    h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rows.length+" session(s)</span></div>";
+    h+="<div class='daygrp'><div class='dayhdr'><span>"+esc(dl)+"</span><span class='daytot'>"+fmtMin(dmin)+" &bull; "+rcount+" session(s)</span></div>";
     h+="<table class='log day'><colgroup><col style='width:9%'><col style='width:10%'><col style='width:6%'><col style='width:9%'><col style='width:11%'><col style='width:22%'><col style='width:28%'><col style='width:5%'></colgroup><thead><tr><th class='center'>#</th><th>Time</th><th>Dur</th><th>Category</th><th>Project</th><th>Item</th><th>Accomplishment</th><th class='center'>Notes</th></tr></thead><tbody>";
+    var num=0;
     rows.forEach(function(s,ri){
       if(ri>0){ var p=rows[ri-1]; if(p.end && s.start && hm2min(p.end)>=hm2min(p.start)){ var g=hm2min(s.start)-hm2min(p.end); if(g>=10 && (dt===todayISO() || SHOW_GAPS)){ h+="<tr class='gaprow'><td colspan='8' class='gapcell'><span class='gaplabel'>&#9203; "+fmtMin(g)+" untracked</span><button class='gapfill' onclick=\"openFill('"+dt+"','"+min2hm(hm2min(p.end))+"','"+esc(s.start)+"')\">+ fill</button></td></tr>"; } } }
+      if(isMarker(s)){
+        var mc=(s.kind==='marker-start')?'mstart':'mend';
+        var ic=(s.kind==='marker-start')?'&#9654;':'&#9632;';
+        h+="<tr class='markrow "+mc+"'><td colspan='8' class='markcell'><span class='marklabel'>"+ic+" "+esc(s.title)+"</span><span class='marktime'>"+esc(s.start)+"</span></td></tr>";
+        return;
+      }
+      num++;
       var stopped = (s.status==='done');
       var time=esc(s.start)+(s.end ? ' &ndash; '+esc(s.end) : " <span class='run'>&bull; open</span>");
       var item = s.url ? "<a href='"+esc(s.url)+"' target='_blank'>"+esc(s.title)+"</a>" : esc(s.title);
@@ -1194,7 +1239,7 @@ function renderTable(){
       var resume="<button class='nbtn rbtn' onclick='resumeSession("+s._uid+")' title='Resume as a new running task'>&#8635;</button>";
       var proj = s.project ? "<span class='proj'>"+esc(s.project)+"</span>" : "<span class='muted'>&mdash;</span>";
       var durCell = s.end ? ("<td class='nowrap'>"+fmtMin(s.min)+"</td>") : ("<td class='nowrap liveDur' data-uid='"+s._uid+"'>"+fmtMin(liveMin(s))+"</td>");
-      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center nowrap'><span class='idnum' title='id "+s.id+"'>"+(ri+1)+"</span>"+edit+resume+"</td><td class='nowrap'>"+time+"</td>"+durCell+"<td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
+      h+="<tr class='"+(stopped?'':'unstopped')+"'><td class='center nowrap'><span class='idnum' title='id "+s.id+"'>"+num+"</span>"+edit+resume+"</td><td class='nowrap'>"+time+"</td>"+durCell+"<td><span class='cat'>"+esc(s.category||'Other')+"</span></td><td>"+proj+"</td><td>"+item+"</td><td>"+acc+"</td><td class='center'>"+notes+"</td></tr>";
     });
     h+="</tbody></table></div>";
   });
@@ -1203,6 +1248,7 @@ function renderTable(){
 function renderView(){ renderSummary(); renderTimeline(); renderBreakdown(); renderTable(); renderNotes(); renderRunPill(); }
 // ---- Category colors (stable hash) ---------------------------------------
 function catColor(name){ name=String(name||'Other'); var h=0; for(var i=0;i<name.length;i++){ h=(h*31+name.charCodeAt(i))%360; } return 'hsl('+h+',60%,58%)'; }
+function isMarker(s){ return !!(s && (s.kind==='marker-start' || s.kind==='marker-end')); }
 // ---- Day timeline strip ---------------------------------------------------
 function renderTimeline(){
   var el=document.getElementById('timeline'); if(!el) return;
@@ -1210,8 +1256,14 @@ function renderTimeline(){
   var ds=sel[0];
   var rows=SESSIONS.filter(function(s){ return s.date===ds; });
   if(!rows.length){ el.innerHTML=''; return; }
-  var DAY=1440, segs='', tot=0;
+  var DAY=1440, segs='', flags='', tot=0;
   rows.forEach(function(s){
+    if(isMarker(s)){
+      var mx=hm2min(s.start)/DAY*100;
+      var mcls=(s.kind==='marker-start')?'start':'end';
+      flags+="<div class='tlmark "+mcls+"' style='left:"+mx+"%' title='"+esc(s.title+' \u2014 '+s.start)+"'></div>";
+      return;
+    }
     var a=hm2min(s.start); var lm=liveMin(s);
     var b=s.end?hm2min(s.end):Math.min(DAY, a+lm);
     if(b<=a){ b=a+1; }
@@ -1225,13 +1277,13 @@ function renderTimeline(){
   var nowMark='';
   if(ds===todayISO()){ var nm=new Date(); nowMark="<div class='tlnow' style='left:"+((nm.getHours()*60+nm.getMinutes())/DAY*100)+"%' title='now'></div>"; }
   el.innerHTML="<div class='tlcard'><div class='tlhead'><span>Day timeline &middot; "+esc(ds)+"</span><span>"+fmtMin(tot)+" tracked</span></div>"
-    +"<div class='tlbar'>"+segs+nowMark+"</div><div class='tlticks'>"+ticks+"</div></div>";
+    +"<div class='tlbar'>"+segs+flags+nowMark+"</div><div class='tlticks'>"+ticks+"</div></div>";
 }
 // ---- Category / project totals -------------------------------------------
 function renderBreakdown(){
   var el=document.getElementById('breakdown'); if(!el) return;
   if(noteOnly()){ el.innerHTML=''; return; }
-  var set=curSet();
+  var set=curSet().filter(function(s){ return !isMarker(s); });
   if(!set.length){ el.innerHTML=''; return; }
   var cat={}, prj={};
   set.forEach(function(s){ var m=liveMin(s); var c=s.category||'Other'; cat[c]=(cat[c]||0)+m; var p=s.project||'\u2014'; prj[p]=(prj[p]||0)+m; });
@@ -1675,6 +1727,16 @@ tr.gaprow td{background:repeating-linear-gradient(45deg,transparent,transparent 
 .gaplabel{color:var(--amber);font-weight:600;letter-spacing:.2px;}
 .gapfill{margin-left:12px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:700;padding:2px 9px;cursor:pointer;border-radius:0;}
 .gapfill:hover{background:var(--a10);}
+tr.markrow td{padding:5px 14px !important;}
+.markrow.mstart td{background:linear-gradient(90deg,var(--green-soft),transparent 72%);border-left:3px solid var(--green);}
+.markrow.mend td{background:linear-gradient(90deg,var(--red-soft),transparent 72%);border-left:3px solid var(--red);}
+.marklabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;}
+.markrow.mstart .marklabel{color:var(--green);}
+.markrow.mend .marklabel{color:var(--red);}
+.marktime{float:right;font-family:var(--mono);font-size:11.5px;color:var(--muted);}
+.tlmark{position:absolute;top:0;bottom:0;width:2px;background:var(--green);z-index:4;cursor:help;}
+.tlmark.end{background:var(--red);}
+.tlmark::after{content:'';position:absolute;top:0;left:-2px;width:6px;height:6px;background:inherit;}
 .rbtn{background:var(--a10);color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);margin-left:6px;}
 .rbtn:hover{background:var(--a22);border-color:var(--accent);}
 .tlcard,.bdcard{margin:0 0 14px;background:var(--card);border:1px solid var(--border);padding:12px 16px 10px;animation:wlFade .35s ease both;}
@@ -2029,7 +2091,7 @@ function filt(){
     Write-Report -BaseName 'notes-dashboard' -Html $html -Md $md.ToString() -NoOpen:$NoOpen
 }
 
-Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Complete-Work, New-WorkSession, New-GhIssueNote, Add-WorkNote, Edit-Work, Set-DayCommentary, `
+Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Complete-Work, New-WorkSession, Add-DayMarker, New-GhIssueNote, Add-WorkNote, Edit-Work, Set-DayCommentary, `
     Get-OpenSessions, Get-WorkLog, Find-WorkLog, Show-WorkSearch, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, Start-WorkServer, `
     Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile, `
     Add-Note, Edit-Note, Remove-Note, Get-Notes, New-NotesDashboard
