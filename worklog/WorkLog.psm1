@@ -97,6 +97,17 @@ function ConvertTo-TitleCaseCategory([string]$s) {
         if ($_ -ieq 'ai') { 'AI' } else { $_.ToLowerInvariant() }
     }) -join ' '
 }
+# Category-only aliases (do NOT apply to projects). e.g. 'dev' -> 'development'.
+function Resolve-CategoryAlias([string]$s) {
+    if ([string]::IsNullOrWhiteSpace($s)) { return $s }
+    switch ($s.Trim().ToLowerInvariant()) {
+        'dev' { return 'development' }
+        default { return $s }
+    }
+}
+function ConvertTo-CategoryName([string]$s) {
+    ConvertTo-TitleCaseCategory (Resolve-CategoryAlias $s)
+}
 function ConvertTo-FirstCapital([string]$s) {
     if ([string]::IsNullOrWhiteSpace($s)) { return $s }
     $i = 0
@@ -178,6 +189,7 @@ function Find-Session($state, [int]$Id) {
 # ---- Workday-boundary enforcement -----------------------------------------
 # Rules (per user policy):
 #   1. Nothing can be logged until that day's START-of-day marker exists.
+#      (Exempt: the 'personal' profile does not require a start-of-day marker.)
 #   2. A task cannot START before the start-of-day marker time.
 #   3. A task cannot END after the end-of-day marker time.
 # Day markers themselves (Add-DayMarker) are exempt — they set the boundaries.
@@ -194,6 +206,8 @@ function Get-DayMarker($state, [ValidateSet('start', 'end')][string]$Type, [date
 function Assert-WorkdayStart($state, [datetime]$At) {
     $sm = Get-DayMarker $state 'start' $At
     if (-not $sm) {
+        # The 'personal' profile is not required to set a start-of-day marker.
+        if ($script:Profile -eq 'personal') { return }
         throw "No start-of-day marker for $($At.ToString('yyyy-MM-dd')). Set it first: Work.ps1 startday"
     }
     $smT = ParseTs $sm['start']
@@ -245,7 +259,7 @@ function Start-Work {
     Assert-WorkdayStart $st $At
     $id = [int]$st['nextId']
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
-    $Category = ConvertTo-TitleCaseCategory $Category
+    $Category = ConvertTo-CategoryName $Category
     $Title = ConvertTo-FirstCapital $Title
     $s = @{
         id = $id; kind = $kind; adoId = $AdoId; category = $Category; project = (ConvertTo-TitleCaseCategory $Project); tags = @($Tags)
@@ -285,7 +299,7 @@ function New-WorkSession {
     if ($hasEnd) { Assert-WorkdayEnd $st $End $Start }
     $s = @{
         id = $id; kind = $kind; adoId = $AdoId
-        category = ConvertTo-TitleCaseCategory $Category; project = (ConvertTo-TitleCaseCategory $Project); tags = @($Tags)
+        category = ConvertTo-CategoryName $Category; project = (ConvertTo-TitleCaseCategory $Project); tags = @($Tags)
         title = ConvertTo-FirstCapital $Title; start = $Start.ToString($script:Fmt)
         end = $(if ($hasEnd) { $End.ToString($script:Fmt) } else { $null })
         durationMin = $dur
@@ -506,7 +520,7 @@ function Add-Note {
         id       = $id
         date     = $Date.ToString('yyyy-MM-dd')
         text     = (ConvertTo-FirstCapital $Text.Trim())
-        category = (ConvertTo-TitleCaseCategory $Category)
+        category = (ConvertTo-CategoryName $Category)
         tags     = @($Tags)
         created  = NowStr
     }
@@ -534,7 +548,7 @@ function Edit-Note {
     $changed = @()
     if ($PSBoundParameters.ContainsKey('Text'))     { $n['text'] = ConvertTo-FirstCapital $Text.Trim(); $changed += 'text' }
     if ($PSBoundParameters.ContainsKey('Date'))     { $n['date'] = $Date.ToString('yyyy-MM-dd'); $changed += 'date' }
-    if ($PSBoundParameters.ContainsKey('Category')) { $n['category'] = ConvertTo-TitleCaseCategory $Category; $changed += 'category' }
+    if ($PSBoundParameters.ContainsKey('Category')) { $n['category'] = ConvertTo-CategoryName $Category; $changed += 'category' }
     if ($PSBoundParameters.ContainsKey('Tags'))     { $n['tags'] = @($Tags); $changed += 'tags' }
     if (-not $changed.Count) { Write-Host "Nothing to change for note #$Id."; return }
     Save-NoteState $st
@@ -596,7 +610,7 @@ function Edit-Work {
     if (-not $s) { throw "No session #$Id." }
     $changed = @()
     if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = ConvertTo-FirstCapital $Title; $changed += 'title' }
-    if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = ConvertTo-TitleCaseCategory $Category; $changed += 'category' }
+    if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = ConvertTo-CategoryName $Category; $changed += 'category' }
     if ($PSBoundParameters.ContainsKey('Project'))       { $s['project'] = (ConvertTo-TitleCaseCategory $Project); $changed += 'project' }
     if ($PSBoundParameters.ContainsKey('AdoId'))         { $s['adoId'] = $AdoId; $s['kind'] = if ($AdoId) { 'ado' } else { 'adhoc' }; $changed += 'adoId' }
     if ($PSBoundParameters.ContainsKey('Tags'))          { $s['tags'] = @($Tags); $changed += 'tags' }
@@ -1773,9 +1787,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--card2);border:1px so
 .runstop{background:var(--red-soft);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 40%,transparent);padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;border-radius:0;flex:none;}
 .runstop:hover{background:color-mix(in srgb,var(--red) 26%,transparent);}
 tr.gaprow td{background:repeating-linear-gradient(45deg,transparent,transparent 7px,var(--a06) 7px,var(--a06) 14px);}
-.gapcell{font-size:11.5px;color:var(--muted);padding:5px 14px !important;}
+.gapcell{font-size:11.5px;color:var(--muted);padding:1px 14px !important;line-height:1.3;}
 .gaplabel{color:var(--amber);font-weight:600;letter-spacing:.2px;}
-.gapfill{margin-left:12px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:700;padding:2px 9px;cursor:pointer;border-radius:0;}
+.gapfill{margin-left:12px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:700;padding:0 9px;line-height:1.5;cursor:pointer;border-radius:0;}
 .gapfill:hover{background:var(--a10);}
 tr.markrow td{padding:5px 14px !important;}
 .markrow.mstart td{background:linear-gradient(90deg,var(--green-soft),transparent 72%);border-left:3px solid var(--green);}

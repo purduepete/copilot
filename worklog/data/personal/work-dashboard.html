@@ -178,9 +178,9 @@ kbd{font-family:var(--mono);font-size:11px;background:var(--card2);border:1px so
 .runstop{background:var(--red-soft);color:var(--red);border:1px solid color-mix(in srgb,var(--red) 40%,transparent);padding:5px 13px;font-size:12px;font-weight:700;cursor:pointer;border-radius:0;flex:none;}
 .runstop:hover{background:color-mix(in srgb,var(--red) 26%,transparent);}
 tr.gaprow td{background:repeating-linear-gradient(45deg,transparent,transparent 7px,var(--a06) 7px,var(--a06) 14px);}
-.gapcell{font-size:11.5px;color:var(--muted);padding:5px 14px !important;}
+.gapcell{font-size:11.5px;color:var(--muted);padding:1px 14px !important;line-height:1.3;}
 .gaplabel{color:var(--amber);font-weight:600;letter-spacing:.2px;}
-.gapfill{margin-left:12px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:700;padding:2px 9px;cursor:pointer;border-radius:0;}
+.gapfill{margin-left:12px;background:transparent;border:1px solid var(--accent);color:var(--accent);font-size:11px;font-weight:700;padding:0 9px;line-height:1.5;cursor:pointer;border-radius:0;}
 .gapfill:hover{background:var(--a10);}
 tr.markrow td{padding:5px 14px !important;}
 .markrow.mstart td{background:linear-gradient(90deg,var(--green-soft),transparent 72%);border-left:3px solid var(--green);}
@@ -217,7 +217,7 @@ tr.markrow td{padding:5px 14px !important;}
 @media(max-width:680px){.bdgrid{grid-template-columns:1fr;gap:2px 0;}}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-25 09:17 &bull; 35 session(s) &bull; 34h 3m total &bull; click a highlighted day to filter</div></div>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-25 10:53 &bull; 36 session(s) &bull; 34h 49m total &bull; click a highlighted day to filter</div></div>
 <div class='themewrap'><span class='tlbl'>Theme</span><select id='themeSel' class='themesel' onchange='wlSetTheme(this.value)'>
 <option value=''>Midnight Blue</option><option value='tokyo'>Tokyo Night</option><option value='nord'>Nord</option><option value='dracula'>Dracula</option><option value='rose'>Ros&eacute; Pine</option><option value='paper'>Paper (Light)</option>
 </select></div></header>
@@ -961,6 +961,23 @@ var SESSIONS = [
     "blocker": "",
     "status": "done",
     "notes": []
+  },
+  {
+    "id": 44,
+    "date": "2026-06-25",
+    "start": "09:51",
+    "end": "10:37",
+    "min": 46,
+    "category": "development",
+    "project": "webbookmarks",
+    "adoId": "",
+    "kind": "adhoc",
+    "url": "",
+    "title": "Webbookmarks v4.9.20 release",
+    "accomplishment": "App.tsx changes; bumped version to 4.9.20; committed, pushed, and updated gist.",
+    "blocker": "",
+    "status": "done",
+    "notes": []
   }
 ];
 var COMMENTARY = {
@@ -1154,7 +1171,7 @@ function renderSummary(){
 }
 function renderTable(){
   if(noteOnly()){ document.getElementById('log').innerHTML=''; return; }
-  var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
+  var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } if(a.start!==b.start){ return a.start<b.start?-1:1; } return markerRank(a)-markerRank(b); });
   if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions"+(SEARCH?" matching \u201C"+esc(SEARCH)+"\u201D":"")+" for this selection.</div>"; return; }
   var groups={}; var order=[];
   set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
@@ -1202,6 +1219,7 @@ function renderView(){ renderSummary(); renderTimeline(); renderBreakdown(); ren
 // ---- Category colors (stable hash) ---------------------------------------
 function catColor(name){ name=String(name||'Other'); var h=0; for(var i=0;i<name.length;i++){ h=(h*31+name.charCodeAt(i))%360; } return 'hsl('+h+',60%,58%)'; }
 function isMarker(s){ return !!(s && (s.kind==='marker-start' || s.kind==='marker-end')); }
+function markerRank(s){ if(s&&s.kind==='marker-start') return -1; if(s&&s.kind==='marker-end') return 1; return 0; }
 // ---- Day timeline strip ---------------------------------------------------
 function renderTimeline(){
   var el=document.getElementById('timeline'); if(!el) return;

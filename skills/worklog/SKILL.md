@@ -76,9 +76,10 @@ to any command to target the personal log.
    (`log -Days 1`, filter to the target date, sort by start) and mapping position N
    to its id, then act on that id. E.g. today's 5th entry → its actual id for `edit`.
 8. **Workday boundaries are enforced (the module throws on violation):**
-   - **Nothing can be logged until that day's `startday` marker exists.** If `start`/`add`
-     errors with *"No start-of-day marker…"*, run `startday` (at the appropriate time)
-     first, then retry.
+   - **Nothing can be logged until that day's `startday` marker exists** (work profiles
+     only — the **`personal` profile is exempt** and needs no start-of-day marker). If
+     `start`/`add` errors with *"No start-of-day marker…"*, run `startday` (at the
+     appropriate time) first, then retry.
    - **A task can't start before the start-of-day marker** time, and **can't end after
      the end-of-day marker** time (applies to `start`, `add`, and `stop`). Set/adjust the
      markers (`startday`/`endday -At <when>`) to widen the day if a task legitimately falls
