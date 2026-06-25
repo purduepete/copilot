@@ -106,7 +106,7 @@ table.log.day td.nowrap{white-space:normal;}
 .newbtn:hover,.searchbar button.newbtn:hover{background:#4d8dff1a;border-color:var(--accent);color:var(--accent);}
 </style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-24 17:24 &bull; 44 session(s) &bull; 40h 8m total &bull; click a highlighted day to filter</div></div></header>
+<header class='rpt-hero'><div><h1>Work Log</h1><div class='meta'>Generated 2026-06-24 17:27 &bull; 44 session(s) &bull; 40h 8m total &bull; click a highlighted day to filter</div></div></header>
 <div class='top'>
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
@@ -191,8 +191,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 14:41:01",
-        "text": "Now is the time for all good men"
+        "text": "Now is the time for all good men",
+        "ts": "2026-06-16 14:41:01"
       }
     ]
   },
@@ -276,12 +276,12 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 16:49:07",
-        "text": "Priority is to work on ADO item 445704"
+        "text": "Priority is to work on ADO item 445704",
+        "ts": "2026-06-16 16:49:07"
       },
       {
-        "ts": "2026-06-16 16:59:53",
-        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling"
+        "text": "Bedrock Data Platform Architecture and Layered Approach: Jesus, Jim, and Sri discussed the Bedrock data platform architecture, focusing on the medallion layering (Bronze, Silver, Gold, Platinum), the role of semantic models, custom mappings, and the hub-and-spoke topology, with Jesus providing technical details and open questions about capacity, grain, and future tooling",
+        "ts": "2026-06-16 16:59:53"
       }
     ]
   },
@@ -317,8 +317,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-16 17:38:25",
-        "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)"
+        "text": "[Data Architecture v1](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock?path=/docs/architecture/data-platform/reports/data-architecture-v1.html&version=GBjanayavaldes/AB-450709/docs/data-platform-architecture)",
+        "ts": "2026-06-16 17:38:25"
       }
     ]
   },
@@ -354,8 +354,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 12:33:00",
-        "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first)."
+        "text": "Learned about Fabric CLI — a command-line tool for managing Microsoft Fabric: create/manage workspaces, items (lakehouses, notebooks, pipelines), and automate tasks from the terminal/CI. Install with `pip install ms-fabric-cli` (on Win ARM64 pin `cryptography==46.0.3` first).",
+        "ts": "2026-06-17 12:33:00"
       }
     ]
   },
@@ -375,8 +375,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 12:55:00",
-        "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) — UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti · `users/srvoru/UIDev` → `main` · ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell → microfrontend modules → GraphQL BFF → Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet."
+        "text": "**[PR #206931](https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/206931) — UI Shell, Tenant App Scaffolding, ModernWork App**\nAuthor: Sri Voruganti · `users/srvoru/UIDev` → `main` · ~163 files, 8 commits\n\n**What it delivers**\n- **UI Shell** (`platform/src/app-platform`, ~50 files): React + TypeScript + Fluent UI single-page shell hosting feature modules; MSAL + Entra ID auth, top/left nav, LobAppHost + registry, theme & preference providers, shared UI components & libraries, env-driven runtime config, Vite + dev mocks.\n- **Tenant app scaffolding** (`shared/dev-tools/scaffold-tenant-app`): generator (`npm run scaffold:tenant`) that stamps a new tenant LOB app from ModernWork, wires it into the workspace and shell `main.tsx`, runs `npm install`; shipped as a dev-tool and a Copilot skill.\n- **ModernWork tenant app** (`tenants/modern-work`, ~28 files): reference LOB dashboard app with mock data and app-platform/data-platform structure (renamed from `tenant-a`).\n- **Shared packages**: `shared/auth` (AuthProvider, RequireAuth, hooks, MSAL runtime, types) and `shared/contracts` (GraphQL schema + shared types / BFF contract).\n- **Architecture & docs**: 4-layer architecture (shell → microfrontend modules → GraphQL BFF → Fabric/Power BI/SQL), 6 ADRs, monorepo workspace wiring.\n\n**Out of scope (next tasks):** no API implementation, no infra/deployment scripts, no internal home dashboard yet.",
+        "ts": "2026-06-17 12:55:00"
       }
     ]
   },
@@ -412,8 +412,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 15:34:36",
-        "text": "Investigate ontology and better understand what that is"
+        "text": "Investigate ontology and better understand what that is",
+        "ts": "2026-06-17 15:34:36"
       }
     ]
   },
@@ -433,8 +433,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-17 16:26:00",
-        "text": "The following ManagementReportingIDs are mapping to the incorrect business -> 261148, 247340, and 261047"
+        "text": "The following ManagementReportingIDs are mapping to the incorrect business -> 261148, 247340, and 261047",
+        "ts": "2026-06-17 16:26:00"
       }
     ]
   },
@@ -454,8 +454,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-18 11:11:56",
-        "text": "Updated Synapse notebook **Fusion_FDL_Budget_Fact_Load** to resolve null values in Mercury budget data.\n\nCommit: [1e7d2e0f — Updating notebook: Fusion_FDL_Budget_Fact_Load](https://starlightagilebi.visualstudio.com/FDnE%20-%20Kanban/_git/FDnE_EPM_Planning_MCAPS/commit/1e7d2e0fa2a721a1bdae58f3618adcb0ec602390) (repo FDnE_EPM_Planning_MCAPS)\n\nChanges:\n- Added `df_get_nulls` null-validation checks across Sell-In, Sell-Thru, GLAttribute/Alt, and ManagementReporting/Alt datasets\n- Mercury curation now backfills default codes via `.fillna()` (ProfitCenter `P10195499`, ExternalSegment `0000`, ESAB5 `AAAA`, CostElement `510005`)\n- New cell validates curated Mercury data for nulls and raises if any remain"
+        "text": "Updated Synapse notebook **Fusion_FDL_Budget_Fact_Load** to resolve null values in Mercury budget data.\n\nCommit: [1e7d2e0f — Updating notebook: Fusion_FDL_Budget_Fact_Load](https://starlightagilebi.visualstudio.com/FDnE%20-%20Kanban/_git/FDnE_EPM_Planning_MCAPS/commit/1e7d2e0fa2a721a1bdae58f3618adcb0ec602390) (repo FDnE_EPM_Planning_MCAPS)\n\nChanges:\n- Added `df_get_nulls` null-validation checks across Sell-In, Sell-Thru, GLAttribute/Alt, and ManagementReporting/Alt datasets\n- Mercury curation now backfills default codes via `.fillna()` (ProfitCenter `P10195499`, ExternalSegment `0000`, ESAB5 `AAAA`, CostElement `510005`)\n- New cell validates curated Mercury data for nulls and raises if any remain",
+        "ts": "2026-06-18 11:11:56"
       }
     ]
   },
@@ -635,8 +635,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-22 20:04:12",
-        "text": "Decided to leverage the table, ForecastBusinessMapping, to resolve business mapping issues"
+        "text": "Decided to leverage the table, ForecastBusinessMapping, to resolve business mapping issues",
+        "ts": "2026-06-22 20:04:12"
       }
     ]
   },
@@ -752,8 +752,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-23 16:13:18",
-        "text": "Npm install -g @github/copilot"
+        "text": "Npm install -g @github/copilot",
+        "ts": "2026-06-23 16:13:18"
       }
     ]
   },
@@ -773,8 +773,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-24 17:14:45",
-        "text": "Travel through Bainbridge Island"
+        "text": "Travel through Bainbridge Island",
+        "ts": "2026-06-24 17:14:45"
       }
     ]
   },
@@ -810,8 +810,8 @@ var SESSIONS = [
     "status": "done",
     "notes": [
       {
-        "ts": "2026-06-24 11:05:23",
-        "text": "Fabric CLI (fab) v1.6.1 installed. Command: fab. Usage: fab --version (show version); fab auth login (interactive login); fab auth status; fab ls (list workspaces/items); fab --help (full command list). Shim at C:\\Files\\ScoopApps\\shims\\fab.exe."
+        "text": "Fabric CLI (fab) v1.6.1 installed. Command: fab. Usage: fab --version (show version); fab auth login (interactive login); fab auth status; fab ls (list workspaces/items); fab --help (full command list). Shim at C:\\Files\\ScoopApps\\shims\\fab.exe.",
+        "ts": "2026-06-24 11:05:23"
       }
     ]
   },
@@ -945,7 +945,8 @@ var SESSIONS = [
   }
 ];
 var COMMENTARY = {
-  "2026-06-16": "A build-and-align day: stood up a personal work-tracking framework and dashboard, moved Copilot assets into a private repo, and synced with the team on the Bedrock data-platform architecture."
+  "2026-06-16": "A build-and-align day: stood up a personal work-tracking framework and dashboard, moved Copilot assets into a private repo, and synced with the team on the Bedrock data-platform architecture.",
+  "2026-06-24": "Shipped a date-bound Notes feature for WorkLog and polished the dashboard (search tokens, lowercase categories, laptop padding). Aligned on the August deliverable and business-user dashboard direction; explored Scout + Copilot for generating insights."
 };
 var NOTES = [
   []
