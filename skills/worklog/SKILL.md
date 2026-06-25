@@ -80,7 +80,9 @@ to any command to target the personal log.
 
 Natural-language phrases that map to specific actions:
 
-- **"start of work day"** → `startday` (0-min marker). **"end of work day"** → `endday`
+- **"start of work day"** → `startday` (0-min marker). **"end of work day"** → first
+  `stop` any open running item, then **update the day's summary** (`summary "<text>"`,
+  e.g. via the worklog-highlights routine), then `endday`
   (pass `-At "<yyyy-MM-dd HH:mm>"` to set a specific time). These bound the work day for
   untracked-gap detection and render as divider rows on the dashboard.
 - **"learning about &lt;x>"** → `start "Learning about <x>" -Category education -Project personal`.
