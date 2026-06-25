@@ -29,7 +29,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory, Position = 0)]
-    [ValidateSet('start', 'switch', 'stop', 'close', 'add', 'note', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'serve', 'log', 'profile')]
+    [ValidateSet('start', 'switch', 'stop', 'close', 'add', 'note', 'tasknote', 'notes', 'edit', 'summary', 'commentary', 'status', 'search', 'standup', 'week', 'dashboard', 'serve', 'log', 'profile')]
     [string]$Command,
 
     [Parameter(Position = 1)][string]$Text,
@@ -48,12 +48,14 @@ param(
     [datetime]$Start,
     [datetime]$End,
     [datetime]$At,
+    [datetime]$Date,
     [int]$Issue = 0,
     [string]$RepoPath = '',
     [string]$Commit = '',
     [switch]$CloseIssue,
     [switch]$AfterLast,
     [switch]$Reopen,
+    [switch]$Remove,
     [switch]$NoOpen
 )
 
@@ -86,7 +88,30 @@ switch ($Command) {
         if ($PSBoundParameters.ContainsKey('Accomplishment')) { $p.Accomplishment = $Accomplishment }
         New-WorkSession @p | Out-Null
     }
-    'note'    { Add-WorkNote -Text $Text -Id $Id }
+    'tasknote' { Add-WorkNote -Text $Text -Id $Id }
+    'note'    {
+        if ($Id -and $Remove) { Remove-Note -Id $Id }
+        elseif ($Id) {
+            $p = @{ Id = $Id }
+            if     ($PSBoundParameters.ContainsKey('Text'))     { $p.Text = $Text }
+            elseif ($PSBoundParameters.ContainsKey('Title'))    { $p.Text = $Title }
+            if ($PSBoundParameters.ContainsKey('Date'))         { $p.Date = $Date }
+            if ($PSBoundParameters.ContainsKey('Category'))     { $p.Category = $Category }
+            if ($PSBoundParameters.ContainsKey('Tags'))         { $p.Tags = $Tags }
+            Edit-Note @p
+        }
+        else {
+            $p = @{ Text = $Text }
+            if ($PSBoundParameters.ContainsKey('Date'))     { $p.Date = $Date }
+            if ($PSBoundParameters.ContainsKey('Category')) { $p.Category = $Category }
+            if ($PSBoundParameters.ContainsKey('Tags'))     { $p.Tags = $Tags }
+            Add-Note @p
+        }
+    }
+    'notes'   {
+        New-NotesDashboard -NoOpen:$NoOpen | Out-Null
+        Get-Notes -Since (Get-Date).AddDays(-$Days) | Format-Table Id, Date, Category, Text -AutoSize
+    }
     'summary'    { Set-DayCommentary -Text $Text }
     'commentary' { Set-DayCommentary -Text $Text }
     'edit'    {

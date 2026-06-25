@@ -94,7 +94,7 @@ function HtmlEnc([string]$s) { [System.Web.HttpUtility]::HtmlEncode($s) }
 function ConvertTo-TitleCaseCategory([string]$s) {
     if ([string]::IsNullOrWhiteSpace($s)) { return $s }
     ($s.Trim() -split '\s+' | ForEach-Object {
-        if ($_.Length -gt 0) { $_.Substring(0, 1).ToUpperInvariant() + $_.Substring(1) } else { $_ }
+        if ($_ -ieq 'ai') { 'AI' } else { $_.ToLowerInvariant() }
     }) -join ' '
 }
 function ConvertTo-FirstCapital([string]$s) {
@@ -140,10 +140,13 @@ function Get-LogState {
             $h['sessions'] = @($h['sessions'])
             if (-not $h.ContainsKey('nextId'))  { $h['nextId']  = ($h['sessions'].Count + 1) }
             if (-not $h.ContainsKey('current')) { $h['current'] = $null }
+            if (-not $h.ContainsKey('notes') -or $null -eq $h['notes']) { $h['notes'] = @() }
+            $h['notes'] = @($h['notes'])
+            if (-not $h.ContainsKey('nextNoteId')) { $h['nextNoteId'] = ($h['notes'].Count + 1) }
             return $h
         }
     }
-    return @{ current = $null; nextId = 1; sessions = @() }
+    return @{ current = $null; nextId = 1; sessions = @(); notes = @(); nextNoteId = 1 }
 }
 
 function Save-LogState($state) {
@@ -199,7 +202,7 @@ function Start-Work {
     $Category = ConvertTo-TitleCaseCategory $Category
     $Title = ConvertTo-FirstCapital $Title
     $s = @{
-        id = $id; kind = $kind; adoId = $AdoId; category = $Category; project = $Project; tags = @($Tags)
+        id = $id; kind = $kind; adoId = $AdoId; category = $Category; project = (ConvertTo-TitleCaseCategory $Project); tags = @($Tags)
         title = $Title; start = $At.ToString($script:Fmt); end = $null; durationMin = 0
         status = 'in-progress'; accomplishment = ''; blocker = ''; notes = @()
     }
@@ -234,7 +237,7 @@ function New-WorkSession {
     $dur = if ($hasEnd) { [math]::Round((($End) - $Start).TotalMinutes) } else { 0 }
     $s = @{
         id = $id; kind = $kind; adoId = $AdoId
-        category = ConvertTo-TitleCaseCategory $Category; project = $Project; tags = @($Tags)
+        category = ConvertTo-TitleCaseCategory $Category; project = (ConvertTo-TitleCaseCategory $Project); tags = @($Tags)
         title = ConvertTo-FirstCapital $Title; start = $Start.ToString($script:Fmt)
         end = $(if ($hasEnd) { $End.ToString($script:Fmt) } else { $null })
         durationMin = $dur
@@ -389,6 +392,103 @@ function Add-WorkNote {
     Write-Host ("* Note added to #{0} ({1} total)" -f $Id, $notes.Count)
 }
 
+# ---- Standalone date-bound notes (NOT time-bound) --------------------------
+# These are independent of work sessions: a note belongs to a calendar date and
+# carries text + optional category + tags. Stored in the same per-profile state
+# file under 'notes', so they honor the work/personal profile split.
+
+function Save-NoteState($state) {
+    # Persist without rebuilding the (session) work dashboard, then rebuild the
+    # notes dashboard so it always reflects the latest notes.
+    $prev = $script:SuppressDashboard
+    $script:SuppressDashboard = $true
+    try { Save-LogState $state } finally { $script:SuppressDashboard = $prev }
+    try { New-NotesDashboard -NoOpen | Out-Null }
+    catch { Write-Warning "Notes dashboard rebuild failed: $($_.Exception.Message)" }
+}
+
+function Add-Note {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Text,
+        [datetime]$Date = (Get-Date),
+        [string]$Category = '',
+        [string[]]$Tags = @()
+    )
+    $st = Get-LogState
+    $id = [int]$st['nextNoteId']
+    $note = @{
+        id       = $id
+        date     = $Date.ToString('yyyy-MM-dd')
+        text     = (ConvertTo-FirstCapital $Text.Trim())
+        category = (ConvertTo-TitleCaseCategory $Category)
+        tags     = @($Tags)
+        created  = NowStr
+    }
+    $arr = [System.Collections.ArrayList]@($st['notes'])
+    [void]$arr.Add($note)
+    $st['notes'] = $arr.ToArray()
+    $st['nextNoteId'] = $id + 1
+    Save-NoteState $st
+    $catLbl = if ($note.category) { " [$($note.category)]" } else { '' }
+    Write-Host ("+ Added note #{0} ({1}){2}" -f $id, $note.date, $catLbl)
+}
+
+function Edit-Note {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][int]$Id,
+        [string]$Text,
+        [datetime]$Date,
+        [string]$Category,
+        [string[]]$Tags
+    )
+    $st = Get-LogState
+    $n = $st['notes'] | Where-Object { [int]$_['id'] -eq $Id } | Select-Object -First 1
+    if (-not $n) { throw "No note #$Id." }
+    $changed = @()
+    if ($PSBoundParameters.ContainsKey('Text'))     { $n['text'] = ConvertTo-FirstCapital $Text.Trim(); $changed += 'text' }
+    if ($PSBoundParameters.ContainsKey('Date'))     { $n['date'] = $Date.ToString('yyyy-MM-dd'); $changed += 'date' }
+    if ($PSBoundParameters.ContainsKey('Category')) { $n['category'] = ConvertTo-TitleCaseCategory $Category; $changed += 'category' }
+    if ($PSBoundParameters.ContainsKey('Tags'))     { $n['tags'] = @($Tags); $changed += 'tags' }
+    if (-not $changed.Count) { Write-Host "Nothing to change for note #$Id."; return }
+    Save-NoteState $st
+    Write-Host ("~ Edited note #{0} (updated: {1})" -f $Id, ($changed -join ', '))
+}
+
+function Remove-Note {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][int]$Id)
+    $st = Get-LogState
+    $before = @($st['notes']).Count
+    $st['notes'] = @($st['notes'] | Where-Object { [int]$_['id'] -ne $Id })
+    if (@($st['notes']).Count -eq $before) { throw "No note #$Id." }
+    Save-NoteState $st
+    Write-Host ("- Removed note #{0}" -f $Id)
+}
+
+function Get-Notes {
+    [CmdletBinding()]
+    param([datetime]$Since)
+    $st = Get-LogState
+    $items = @($st['notes'] | ForEach-Object {
+        [pscustomobject]@{
+            Id       = [int]$_['id']
+            Date     = [string]$_['date']
+            Category = [string]$_['category']
+            Tags     = @($_['tags'])
+            Text     = [string]$_['text']
+            Created  = [string]$_['created']
+        }
+    })
+    if ($PSBoundParameters.ContainsKey('Since')) {
+        $items = @($items | Where-Object {
+            ([datetime]::ParseExact($_.Date, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)) -ge $Since.Date
+        })
+    }
+    @($items | Sort-Object @{ Expression = 'Date'; Descending = $true }, @{ Expression = 'Id'; Descending = $true })
+}
+
 # ---- Public: Edit ----------------------------------------------------------
 function Edit-Work {
     [CmdletBinding()]
@@ -412,7 +512,7 @@ function Edit-Work {
     $changed = @()
     if ($PSBoundParameters.ContainsKey('Title'))         { $s['title'] = ConvertTo-FirstCapital $Title; $changed += 'title' }
     if ($PSBoundParameters.ContainsKey('Category'))      { $s['category'] = ConvertTo-TitleCaseCategory $Category; $changed += 'category' }
-    if ($PSBoundParameters.ContainsKey('Project'))       { $s['project'] = $Project; $changed += 'project' }
+    if ($PSBoundParameters.ContainsKey('Project'))       { $s['project'] = (ConvertTo-TitleCaseCategory $Project); $changed += 'project' }
     if ($PSBoundParameters.ContainsKey('AdoId'))         { $s['adoId'] = $AdoId; $s['kind'] = if ($AdoId) { 'ado' } else { 'adhoc' }; $changed += 'adoId' }
     if ($PSBoundParameters.ContainsKey('Tags'))          { $s['tags'] = @($Tags); $changed += 'tags' }
     if ($PSBoundParameters.ContainsKey('Accomplishment')){ $s['accomplishment'] = ConvertTo-FirstCapital $Accomplishment; $changed += 'accomplishment' }
@@ -837,6 +937,18 @@ function New-WorkDashboard {
     $commentaryJson = ([pscustomobject]$commentaryMap | ConvertTo-Json -Depth 3)
     if (-not $commentaryJson -or $commentaryJson -notmatch '[:{]') { $commentaryJson = '{}' }
     $commentaryJson = $commentaryJson.Replace('</', '<\/')
+    $notesData = @(Get-Notes | ForEach-Object {
+        [pscustomobject]@{
+            id       = $_.Id
+            date     = $_.Date
+            category = $_.Category
+            tags     = @($_.Tags)
+            text     = $_.Text
+            created  = $_.Created
+        }
+    })
+    $notesJson = ConvertTo-Json -InputObject $notesData -Depth 5 -AsArray
+    $notesJson = $notesJson.Replace('</', '<\/')
     $count = $data.Count
     $totalMin = (@($data) | Measure-Object min -Sum).Sum; if (-not $totalMin) { $totalMin = 0 }
     $meta = "Generated $((Get-Date).ToString('yyyy-MM-dd HH:mm')) &bull; $count session(s) &bull; $(FmtMin ([int]$totalMin)) total &bull; click a highlighted day to filter"
@@ -928,10 +1040,12 @@ function selDay(ds,ev){
 }
 function clearSel(){ sel=[]; renderCal(); renderView(); }
 var SEARCH='';
+function noteOnly(){ return SEARCH==='is_note' || SEARCH==='is_notes'; }
 function matchQ(s,q){
   if(!q) return true;
+  if(noteOnly()) return false;
   var hay=[s.title,s.accomplishment,s.blocker,s.project,s.category,s.adoId].join('\n');
-  hay+='\n'+(s.end ? (s.status||'done') : ('open in-progress '+(s.status||'')));
+  hay+='\n'+(s.end ? ('is_done '+(s.status||'done')) : ('is_open in-progress '+(s.status||'')));
   if(s.notes){ s.notes.forEach(function(n){ hay+='\n'+(n.text||''); }); }
   return hay.toLowerCase().indexOf(q)!==-1;
 }
@@ -954,6 +1068,10 @@ function dayCommentary(set){
   return autoSummary(set);
 }
 function renderSummary(){
+  if(noteOnly()){
+    document.getElementById('sum').innerHTML="<div class='sum-row'><div class='stat'><div class='big'>"+NOTES.length+"</div><div class='lbl'>Notes</div></div></div><div class='scope'>Showing: <b>notes only</b></div>";
+    return;
+  }
   var set=curSet(); var total=0; var cat={};
   set.forEach(function(s){ total+=s.min; var c=s.category||'Other'; cat[c]=(cat[c]||0)+s.min; });
   var chips='';
@@ -970,6 +1088,7 @@ function renderSummary(){
     (comm ? "<div class='commentary' title='"+esc(comm)+"'><b>Highlights:</b> "+esc(comm)+"</div>" : "");
 }
 function renderTable(){
+  if(noteOnly()){ document.getElementById('log').innerHTML=''; return; }
   var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
   if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions"+(SEARCH?" matching \u201C"+esc(SEARCH)+"\u201D":"")+" for this selection.</div>"; return; }
   var groups={}; var order=[];
@@ -1003,7 +1122,7 @@ function renderTable(){
   });
   document.getElementById('log').innerHTML=h;
 }
-function renderView(){ renderSummary(); renderTable(); }
+function renderView(){ renderSummary(); renderTable(); renderNotes(); }
 function byId(uid){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i]._uid===uid) return SESSIONS[i]; } return null; }
 function openNotes(id){
   var s=byId(id); if(!s || !s.notes || !s.notes.length) return;
@@ -1015,7 +1134,7 @@ function openNotes(id){
   document.getElementById('modal').classList.add('show');
 }
 function closeNotes(){ document.getElementById('modal').classList.remove('show'); }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeNotes(); closeEdit(); } });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeNotes(); closeEdit(); closeNote(); } });
 // ---- Inline editing -------------------------------------------------------
 var LIVE = (location.protocol==='http:' || location.protocol==='https:');
 var EDIT_UID=null;
@@ -1128,6 +1247,122 @@ function saveEdit(){
     } else { showEditCmd(cmd); }
   }
 }
+// ---- Notes (date-bound) ---------------------------------------------------
+var NOTE_ID=null;
+var NOTE_DATE=null;
+function noteById(id){ for(var i=0;i<NOTES.length;i++){ if(NOTES[i].id===id) return NOTES[i]; } return null; }
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function uniqNoteCats(){
+  var seen={}, out=[];
+  function add(v){ v=String(v==null?'':v).trim(); if(v && !seen[v.toLowerCase()]){ seen[v.toLowerCase()]=1; out.push(v); } }
+  NOTES.forEach(function(n){ add(n.category); });
+  SESSIONS.forEach(function(s){ add(s.category); });
+  out.sort(function(a,b){ return a.toLowerCase()<b.toLowerCase()?-1:1; });
+  return out;
+}
+function noteMatch(n,q){ return [n.text,n.category,(n.tags||[]).join(' ')].join('\n').toLowerCase().indexOf(q)!==-1; }
+function renderNotes(){
+  var el=document.getElementById('noteList'); if(!el) return;
+  if(!NOTES.length){ el.innerHTML=''; return; }
+  var set=NOTES.slice();
+  if(noteOnly()){ /* show all notes */ }
+  else if(SEARCH){ set=set.filter(function(n){ return noteMatch(n,SEARCH); }); }
+  else if(sel.length){ set=set.filter(function(n){ return isSel(n.date); }); }
+  if(!set.length){ el.innerHTML=''; return; }
+  set.sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return b.id-a.id; });
+  var h="<div class='dayhdr' style='margin:30px 0 12px'><span style='font-size:15px;font-weight:700;color:var(--accent)'>Notes</span></div>";
+  set.forEach(function(n){
+    var cat=n.category?"<span class='cat'>"+esc(n.category)+"</span> ":'';
+    var tags=''; (n.tags||[]).forEach(function(t){ if(t) tags+="<span class='chip'>"+esc(t)+"</span>"; });
+    h+="<div class='card notecard' style='margin-bottom:10px'>";
+    h+="<div style='display:flex;justify-content:space-between;gap:12px;align-items:baseline'><div>"+cat+"<span class='idnum' title='note id "+n.id+"'>#"+n.id+"</span></div><button class='nbtn ebtn' onclick='openNoteEdit("+n.id+")' title='Edit note'>&#9998;</button></div>";
+    h+="<div style='margin-top:6px'>"+mdNote(n.text)+"</div>";
+    if(tags){ h+="<div style='margin-top:8px'>"+tags+"</div>"; }
+    h+="</div>";
+  });
+  el.innerHTML=h;
+}
+function setNMsg(t,cls){ var m=document.getElementById('nMsg'); if(!m) return; m.className='emsg'+(cls?' '+cls:''); m.textContent=t; }
+function openNoteNew(){
+  NOTE_ID=null;
+  NOTE_DATE=(sel.length===1?sel[0]:todayISO());
+  document.getElementById('nHdr').textContent='New note';
+  document.getElementById('nCatNew').value='';
+  fillSelect('nCatSel', uniqNoteCats(), '');
+  onSelChange('nCat');
+  document.getElementById('nTags').value='';
+  document.getElementById('nText').value='';
+  document.getElementById('nDel').style.display='none';
+  setNMsg('','');
+  document.getElementById('nmodal').classList.add('show');
+  document.getElementById('nText').focus();
+}
+function openNoteEdit(id){
+  var n=noteById(id); if(!n) return; NOTE_ID=id; NOTE_DATE=n.date;
+  document.getElementById('nHdr').textContent='Edit note #'+id;
+  document.getElementById('nCatNew').value='';
+  fillSelect('nCatSel', uniqNoteCats(), n.category||'');
+  onSelChange('nCat');
+  document.getElementById('nTags').value=(n.tags||[]).join(', ');
+  document.getElementById('nText').value=n.text||'';
+  document.getElementById('nDel').style.display='';
+  setNMsg('','');
+  document.getElementById('nmodal').classList.add('show');
+  document.getElementById('nText').focus();
+}
+function closeNote(){ var m=document.getElementById('nmodal'); if(m) m.classList.remove('show'); NOTE_ID=null; }
+function noteCmd(action,p){
+  var parts=['pwsh','-File',qarg(SCRIPT_DIR+'\\Work.ps1'),'note','-Profile',qarg(PROFILE)];
+  if(action!=='add'){ parts.push('-Id',p.id); }
+  if(action==='remove'){ parts.push('-Remove'); return parts.join(' '); }
+  parts.push('-Text',qarg(p.text));
+  if(p.date){ parts.push('-Date',qarg(p.date)); }
+  if(p.category){ parts.push('-Category',qarg(p.category)); }
+  if(p.tags){ parts.push('-Tags',qarg(p.tags)); }
+  return parts.join(' ');
+}
+function showNoteCmd(cmd){
+  var m=document.getElementById('nMsg'); m.className='emsg';
+  m.innerHTML="Run this in your terminal to apply:<br><textarea class='ecmd' readonly rows='3'></textarea>";
+  var ta=m.querySelector('textarea'); ta.value=cmd; ta.focus(); ta.select();
+}
+function copyOrShowNote(cmd){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(cmd).then(
+      function(){ setNMsg('Command copied \u2014 paste into your terminal to apply.','ok'); setTimeout(closeNote,3000); },
+      function(){ showNoteCmd(cmd); });
+  } else { showNoteCmd(cmd); }
+}
+function saveNote(){
+  var payload={ id: NOTE_ID,
+    date: NOTE_DATE,
+    category: selVal('nCat'),
+    tags: document.getElementById('nTags').value,
+    text: document.getElementById('nText').value };
+  if(!payload.text.trim()){ setNMsg('Note text is required.','err'); return; }
+  if(LIVE){
+    setNMsg('Saving\u2026','');
+    fetch('/api/note',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.ok){ location.reload(); } else { setNMsg('Error: '+((j&&j.error)||'save failed'),'err'); } })
+      .catch(function(e){ setNMsg('Error: '+e,'err'); });
+  } else {
+    copyOrShowNote(noteCmd(NOTE_ID==null?'add':'edit', payload));
+  }
+}
+function deleteNote(){
+  if(NOTE_ID==null) return;
+  if(!confirm('Delete note #'+NOTE_ID+'?')) return;
+  if(LIVE){
+    setNMsg('Deleting\u2026','');
+    fetch('/api/note-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:NOTE_ID})})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.ok){ location.reload(); } else { setNMsg('Error: '+((j&&j.error)||'delete failed'),'err'); } })
+      .catch(function(e){ setNMsg('Error: '+e,'err'); });
+  } else {
+    copyOrShowNote(noteCmd('remove',{id:NOTE_ID}));
+  }
+}
 (function(){
   var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
   calY=n.getFullYear(); calM=n.getMonth();
@@ -1139,6 +1374,7 @@ function saveEdit(){
 <!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'><title>Work Log</title>
 <style>$script:BaseCss
+@media(max-width:1600px){.page{padding-left:5%;padding-right:5%;}}
 .searchbar{display:flex;gap:.5rem;align-items:center;margin:0 0 .75rem 0;}
 .searchbar input{flex:1;padding:.55rem .8rem;border-radius:0;border:1px solid var(--bd,#d0d7de);background:var(--card,#fff);color:inherit;font-size:.95rem;outline:none;}
 .searchbar input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(77,141,255,.25);}
@@ -1162,6 +1398,7 @@ function saveEdit(){
 .eactions{display:flex;gap:10px;margin-top:18px;justify-content:flex-end;}
 .pill.save{background:var(--accent);color:#06101f;border-color:var(--accent);font-weight:700;}
 .pill.save:hover{background:#3b7df0;}
+.pill.active{background:var(--accent);color:#06101f;border-color:var(--accent);font-weight:700;}
 .emsg{margin-top:12px;font-size:12.5px;min-height:1em;}
 .emsg.ok{color:var(--green);}
 .emsg.err{color:var(--red);}
@@ -1176,11 +1413,13 @@ function saveEdit(){
   <div class='card'><div id='sum'></div></div>
 </div>
 <div class='searchbar'>
-  <input id='q' type='search' placeholder='Search title, notes, project, status (e.g. open)&hellip;' oninput='onSearch(this.value)' autocomplete='off'>
+  <input id='q' type='search' placeholder='Search title, notes, project, status&hellip; (tokens: is_open, is_note)' oninput='onSearch(this.value)' autocomplete='off'>
   <button class='pill' onclick='clearSearch()'>Clear</button>
   <button class='pill newbtn' onclick='openNew()'>+ New item</button>
+  <button class='pill newbtn' onclick='openNoteNew()'>+ Add note</button>
 </div>
 <div id='log'></div>
+<div id='noteList'></div>
 </div>
 <div id='modal' class='modal' onclick='if(event.target===this)closeNotes()'>
   <div class='modal-box'>
@@ -1214,9 +1453,31 @@ function saveEdit(){
     </div>
   </div>
 </div>
+<div id='nmodal' class='modal' onclick='if(event.target===this)closeNote()'>
+  <div class='modal-box'>
+    <div class='modal-head'><span id='nHdr'>New note</span><button class='cbtn' onclick='closeNote()'>&times;</button></div>
+    <div class='modal-body'>
+      <div class='eform'>
+        <label>Category
+          <select id='nCatSel' onchange="onSelChange('nCat')"></select>
+          <input type='text' id='nCatNew' class='enew' placeholder='New category&hellip;' style='display:none'>
+        </label>
+        <label class='wide'>Tags (comma-separated)<input type='text' id='nTags' placeholder='e.g. followup, bedrock'></label>
+        <label class='wide'>Note<textarea id='nText' rows='4'></textarea></label>
+      </div>
+      <div id='nMsg' class='emsg'></div>
+      <div class='eactions'>
+        <button class='pill save' onclick='saveNote()'>Save</button>
+        <button id='nDel' class='pill' style='display:none;border-color:var(--red);color:var(--red)' onclick='deleteNote()'>Delete</button>
+        <button class='pill' onclick='closeNote()'>Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
 <script>
 var SESSIONS = $json;
 var COMMENTARY = $commentaryJson;
+var NOTES = $notesJson;
 var ADO_BASE = "$($script:Org)";
 var SCRIPT_DIR = $($script:ScriptDir | ConvertTo-Json);
 var PROFILE = $($script:Profile | ConvertTo-Json);
@@ -1284,6 +1545,35 @@ function Invoke-WorkEditRequest {
             Write-WorkServerJson $res 200 @{ ok = $true }
             return
         }
+        if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/note') {
+            $reader = New-Object System.IO.StreamReader($req.InputStream, $req.ContentEncoding)
+            $body = $reader.ReadToEnd(); $reader.Close()
+            $d = $body | ConvertFrom-Json
+            $names = $d.PSObject.Properties.Name
+            $p = @{ Text = [string]$d.text }
+            if (($names -contains 'date') -and $d.date) { $p.Date = [datetime]$d.date }
+            if  ($names -contains 'category')           { $p.Category = [string]$d.category }
+            if  ($names -contains 'tags') {
+                $p.Tags = @(([string]$d.tags) -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+            }
+            if (($names -contains 'id') -and $d.id) { Edit-Note -Id ([int]$d.id) @p; Write-Host ("~ Live note edit #{0}" -f [int]$d.id) }
+            else       { Add-Note @p; Write-Host '+ Live note added' }
+            $script:SuppressDashboard = $false
+            New-WorkDashboard -NoOpen | Out-Null   # refresh embedded NOTES for reload
+            Write-WorkServerJson $res 200 @{ ok = $true }
+            return
+        }
+        if ($req.HttpMethod -eq 'POST' -and $path -eq '/api/note-delete') {
+            $reader = New-Object System.IO.StreamReader($req.InputStream, $req.ContentEncoding)
+            $body = $reader.ReadToEnd(); $reader.Close()
+            $d = $body | ConvertFrom-Json
+            Remove-Note -Id ([int]$d.id)
+            $script:SuppressDashboard = $false
+            New-WorkDashboard -NoOpen | Out-Null
+            Write-Host ("- Live note removed #{0}" -f [int]$d.id)
+            Write-WorkServerJson $res 200 @{ ok = $true }
+            return
+        }
         $file = Join-Path $script:OutDir 'work-dashboard.html'
         if (-not (Test-Path -LiteralPath $file)) { $script:SuppressDashboard = $false; New-WorkDashboard -NoOpen | Out-Null }
         $bytes = [System.IO.File]::ReadAllBytes($file)
@@ -1323,6 +1613,82 @@ function Start-WorkServer {
     }
 }
 
+# ---- Public: Notes dashboard ----------------------------------------------
+function New-NotesDashboard {
+    [CmdletBinding()]
+    param([switch]$NoOpen)
+
+    $notes = @(Get-Notes)
+    $count = $notes.Count
+
+    # Build per-date groups (newest date first), server-rendered as cards.
+    $groups = $notes | Group-Object Date | Sort-Object Name -Descending
+    $sb = New-Object System.Text.StringBuilder
+    if (-not $count) {
+        [void]$sb.Append("<div class='empty'>No notes yet. Add one with <code>note `"text`"</code>.</div>")
+    }
+    foreach ($g in $groups) {
+        $d = [datetime]::ParseExact($g.Name, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+        $hdr = $d.ToString('dddd, MMMM d, yyyy')
+        $n = @($g.Group).Count
+        [void]$sb.Append("<div class='daygrp' data-date='$($g.Name)'>")
+        [void]$sb.Append("<div class='dayhdr'><span>$hdr</span><span class='ncount'>$n</span></div>")
+        foreach ($note in ($g.Group | Sort-Object Id -Descending)) {
+            $cat = if ($note.Category) { "<span class='cat'>$(HtmlEnc $note.Category)</span> " } else { '' }
+            $tags = ''
+            foreach ($t in @($note.Tags)) { if ($t) { $tags += "<span class='chip'>$(HtmlEnc $t)</span>" } }
+            $txt = HtmlEnc $note.Text
+            $search = (HtmlEnc (("{0} {1} {2}" -f $note.Text, $note.Category, ($note.Tags -join ' ')).ToLower()))
+            [void]$sb.Append("<div class='card' style='margin-bottom:10px' data-search='$search'>")
+            [void]$sb.Append("<div style='display:flex;justify-content:space-between;gap:12px;align-items:baseline'>")
+            [void]$sb.Append("<div>$cat<span class='idnum'>#$($note.Id)</span></div>")
+            [void]$sb.Append("<div class='muted' style='font-size:11px'>$(HtmlEnc $note.Created)</div></div>")
+            [void]$sb.Append("<div style='margin-top:6px;font-size:14px'>$txt</div>")
+            if ($tags) { [void]$sb.Append("<div style='margin-top:8px'>$tags</div>") }
+            [void]$sb.Append("</div>")
+        }
+        [void]$sb.Append("</div>")
+    }
+
+    $meta = "Generated $((Get-Date).ToString('yyyy-MM-dd HH:mm')) &bull; $count note(s) &bull; date-bound, not time-bound"
+    $search = "<input id='q' placeholder='Search notes&hellip;' oninput='filt()' style='width:100%;padding:10px 14px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:14px;margin:6px 0 18px' autocomplete='off'>"
+    $js = @'
+<script>
+function filt(){
+  var q=document.getElementById('q').value.trim().toLowerCase();
+  document.querySelectorAll('.daygrp').forEach(function(g){
+    var any=false;
+    g.querySelectorAll('.card').forEach(function(c){
+      var hit = !q || (c.getAttribute('data-search')||'').indexOf(q)!==-1;
+      c.style.display = hit ? '' : 'none';
+      if(hit) any=true;
+    });
+    g.style.display = any ? '' : 'none';
+  });
+}
+</script>
+'@
+    $body = "$search<div id='notes'>$($sb.ToString())</div>$js"
+    $html = New-ReportHtml 'Notes' $meta $body
+
+    # Markdown export
+    $md = New-Object System.Text.StringBuilder
+    [void]$md.Append("# Notes`n`n")
+    foreach ($g in $groups) {
+        $d = [datetime]::ParseExact($g.Name, 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+        [void]$md.Append("## $($d.ToString('dddd, MMMM d, yyyy'))`n`n")
+        foreach ($note in ($g.Group | Sort-Object Id -Descending)) {
+            $catMd = if ($note.Category) { "**[$($note.Category)]** " } else { '' }
+            $tagMd = if (@($note.Tags).Count) { " _($(@($note.Tags) -join ', '))_" } else { '' }
+            [void]$md.Append("- $catMd$($note.Text)$tagMd  `n")
+        }
+        [void]$md.Append("`n")
+    }
+
+    Write-Report -BaseName 'notes-dashboard' -Html $html -Md $md.ToString() -NoOpen:$NoOpen
+}
+
 Export-ModuleMember -Function Start-Work, Switch-Work, Stop-Work, Complete-Work, New-WorkSession, New-GhIssueNote, Add-WorkNote, Edit-Work, Set-DayCommentary, `
     Get-OpenSessions, Get-WorkLog, Find-WorkLog, Show-WorkSearch, Show-WorkStatus, New-Standup, New-WeeklySummary, New-WorkDashboard, Start-WorkServer, `
-    Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile
+    Set-WorkProfile, Set-WorkDefaultProfile, Get-WorkProfile, `
+    Add-Note, Edit-Note, Remove-Note, Get-Notes, New-NotesDashboard

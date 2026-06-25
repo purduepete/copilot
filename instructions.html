@@ -170,6 +170,29 @@
 
       </details>
 
+      <details class="subject">
+        <summary>
+          <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>
+          Copilot Skills
+        </summary>
+
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            Personal Skills
+          </summary>
+          <div class="links">
+            <a href="#sk-what">1. What skills are</a>
+            <a href="#sk-catalog">2. My skills</a>
+            <a href="#sk-activate">3. Activating &amp; maintaining</a>
+            <a href="#sk-locations">4. Locations at a glance</a>
+          </div>
+        </details>
+
+      </details>
+
       <!-- ============================================================
            ADD A FUTURE SUBJECT: copy this block, place above this comment.
            (For a new TOPIC under an existing subject, copy just the inner
@@ -214,7 +237,7 @@
         <strong>About this hub</strong>
         <p>This is a living reference for things I want to remember how to do. Each <strong>subject</strong> (e.g. Azure DevOps)
         contains one or more <strong>topics</strong>, and each topic has its own sections. New subjects can be added over time.</p>
-        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Time Tracking</strong>. <span class="future">More to come…</span></p>
+        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Time Tracking</strong>, <strong>Copilot Skills</strong>. <span class="future">More to come…</span></p>
       </div>
     </section>
 
@@ -343,8 +366,10 @@
         <tr><td>&ldquo;Close item 3 against gh issue 17&rdquo; / &ldquo;Finish item 3 and close the issue&rdquo;</td><td><code>close -Issue 17 [-CloseIssue]</code> (gh note + stop + dashboard, one shot)</td></tr>
 
         <tr class="grp"><td colspan="2">Annotate &amp; adjust</td></tr>
-        <tr><td>&ldquo;Add a note to item 5: &lt;text&gt;&rdquo;</td><td><code>note</code></td></tr>
-        <tr><td>&ldquo;Add a link to item 5 named &lt;X&gt;: &lt;url&gt;&rdquo;</td><td><code>note</code> as <code>[X](url)</code></td></tr>
+        <tr><td>&ldquo;Add a note to item 5: &lt;text&gt;&rdquo; (note on a work session)</td><td><code>tasknote</code></td></tr>
+        <tr><td>&ldquo;Add a link to item 5 named &lt;X&gt;: &lt;url&gt;&rdquo;</td><td><code>tasknote</code> as <code>[X](url)</code></td></tr>
+        <tr><td>&ldquo;Make a note: &lt;text&gt;&rdquo; / &ldquo;Remember &lt;text&gt;&rdquo; / &ldquo;Note for July 1: &lt;text&gt;&rdquo; (date-bound, no time)</td><td><code>note</code> (standalone notes &mdash; defaults to today, optional <code>-Date -Category -Tags</code>)</td></tr>
+        <tr><td>&ldquo;Show / open my notes&rdquo;</td><td><code>notes</code> (also a section below the log on the dashboard, with inline add/edit/delete)</td></tr>
         <tr><td>&ldquo;Edit item 5: category Dev / retitle / reopen&rdquo;</td><td><code>edit</code></td></tr>
         <tr><td>&ldquo;Starting on the rebalance fix, project webportfolio&rdquo; / &ldquo;Set item 5's project to webbookmarks&rdquo;</td><td><code>start</code> / <code>edit</code> with <code>-Project</code></td></tr>
 
@@ -369,7 +394,9 @@
     <pre><code>pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Fix MS Sales pull" -Ado 435324 -Category Dev -Project webportfolio
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 start "Architecture review" -Category Meeting
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 switch -Id 1
-pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 note  "Found root cause in the view definition"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 tasknote "Found root cause in the view definition"
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 note "Renew ADO PAT before it expires" -Date 2026-07-01 -Category followup
+pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 notes
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 summary "High-level, fuzzy recap of the day's accomplishments"
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 stop  "Patched view, validated counts" -Id 1 -Blocker "Need prod approval"
 pwsh -File C:\Files\Dev\main\copilot\worklog\Work.ps1 edit  -Id 1 -Status paused -Category Dev -Project webportfolio
@@ -553,6 +580,66 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Get-VSCodeWork.ps1 -LastMinutes 60 
         <strong>Create / close item &lt;ID&gt; against gh issue &lt;n&gt;.</strong>
       </div>
     </div>
+
+    <!-- ===================== SUBJECT: COPILOT SKILLS ===================== -->
+    <div class="subject-banner">
+      <span class="badge"><svg class="icon" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg></span>
+      <h2>Copilot Skills</h2>
+    </div>
+
+    <div class="topic-head" id="sk-skills">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <h3>Topic: Personal Skills</h3>
+    </div>
+    <p>Reusable capability packs that teach Copilot my recurring workflows, so a short natural request triggers the right action the same way every session — no re-explaining.</p>
+
+    <h4 id="sk-what">1. What skills are</h4>
+    <ul>
+      <li>A <strong>skill</strong> is a folder with a <code>SKILL.md</code> file: YAML frontmatter (name + <em>when-to-trigger</em> description) plus markdown instructions Copilot loads on demand.</li>
+      <li>Mine are <strong>user-level</strong> (under <code>~/.copilot/skills/</code>), so they work in <strong>any</strong> repo and are personal — teammates don't see them.</li>
+      <li>Copilot picks the matching skill from the intent of my message; I don't have to name it.</li>
+    </ul>
+
+    <h4 id="sk-catalog">2. My skills</h4>
+    <table>
+      <thead><tr><th>Skill</th><th>Say something like…</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>worklog</code></td>
+          <td><em>"log lunch 12–12:30"</em>, <em>"start work on X"</em>, <em>"create task ending at 12:00"</em>, <em>"start work log"</em></td>
+          <td>Drives the WorkLog CLI (<code>Work.ps1</code>) — start/stop/switch/add/edit/note, dashboards, live-edit server. Encodes my conventions: capitalize first word, chain back-filled tasks from the last entry's end time, fix typos and tell me.</td>
+        </tr>
+        <tr>
+          <td><code>ado-worklist</code></td>
+          <td><em>"Regenerate my ADO work item list"</em></td>
+          <td>Runs <code>Rebuild-OpenWorkItems.ps1</code> (~4&nbsp;s) to refresh <code>open-work-items.html</code> — my open items (assigned to @Me, excluding Closed/Done/Removed/Resolved), grouped by Area&nbsp;&rarr;&nbsp;Status, sorted by ID.</td>
+        </tr>
+        <tr>
+          <td><code>calendar</code></td>
+          <td><em>"what meeting am I in?"</em>, <em>"what's my next meeting?"</em>, <em>"read my calendar"</em></td>
+          <td>Reads the local Outlook calendar via the COM API (no Graph/login). Reports subject, time, organizer, Teams join link and agenda; filters out all-day OOF/OOO entries; can hand a meeting to the <code>worklog</code> skill to log it.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h4 id="sk-activate">3. Activating &amp; maintaining</h4>
+    <ul>
+      <li><strong>Enable:</strong> run <code>/skills</code> in Copilot to view and toggle them.</li>
+      <li><strong>Load new/edited skills:</strong> run <code>/restart</code> — skills are picked up at startup.</li>
+      <li><strong>Edit:</strong> change the relevant <code>SKILL.md</code>; the <em>WHEN:</em> trigger phrases live in the frontmatter <code>description</code>.</li>
+      <li><strong>Author a new one:</strong> ask Copilot to create a skill, or copy an existing folder as a template.</li>
+    </ul>
+
+    <h4 id="sk-locations">4. Locations at a glance</h4>
+    <table>
+      <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+      <tbody>
+        <tr><td><code>C:\Users\jimb\.copilot\skills\worklog\SKILL.md</code></td><td>Time-tracking skill (wraps <code>worklog\Work.ps1</code>)</td></tr>
+        <tr><td><code>C:\Users\jimb\.copilot\skills\ado-worklist\SKILL.md</code></td><td>ADO work-item dashboard skill (wraps <code>Rebuild-OpenWorkItems.ps1</code>)</td></tr>
+        <tr><td><code>C:\Users\jimb\.copilot\skills\calendar\SKILL.md</code></td><td>Outlook calendar reader skill (local COM)</td></tr>
+        <tr><td><code>C:\Users\jimb\.copilot\skills\</code></td><td>Root for all my user-level skills (available in every repo)</td></tr>
+      </tbody>
+    </table>
 
     <!-- ===================== ADD FUTURE SUBJECTS BELOW ===================== -->
 
