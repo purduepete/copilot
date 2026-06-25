@@ -1075,7 +1075,7 @@ function New-WorkDashboard {
             created  = $_.Created
         }
     })
-    $notesJson = ConvertTo-Json -InputObject $notesData -Depth 5 -AsArray
+    $notesJson = if (@($notesData).Count) { @($notesData) | ConvertTo-Json -Depth 5 -AsArray } else { '[]' }
     $notesJson = $notesJson.Replace('</', '<\/')
     $count = $data.Count
     $totalMin = (@($data) | Measure-Object min -Sum).Sum; if (-not $totalMin) { $totalMin = 0 }
@@ -1647,9 +1647,10 @@ function renderNotes(){
   set.forEach(function(n){
     var cat=n.category?"<span class='cat'>"+esc(n.category)+"</span> ":'';
     var tags=''; (n.tags||[]).forEach(function(t){ if(t) tags+="<span class='chip'>"+esc(t)+"</span>"; });
+    var dayNum=NOTES.filter(function(m){ return m.date===n.date && m.id<=n.id; }).length;
     h+="<div class='card notecard' style='margin-bottom:10px'>";
-    h+="<div style='display:flex;justify-content:space-between;gap:12px;align-items:baseline'><div>"+cat+"<span class='idnum' title='note id "+n.id+"'>#"+n.id+"</span></div><button class='nbtn ebtn' onclick='openNoteEdit("+n.id+")' title='Edit note'>&#9998;</button></div>";
-    h+="<div style='margin-top:6px'>"+mdNote(n.text)+"</div>";
+    h+="<div style='display:flex;justify-content:space-between;gap:12px;align-items:baseline'><div>"+cat+"<span class='idnum' title='note id "+n.id+"'>"+dayNum+"</span></div><button class='nbtn ebtn' onclick='openNoteEdit("+n.id+")' title='Edit note'>&#9998;</button></div>";
+    h+="<div style='margin-top:6px;font-size:13px'>"+mdNote(n.text)+"</div>";
     if(tags){ h+="<div style='margin-top:8px'>"+tags+"</div>"; }
     h+="</div>";
   });

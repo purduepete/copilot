@@ -1,49 +1,77 @@
 <!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
 <meta name='viewport' content='width=device-width, initial-scale=1'><title>Notes</title>
 <style>@import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&family=Roboto+Mono:wght@400;500&display=swap');
-:root{--bg:#0a0e1a;--card:#0f1524;--card2:#151c2d;--border:#1e2739;--text:#e9eef6;--muted:#7d8a9e;--accent:#4d8dff;--green:#33d685;--red:#ff5d5d;--amber:#ffb648;--mono:'Roboto Mono',Consolas,monospace;}
+:root{--bg:#0a0e1a;--card:#0f1524;--card2:#151c2d;--border:#1e2739;--text:#e9eef6;--muted:#7d8a9e;--accent:#4d8dff;--green:#33d685;--red:#ff5d5d;--amber:#ffb648;--proj:#a06bff;--mono:'Roboto Mono',Consolas,monospace;--font:'Roboto Flex',system-ui,sans-serif;--scheme:dark;--on-accent:var(--bg);--bg-grad:none;}
+/* Derived tints — auto-recompute from --accent when a theme overrides it */
+:root{
+  --accent2:color-mix(in srgb,var(--accent) 58%,#fff);
+  --a06:color-mix(in srgb,var(--accent) 6%,transparent);
+  --a10:color-mix(in srgb,var(--accent) 10%,transparent);
+  --a14:color-mix(in srgb,var(--accent) 14%,transparent);
+  --a22:color-mix(in srgb,var(--accent) 22%,transparent);
+  --a33:color-mix(in srgb,var(--accent) 33%,transparent);
+  --accent-hover:color-mix(in srgb,var(--accent),#000 14%);
+  --hover:color-mix(in srgb,var(--accent) 8%,var(--card));
+  --proj-soft:color-mix(in srgb,var(--proj) 16%,transparent);
+  --proj-fg:color-mix(in srgb,var(--proj) 52%,#fff);
+  --green-soft:color-mix(in srgb,var(--green) 16%,transparent);
+  --green-line:color-mix(in srgb,var(--green) 33%,transparent);
+  --amber-faint:color-mix(in srgb,var(--amber) 6%,transparent);
+  --red-soft:color-mix(in srgb,var(--red) 12%,transparent);
+}
+/* ---- Theme presets ------------------------------------------------------ */
+html[data-theme=nord]{--bg:#2e3440;--card:#3b4252;--card2:#434c5e;--border:#4c566a;--text:#eceff4;--muted:#9aa5b8;--accent:#88c0d0;--green:#a3be8c;--red:#bf616a;--amber:#ebcb8b;--proj:#b48ead;--on-accent:#2e3440;}
+html[data-theme=dracula]{--bg:#282a36;--card:#2d2f3d;--card2:#343746;--border:#44475a;--text:#f8f8f2;--muted:#8b8fa3;--accent:#bd93f9;--green:#50fa7b;--red:#ff5555;--amber:#ffb86c;--proj:#ff79c6;--on-accent:#282a36;}
+html[data-theme=rose]{--bg:#191724;--card:#1f1d2e;--card2:#26233a;--border:#403d52;--text:#e0def4;--muted:#908caa;--accent:#c4a7e7;--green:#9ccfd8;--red:#eb6f92;--amber:#f6c177;--proj:#ebbcba;--on-accent:#191724;}
+html[data-theme=tokyo]{--bg:#1a1b26;--card:#1f2335;--card2:#24283b;--border:#2f334d;--text:#c0caf5;--muted:#7982a9;--accent:#7aa2f7;--green:#9ece6a;--red:#f7768e;--amber:#e0af68;--proj:#bb9af7;--on-accent:#1a1b26;}
+html[data-theme=paper]{--bg:#f6f8fa;--card:#ffffff;--card2:#eef1f5;--border:#d0d7de;--text:#1f2328;--muted:#656d76;--accent:#0969da;--green:#1a7f37;--red:#cf222e;--amber:#9a6700;--proj:#8250df;--on-accent:#ffffff;--scheme:light;}
 *{box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{font-family:'Roboto Flex',system-ui,sans-serif;font-optical-sizing:auto;margin:0;background:var(--bg);color:var(--text);line-height:1.55;}
+body{font-family:var(--font);font-optical-sizing:auto;margin:0;background:var(--bg);background-image:var(--bg-grad);background-attachment:fixed;color:var(--text);line-height:1.55;transition:background-color .35s ease,color .35s ease;}
+@keyframes wlFade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+@keyframes wlPulse{0%{box-shadow:0 0 0 0 var(--green-line);}70%{box-shadow:0 0 0 6px transparent;}100%{box-shadow:0 0 0 0 transparent;}}
+.card,table.log,table.log th,.pill,.cbtn,.themesel,.helpbar{transition:background-color .3s ease,border-color .3s ease,color .3s ease,box-shadow .18s ease,transform .18s ease;}
 .page{max-width:none;margin:0;padding:26px 15% 80px;}
 a{color:var(--accent);text-decoration:none;}a:hover{text-decoration:underline;}
-.rpt-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:6px 2px 16px;border-bottom:1px solid var(--border);}
-.rpt-hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:0;}
+.rpt-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:6px 2px 16px;border-bottom:2px solid var(--border);border-image:linear-gradient(90deg,var(--accent),transparent 75%) 1;}
+.rpt-hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px;margin:0;background:linear-gradient(92deg,var(--text) 30%,var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .meta{color:var(--muted);font-size:13px;margin-top:6px;}
 h2{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:26px 0 10px;font-weight:600;}
 .card{background:var(--card);border:1px solid var(--border);border-radius:0;padding:18px;}
+.card:hover{border-color:var(--a33);box-shadow:0 8px 26px rgba(0,0,0,.22);}
 .muted{color:var(--muted);}.nowrap{white-space:nowrap;}.center{text-align:center;}
 .run{color:var(--green);font-weight:600;}
 .blk{color:var(--red);font-size:12px;margin-top:4px;}
-.cat{display:inline-block;background:#4d8dff22;color:#9cc2ff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
-.proj{display:inline-block;background:#a06bff22;color:#c7adff;border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;}
+.cat{display:inline-block;background:var(--a14);color:var(--accent2);border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.proj{display:inline-block;background:var(--proj-soft);color:var(--proj-fg);border-radius:0;padding:2px 10px;font-size:11px;font-weight:600;}
 .sbadge{display:inline-block;border-radius:0;padding:1px 8px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-left:8px;vertical-align:middle;white-space:nowrap;border:1px solid transparent;}
-.sbadge.open{background:#33d68522;color:var(--green);border-color:#33d68555;}
-.sbadge.paused{background:#ffb64822;color:var(--amber);border-color:#ffb64855;}
-.sbadge.inprogress{background:#4d8dff22;color:#9cc2ff;border-color:#4d8dff55;}
-tr.unstopped td{background:#ffb6480d;}
+.sbadge.open{background:var(--green-soft);color:var(--green);border-color:var(--green-line);animation:wlPulse 2.4s ease-out infinite;}
+.sbadge.paused{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 33%,transparent);}
+.sbadge.inprogress{background:var(--a14);color:var(--accent2);border-color:var(--a33);}
+tr.unstopped td{background:var(--amber-faint);}
 tr.unstopped td:first-child{box-shadow:inset 3px 0 0 var(--amber);}
 .adoid{color:var(--muted);font-family:var(--mono);font-size:11.5px;font-weight:500;}
 .idnum{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);}
-.chip{display:inline-block;background:#4d8dff1a;color:#9cc2ff;border:1px solid #4d8dff33;border-radius:0;padding:3px 11px;font-size:12px;margin:0 6px 6px 0;}
-.ncount{display:inline-block;min-width:20px;text-align:center;background:#4d8dff33;color:#9cc2ff;border-radius:0;font-size:11px;padding:1px 7px;font-weight:600;cursor:default;}
+.chip{display:inline-block;background:var(--a10);color:var(--accent2);border:1px solid var(--a22);border-radius:0;padding:3px 11px;font-size:12px;margin:0 6px 6px 0;}
+.ncount{display:inline-block;min-width:20px;text-align:center;background:var(--a22);color:var(--accent2);border-radius:0;font-size:11px;padding:1px 7px;font-weight:600;cursor:default;}
 table.log{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--border);border-radius:0;overflow:hidden;}
-table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;}
+table.log th{background:var(--card2);color:var(--muted);text-transform:uppercase;font-size:10.5px;letter-spacing:.5px;font-weight:600;text-align:left;padding:10px 14px;position:sticky;top:0;z-index:3;}
 table.log td{padding:11px 14px;border-top:1px solid var(--border);font-size:13.5px;vertical-align:top;}
-table.log tbody tr:hover td{background:#161f30;}
+table.log tbody tr:hover td{background:var(--hover);}
+table.log tbody tr:hover td:first-child{box-shadow:inset 3px 0 0 var(--accent);}
 table.log.day{table-layout:fixed;}
 table.log.day th,table.log.day td{overflow-wrap:anywhere;word-break:break-word;}
 table.log.day td.nowrap{white-space:normal;}
-.callout{display:flex;gap:9px;background:#4d8dff12;border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
-.callout.warn{background:#ff5d5d1a;border-left-color:var(--red);}
+.callout{display:flex;gap:9px;background:var(--a06);border-left:3px solid var(--accent);border-radius:0;padding:11px 15px;font-size:13.5px;margin:8px 0;}
+.callout.warn{background:var(--red-soft);border-left-color:var(--red);}
 .top{display:grid;grid-template-columns:300px 1fr;gap:16px;margin:18px 0 8px;}
 .sum-row{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:14px;}
-.stat .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;}
+.stat .big{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;background:linear-gradient(92deg,var(--text),var(--accent));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
 .stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
 .chips{margin-bottom:8px;}.scope{font-size:12.5px;color:var(--muted);}
-.commentary{margin:10px 0 2px;padding:7px 10px;border-left:3px solid var(--accent,#3b82f6);background:rgba(59,130,246,.07);border-radius:4px;font-size:12.5px;font-style:italic;line-height:1.45;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.commentary b{font-style:normal;color:var(--fg,#e6e6e6);font-weight:600;}
-.daygrp{margin:0 0 18px;}
+.commentary{margin:10px 0 2px;padding:7px 10px;border-left:3px solid var(--accent);background:var(--a06);border-radius:4px;font-size:12.5px;font-style:italic;line-height:1.45;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.commentary b{font-style:normal;color:var(--text);font-weight:600;}
+.daygrp{margin:0 0 18px;animation:wlFade .4s ease both;}
 .dayhdr{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 8px;padding:0 2px;}
 .dayhdr span:first-child{font-size:15px;font-weight:700;color:var(--accent);}
 .daytot{font-size:12px;color:var(--muted);}
@@ -51,20 +79,20 @@ table.log.day td.nowrap{white-space:normal;}
 .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
 .cal-title{font-size:14px;font-weight:700;}
 .cbtn{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;}
-.cbtn:hover{background:#161f30;}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cbtn:hover{background:var(--hover);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;-webkit-user-select:none;user-select:none;}
 .cal-grid .dow{font-size:9.5px;color:var(--muted);text-align:center;text-transform:uppercase;padding-bottom:3px;}
-.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:0;font-size:13px;color:#46505c;}
+.cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:0;font-size:13px;color:color-mix(in srgb,var(--muted) 60%,transparent);transition:background .15s ease,transform .1s ease;}
 .cal-day.in{color:var(--text);}
-.cal-day.has{background:#4d8dff22;cursor:pointer;font-weight:600;}
-.cal-day.has:hover{background:#4d8dff55;}
+.cal-day.has{background:var(--a14);cursor:pointer;font-weight:600;}
+.cal-day.has:hover{background:var(--a33);transform:scale(1.08);}
 .cal-day.today{outline:1.5px solid var(--accent);outline-offset:-1.5px;}
-.cal-day.sel{background:var(--accent);color:#06101f;}
+.cal-day.sel{background:var(--accent);color:var(--on-accent);}
 .cal-day .dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:3px;}
-.cal-day.sel .dot{background:#06101f;}
+.cal-day.sel .dot{background:var(--on-accent);}
 .cal-foot{margin-top:12px;text-align:center;}
 .pill{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;padding:5px 14px;font-size:12px;cursor:pointer;}
-.pill:hover{background:#161f30;}
+.pill:hover{background:var(--hover);}
 .nbtn{cursor:pointer;border:none;font-family:var(--mono);}
 .ncount.zero{background:transparent;color:var(--muted);}
 .modal{display:none;position:fixed;inset:0;background:rgba(4,7,14,.72);z-index:50;align-items:flex-start;justify-content:center;padding:8vh 16px;}
@@ -74,8 +102,8 @@ table.log.day td.nowrap{white-space:normal;}
 .modal-body{padding:16px 18px;overflow:auto;}
 @media(max-width:760px){.top{grid-template-columns:1fr;}.page{padding:18px 6%;}}</style></head><body>
 <div class='page'>
-<header class='rpt-hero'><div><h1>Notes</h1><div class='meta'>Generated 2026-06-24 17:09 &bull; 0 note(s) &bull; date-bound, not time-bound</div></div></header>
-<input id='q' placeholder='Search notes&hellip;' oninput='filt()' style='width:100%;padding:10px 14px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:14px;margin:6px 0 18px' autocomplete='off'><div id='notes'><div class='empty'>No notes yet. Add one with <code>note "text"</code>.</div></div><script>
+<header class='rpt-hero'><div><h1>Notes</h1><div class='meta'>Generated 2026-06-25 13:17 &bull; 1 note(s) &bull; date-bound, not time-bound</div></div></header>
+<input id='q' placeholder='Search notes&hellip;' oninput='filt()' style='width:100%;padding:10px 14px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:14px;margin:6px 0 18px' autocomplete='off'><div id='notes'><div class='daygrp' data-date='2026-06-24'><div class='dayhdr'><span>Wednesday, June 24, 2026</span><span class='ncount'>1</span></div><div class='card' style='margin-bottom:10px' data-search='fabric cli (fab) v1.6.1 installed. command: fab. usage: fab --version (show version); fab auth login (interactive login); fab auth status; fab ls (list workspaces/items); fab --help (full command list). shim at c:\files\scoopapps\shims\fab.exe. note fabric cli'><div style='display:flex;justify-content:space-between;gap:12px;align-items:baseline'><div><span class='cat'>note</span> <span class='idnum'>#3</span></div><div class='muted' style='font-size:11px'>2026-06-25 13:04:14</div></div><div style='margin-top:6px;font-size:14px'>Fabric CLI (fab) v1.6.1 installed. Command: fab. Usage: fab --version (show version); fab auth login (interactive login); fab auth status; fab ls (list workspaces/items); fab --help (full command list). Shim at C:\Files\ScoopApps\shims\fab.exe.</div><div style='margin-top:8px'><span class='chip'>fabric</span><span class='chip'>cli</span></div></div></div></div><script>
 function filt(){
   var q=document.getElementById('q').value.trim().toLowerCase();
   document.querySelectorAll('.daygrp').forEach(function(g){
