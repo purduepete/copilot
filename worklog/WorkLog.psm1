@@ -175,6 +175,51 @@ function Find-Session($state, [int]$Id) {
     $state['sessions'] | Where-Object { [int]$_['id'] -eq $Id } | Select-Object -First 1
 }
 
+# ---- Workday-boundary enforcement -----------------------------------------
+# Rules (per user policy):
+#   1. Nothing can be logged until that day's START-of-day marker exists.
+#   2. A task cannot START before the start-of-day marker time.
+#   3. A task cannot END after the end-of-day marker time.
+# Day markers themselves (Add-DayMarker) are exempt — they set the boundaries.
+function Get-DayMarker($state, [ValidateSet('start', 'end')][string]$Type, [datetime]$Date) {
+    $kind = "marker-$Type"
+    $day  = $Date.ToString('yyyy-MM-dd')
+    $m = @($state['sessions'] | Where-Object { $_['kind'] -eq $kind -and (ParseTs $_['start']).ToString('yyyy-MM-dd') -eq $day })
+    if ($m.Count) { return $m[0] }
+    return $null
+}
+
+# Validate the START of a task on its day: the start marker must exist, the start
+# time must be >= it, and (if an end marker exists) the start must be <= it.
+function Assert-WorkdayStart($state, [datetime]$At) {
+    $sm = Get-DayMarker $state 'start' $At
+    if (-not $sm) {
+        throw "No start-of-day marker for $($At.ToString('yyyy-MM-dd')). Set it first: Work.ps1 startday"
+    }
+    $smT = ParseTs $sm['start']
+    if ($At -lt $smT) {
+        throw "Task can't start at $($At.ToString('HH:mm')) — before the start-of-day marker ($($smT.ToString('HH:mm')))."
+    }
+    $em = Get-DayMarker $state 'end' $At
+    if ($em) {
+        $emT = ParseTs $em['end']
+        if ($At -gt $emT) {
+            throw "Task can't start at $($At.ToString('HH:mm')) — after the end-of-day marker ($($emT.ToString('HH:mm')))."
+        }
+    }
+}
+
+# Validate the END of a task against that day's end-of-day marker (if any).
+function Assert-WorkdayEnd($state, [datetime]$At, [datetime]$DayOf) {
+    $em = Get-DayMarker $state 'end' $DayOf
+    if ($em) {
+        $emT = ParseTs $em['end']
+        if ($At -gt $emT) {
+            throw "Task can't end at $($At.ToString('HH:mm')) — after the end-of-day marker ($($emT.ToString('HH:mm')))."
+        }
+    }
+}
+
 # ---- Public: Start ---------------------------------------------------------
 function Start-Work {
     [CmdletBinding()]
@@ -197,6 +242,7 @@ function Start-Work {
             if ($last -lt (Get-Date)) { $At = $last }
         }
     }
+    Assert-WorkdayStart $st $At
     $id = [int]$st['nextId']
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
     $Category = ConvertTo-TitleCaseCategory $Category
@@ -235,6 +281,8 @@ function New-WorkSession {
     $kind = if ($AdoId) { 'ado' } else { 'adhoc' }
     $hasEnd = $PSBoundParameters.ContainsKey('End') -and $End
     $dur = if ($hasEnd) { [math]::Round((($End) - $Start).TotalMinutes) } else { 0 }
+    Assert-WorkdayStart $st $Start
+    if ($hasEnd) { Assert-WorkdayEnd $st $End $Start }
     $s = @{
         id = $id; kind = $kind; adoId = $AdoId
         category = ConvertTo-TitleCaseCategory $Category; project = (ConvertTo-TitleCaseCategory $Project); tags = @($Tags)
@@ -316,6 +364,7 @@ function Stop-Work {
     $s = Find-Session $st $Id
     if (-not $s) { throw "No session #$Id." }
     if ($s['end']) { Write-Warning "Session #$Id already stopped."; return }
+    Assert-WorkdayEnd $st $At (ParseTs $s['start'])
     $s['end'] = $At.ToString($script:Fmt)
     $s['durationMin'] = [math]::Round((($At) - (ParseTs $s['start'])).TotalMinutes)
     if ($Accomplishment) { $s['accomplishment'] = ConvertTo-FirstCapital $Accomplishment }
@@ -1201,7 +1250,7 @@ function renderSummary(){
 }
 function renderTable(){
   if(noteOnly()){ document.getElementById('log').innerHTML=''; return; }
-  var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } return a.start<b.start?-1:1; });
+  var set=curSet().slice().sort(function(a,b){ if(a.date!==b.date){ return a.date<b.date?1:-1; } if(a.start!==b.start){ return a.start<b.start?-1:1; } return markerRank(a)-markerRank(b); });
   if(!set.length){ document.getElementById('log').innerHTML="<div class='empty'>No sessions"+(SEARCH?" matching \u201C"+esc(SEARCH)+"\u201D":"")+" for this selection.</div>"; return; }
   var groups={}; var order=[];
   set.forEach(function(s){ if(!groups[s.date]){ groups[s.date]=[]; order.push(s.date); } groups[s.date].push(s); });
@@ -1249,6 +1298,7 @@ function renderView(){ renderSummary(); renderTimeline(); renderBreakdown(); ren
 // ---- Category colors (stable hash) ---------------------------------------
 function catColor(name){ name=String(name||'Other'); var h=0; for(var i=0;i<name.length;i++){ h=(h*31+name.charCodeAt(i))%360; } return 'hsl('+h+',60%,58%)'; }
 function isMarker(s){ return !!(s && (s.kind==='marker-start' || s.kind==='marker-end')); }
+function markerRank(s){ if(s&&s.kind==='marker-start') return -1; if(s&&s.kind==='marker-end') return 1; return 0; }
 // ---- Day timeline strip ---------------------------------------------------
 function renderTimeline(){
   var el=document.getElementById('timeline'); if(!el) return;
