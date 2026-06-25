@@ -818,7 +818,7 @@ table.log.day td.nowrap{white-space:normal;}
 .cal-title{font-size:14px;font-weight:700;}
 .cbtn{background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;width:30px;height:30px;cursor:pointer;font-size:16px;line-height:1;}
 .cbtn:hover{background:var(--hover);}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;-webkit-user-select:none;user-select:none;}
 .cal-grid .dow{font-size:9.5px;color:var(--muted);text-align:center;text-transform:uppercase;padding-bottom:3px;}
 .cal-day{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:0;font-size:13px;color:color-mix(in srgb,var(--muted) 60%,transparent);transition:background .15s ease,transform .1s ease;}
 .cal-day.in{color:var(--text);}
@@ -1085,7 +1085,7 @@ function New-WorkDashboard {
 var MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 var WEEKDAYS=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
 var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-var calY, calM, sel=[];
+var calY, calM, sel=[], selAnchor=null;
 function isSel(ds){ return sel.indexOf(ds)!==-1; }
 function fmtMin(m){ if(m<=0) return '0m'; if(m<60) return m+'m'; return Math.floor(m/60)+'h '+(m%60)+'m'; }
 function esc(s){ s=(s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -1157,16 +1157,25 @@ function renderCal(){
 function navMonth(delta){ calM+=delta; if(calM<0){ calM=11; calY--; } if(calM>11){ calM=0; calY++; } renderCal(); }
 function selDay(ds,ev){
   var multi = ev && (ev.ctrlKey || ev.metaKey);
-  if(multi){
+  var range = ev && ev.shiftKey;
+  if(range && selAnchor){
+    var lo = (selAnchor<=ds) ? selAnchor : ds;
+    var hi = (selAnchor<=ds) ? ds : selAnchor;
+    sel=[];
+    for(var k in DAYMAP){ if(k>=lo && k<=hi){ sel.push(k); } }
+    if(sel.indexOf(ds)===-1){ sel.push(ds); }
+  } else if(multi){
     var i=sel.indexOf(ds);
     if(i===-1){ sel.push(ds); } else { sel.splice(i,1); }
+    selAnchor=ds;
   } else {
     sel=(sel.length===1 && sel[0]===ds) ? [] : [ds];
+    selAnchor=ds;
   }
   renderCal(); renderView();
-  if(!multi){ document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
+  if(!multi && !range){ document.getElementById('log').scrollIntoView({behavior:'smooth',block:'start'}); }
 }
-function clearSel(){ sel=[]; renderCal(); renderView(); }
+function clearSel(){ sel=[]; selAnchor=null; renderCal(); renderView(); }
 var SEARCH='';
 var SHOW_GAPS=false; try{ SHOW_GAPS=(localStorage.getItem('wl_gaps')==='1'); }catch(e){}
 function noteOnly(){ return SEARCH==='is_note' || SEARCH==='is_notes'; }
@@ -1182,11 +1191,37 @@ function onSearch(v){ SEARCH=(v||'').trim().toLowerCase(); renderView(); }
 function clearSearch(){ var b=document.getElementById('q'); if(b){ b.value=''; b.focus(); } onSearch(''); }
 var _wlToastT;
 function wlToast(msg){ var el=document.getElementById('wlToast'); if(!el) return; el.innerHTML=msg; el.classList.add('show'); clearTimeout(_wlToastT); _wlToastT=setTimeout(function(){ el.classList.remove('show'); }, 1600); }
+// ---- Modal dialog (replaces native prompt/confirm) ------------------------
+var _dlgCb=null, _dlgHasInput=false, _dlgStep=1, _dlgMin=null, _dlgMax=null;
+function wlDialog(o){
+  o=o||{};
+  document.getElementById('dlgHead').textContent=o.title||'Confirm';
+  document.getElementById('dlgMsg').innerHTML=o.message||'';
+  var iw=document.getElementById('dlgInputWrap'), inp=document.getElementById('dlgInput');
+  _dlgHasInput=!!o.input;
+  if(_dlgHasInput){ iw.style.display='block'; inp.value=(o.value!=null?o.value:''); inp.placeholder=o.placeholder||''; inp.type=o.inputType||'text';
+    var showStep=!!o.stepper; _dlgStep=o.step||1; _dlgMin=(o.min!=null?o.min:null); _dlgMax=(o.max!=null?o.max:null);
+    document.getElementById('dlgDec').style.display=showStep?'':'none';
+    document.getElementById('dlgInc').style.display=showStep?'':'none';
+  }
+  else { iw.style.display='none'; }
+  var ok=document.getElementById('dlgOk');
+  ok.textContent=o.okLabel||'OK';
+  ok.className='pill '+(o.danger?'danger':'soft');
+  _dlgCb=o.onOk||null;
+  document.getElementById('dlg').classList.add('show');
+  setTimeout(function(){ if(_dlgHasInput){ inp.focus(); var L=inp.value.length; try{ inp.setSelectionRange(L,L); }catch(e){} } else { ok.focus(); } }, 30);
+}
+function dlgStep(d){ var inp=document.getElementById('dlgInput'); var v=parseFloat(inp.value); if(isNaN(v)) v=0; v=v+d*_dlgStep; if(_dlgMin!=null) v=Math.max(_dlgMin,v); if(_dlgMax!=null) v=Math.min(_dlgMax,v); v=Math.round(v*100)/100; inp.value=v; inp.focus(); }
+function closeDlg(){ var m=document.getElementById('dlg'); if(m) m.classList.remove('show'); _dlgCb=null; }
+function dlgConfirm(){ var cb=_dlgCb, val=_dlgHasInput?document.getElementById('dlgInput').value:null; closeDlg(); if(cb) cb(val); }
+function dlgKey(e){ if(e.key==='Enter'){ e.preventDefault(); dlgConfirm(); } else if(e.key==='Escape'){ e.preventDefault(); closeDlg(); } }
+function wlConfirm(message,onOk,o){ o=o||{}; wlDialog({title:o.title||'Confirm',message:message,okLabel:o.okLabel||'Confirm',danger:o.danger,onOk:function(){ onOk(); }}); }
 function focusSearch(){ var q=document.getElementById('q'); if(q){ q.focus(); q.select(); } }
 function parseYMD(s){ var p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function gotoDay(dt){
   var ds=ymd(dt.getFullYear(),dt.getMonth(),dt.getDate());
-  sel=[ds]; calY=dt.getFullYear(); calM=dt.getMonth();
+  sel=[ds]; selAnchor=ds; calY=dt.getFullYear(); calM=dt.getMonth();
   renderCal(); renderView();
   wlToast('<b>'+dt.toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})+'</b>');
 }
@@ -1212,7 +1247,7 @@ function toggleHelp(show){
 document.addEventListener('keydown', function(e){
   var t=e.target||{}, tag=t.tagName||'';
   var typing=(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||t.isContentEditable);
-  if(e.key==='Escape'){ if(typing && t.id==='q'){ clearSearch(); t.blur(); return; } var hb=document.getElementById('helpbar'); if(hb && hb.classList.contains('show')){ toggleHelp(false); } return; }
+  if(e.key==='Escape'){ var dl=document.getElementById('dlg'); if(dl && dl.classList.contains('show')){ closeDlg(); return; } if(typing && t.id==='q'){ clearSearch(); t.blur(); return; } var hb=document.getElementById('helpbar'); if(hb && hb.classList.contains('show')){ toggleHelp(false); } return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(typing) return;
   switch(e.key){
@@ -1369,7 +1404,7 @@ function renderBreakdown(){
 // ---- Quick resume ---------------------------------------------------------
 function resumeSession(uid){
   var s=byId(uid); if(!s) return;
-  if(!confirm('Start a new running task from \u201C'+(s.title||'session')+'\u201D now?')) return;
+  wlConfirm('Start a new running task from \u201C'+esc(s.title||'session')+'\u201D now?',function(){
   if(LIVE){
     fetch('/api/start',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,category:s.category,project:s.project,adoId:s.adoId})})
       .then(function(r){ return r.json(); })
@@ -1382,6 +1417,7 @@ function resumeSession(uid){
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(cmd); wlToast('<b>Command copied</b> \u2014 run it to resume'); }
     else { wlToast(esc(cmd)); }
   }
+  },{title:'Resume task',okLabel:'Start'});
 }
 function byId(uid){ for(var i=0;i<SESSIONS.length;i++){ if(SESSIONS[i]._uid===uid) return SESSIONS[i]; } return null; }
 // ---- Live timer / running pill -------------------------------------------
@@ -1402,7 +1438,7 @@ function renderRunPill(){
 }
 function stopSession(uid){
   var s=byId(uid); if(!s) return;
-  if(!confirm('Stop \u201C'+(s.title||'session')+'\u201D now?')) return;
+  wlConfirm('Stop \u201C'+esc(s.title||'session')+'\u201D now?',function(){
   if(LIVE){
     fetch('/api/stop',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:s.id})})
       .then(function(r){ return r.json(); })
@@ -1413,10 +1449,11 @@ function stopSession(uid){
     if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(cmd); wlToast('<b>Command copied</b> \u2014 run it to stop #'+s.id); }
     else { wlToast(esc(cmd)); }
   }
+  },{title:'Stop task',okLabel:'Stop',danger:true});
 }
 // ---- Daily goal ring ------------------------------------------------------
 function getGoal(){ var g=parseFloat(localStorage.getItem('wl_goal')); return (g>0)?g:6; }
-function setGoal(){ var v=prompt('Daily goal (hours):',getGoal()); if(v===null) return; v=parseFloat(v); if(v>0){ try{ localStorage.setItem('wl_goal',v); }catch(e){} renderSummary(); } }
+function setGoal(){ wlDialog({title:'Daily goal',message:'Set your daily goal, in hours.',input:true,inputType:'number',stepper:true,step:0.5,min:0.5,max:24,value:getGoal(),placeholder:'e.g. 6',okLabel:'Save',onOk:function(v){ v=parseFloat(v); if(v>0){ try{ localStorage.setItem('wl_goal',v); }catch(e){} renderSummary(); wlToast('<b>Goal set:</b> '+v+'h'); } }}); }
 function ringDate(){ return (sel.length===1)?sel[0]:todayISO(); }
 function dayTotalLive(ds){ var t=0; SESSIONS.forEach(function(s){ if(s.date===ds) t+=liveMin(s); }); return t; }
 function goalRingHtml(){
@@ -1688,16 +1725,18 @@ function saveNote(){
 }
 function deleteNote(){
   if(NOTE_ID==null) return;
-  if(!confirm('Delete note #'+NOTE_ID+'?')) return;
+  var nid=NOTE_ID;
+  wlConfirm('Delete note #'+nid+'?',function(){
   if(LIVE){
     setNMsg('Deleting\u2026','');
-    fetch('/api/note-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:NOTE_ID})})
+    fetch('/api/note-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:nid})})
       .then(function(r){ return r.json(); })
       .then(function(j){ if(j && j.ok){ location.reload(); } else { setNMsg('Error: '+((j&&j.error)||'delete failed'),'err'); } })
       .catch(function(e){ setNMsg('Error: '+e,'err'); });
   } else {
-    copyOrShowNote(noteCmd('remove',{id:NOTE_ID}));
+    copyOrShowNote(noteCmd('remove',{id:nid}));
   }
+  },{title:'Delete note',okLabel:'Delete',danger:true});
 }
 (function(){
   var n=new Date(); var today=ymd(n.getFullYear(), n.getMonth(), n.getDate());
@@ -1745,6 +1784,20 @@ function deleteNote(){
 .emsg{margin-top:12px;font-size:12.5px;min-height:1em;}
 .emsg.ok{color:var(--green);}
 .emsg.err{color:var(--red);}
+.pill.danger{background:var(--red-soft);color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,transparent);font-weight:700;}
+.pill.danger:hover{background:color-mix(in srgb,var(--red) 26%,transparent);}
+.pill.soft{background:var(--a14);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 40%,transparent);font-weight:700;}
+.pill.soft:hover{background:var(--a33);}
+.dlg-msg{font-size:13.5px;line-height:1.5;color:var(--text);}
+.dlg-input{width:100%;margin-top:12px;padding:8px 10px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:0;font-size:14px;box-sizing:border-box;}
+.dlg-input:focus{outline:none;border-color:var(--accent);}
+.dlg-input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+.dlg-input[type=number]::-webkit-outer-spin-button,.dlg-input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+.dlg-stepper{display:flex;align-items:stretch;gap:8px;margin-top:12px;}
+.dlg-stepper .dlg-input{margin-top:0;text-align:center;font-variant-numeric:tabular-nums;}
+.stepbtn{flex:none;width:42px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:18px;font-weight:600;line-height:1;cursor:pointer;border-radius:0;transition:background .12s ease,border-color .12s ease,color .12s ease;}
+.stepbtn:hover{background:var(--hover);border-color:var(--accent);color:var(--accent);}
+.stepbtn:active{transform:scale(.96);}
 .ecmd{width:100%;margin-top:6px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:8px;border-radius:0;}
 .newbtn,.searchbar button.newbtn{background:transparent;color:var(--accent);border:1px solid var(--accent);font-weight:700;}
 .newbtn:hover,.searchbar button.newbtn:hover{background:var(--a10);border-color:var(--accent);color:var(--accent);}
@@ -1887,7 +1940,7 @@ function wlSetTheme(t){var d=document.documentElement;if(t){d.setAttribute('data
       </div>
       <div id='eMsg' class='emsg'></div>
       <div class='eactions'>
-        <button class='pill save' onclick='saveEdit()'>Save</button>
+        <button class='pill soft' onclick='saveEdit()'>Save</button>
         <button class='pill' onclick='closeEdit()'>Cancel</button>
       </div>
     </div>
@@ -1907,9 +1960,22 @@ function wlSetTheme(t){var d=document.documentElement;if(t){d.setAttribute('data
       </div>
       <div id='nMsg' class='emsg'></div>
       <div class='eactions'>
-        <button class='pill save' onclick='saveNote()'>Save</button>
-        <button id='nDel' class='pill' style='display:none;border-color:var(--red);color:var(--red)' onclick='deleteNote()'>Delete</button>
+        <button class='pill soft' onclick='saveNote()'>Save</button>
+        <button id='nDel' class='pill danger' style='display:none' onclick='deleteNote()'>Delete</button>
         <button class='pill' onclick='closeNote()'>Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id='dlg' class='modal' onclick='if(event.target===this)closeDlg()'>
+  <div class='modal-box' style='width:min(440px,100%)'>
+    <div class='modal-head'><span id='dlgHead'>Confirm</span><button class='cbtn' onclick='closeDlg()'>&times;</button></div>
+    <div class='modal-body'>
+      <div id='dlgMsg' class='dlg-msg'></div>
+      <div id='dlgInputWrap' style='display:none'><div class='dlg-stepper'><button type='button' id='dlgDec' class='stepbtn' onclick='dlgStep(-1)'>&minus;</button><input id='dlgInput' class='dlg-input' onkeydown='dlgKey(event)'><button type='button' id='dlgInc' class='stepbtn' onclick='dlgStep(1)'>+</button></div></div>
+      <div class='eactions'>
+        <button id='dlgOk' class='pill soft' onclick='dlgConfirm()'>OK</button>
+        <button class='pill' onclick='closeDlg()'>Cancel</button>
       </div>
     </div>
   </div>
