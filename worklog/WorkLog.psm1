@@ -1212,7 +1212,7 @@ function toggleHelp(show){
 document.addEventListener('keydown', function(e){
   var t=e.target||{}, tag=t.tagName||'';
   var typing=(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||t.isContentEditable);
-  if(e.key==='Escape'){ if(typing && t.id==='q'){ t.blur(); } var hb=document.getElementById('helpbar'); if(hb && hb.classList.contains('show')){ toggleHelp(false); } return; }
+  if(e.key==='Escape'){ if(typing && t.id==='q'){ clearSearch(); t.blur(); return; } var hb=document.getElementById('helpbar'); if(hb && hb.classList.contains('show')){ toggleHelp(false); } return; }
   if(e.ctrlKey||e.metaKey||e.altKey) return;
   if(typing) return;
   switch(e.key){
@@ -1316,7 +1316,7 @@ function markerRank(s){ if(s&&s.kind==='marker-start') return -1; if(s&&s.kind==
 // ---- Day timeline strip ---------------------------------------------------
 function renderTimeline(){
   var el=document.getElementById('timeline'); if(!el) return;
-  if(noteOnly() || SEARCH || sel.length!==1){ el.innerHTML=''; return; }
+  if(noteOnly() || sel.length!==1){ el.innerHTML=''; return; }
   var ds=sel[0];
   var rows=SESSIONS.filter(function(s){ return s.date===ds; });
   if(!rows.length){ el.innerHTML=''; return; }
@@ -1845,8 +1845,6 @@ function wlSetTheme(t){var d=document.documentElement;if(t){d.setAttribute('data
   <div class='card'><div id='cal'></div></div>
   <div class='card'><div id='sum'></div></div>
 </div>
-<div id='timeline'></div>
-<div id='breakdown'></div>
 <div class='searchbar'>
   <span class='searchwrap'>
     <input id='q' type='search' placeholder='Search title, notes, project, status&hellip; (tokens: is_open, is_note)' oninput='onSearch(this.value)' autocomplete='off'>
@@ -1856,6 +1854,8 @@ function wlSetTheme(t){var d=document.documentElement;if(t){d.setAttribute('data
   <button class='pill newbtn' onclick='openNoteNew()'>+ Add note</button>
   <button id='gapToggle' class='pill newbtn' onclick='toggleGaps()'>Show untracked</button>
 </div>
+<div id='timeline'></div>
+<div id='breakdown'></div>
 <div id='log'></div>
 <div id='noteList'></div>
 </div>
