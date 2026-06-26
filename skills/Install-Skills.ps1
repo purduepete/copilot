@@ -22,36 +22,46 @@
 [CmdletBinding()]
 param(
     [string]$SkillsRepo = $PSScriptRoot,
-    [string]$Target = (Join-Path $env:USERPROFILE '.copilot\skills')
+    [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills'),
+    [string]$ClaudeTarget = 'C:\Files\Dev\.claude\skills'
 )
 
-New-Item -ItemType Directory -Path $Target -Force | Out-Null
+function Install-SkillJunctions {
+    param([string]$SkillsRepo, [string]$Target)
 
-Get-ChildItem -Path $SkillsRepo -Directory | ForEach-Object {
-    $name = $_.Name
-    $link = Join-Path $Target $name
-    $dest = $_.FullName
+    New-Item -ItemType Directory -Path $Target -Force | Out-Null
 
-    if (Test-Path -LiteralPath $link) {
-        $item = Get-Item -LiteralPath $link -Force
-        if ($item.LinkType -eq 'Junction') {
-            $current = @($item.Target)[0]
-            if ($current -eq $dest) {
-                Write-Host "= $name already linked"
+    Get-ChildItem -Path $SkillsRepo -Directory | ForEach-Object {
+        $name = $_.Name
+        $link = Join-Path $Target $name
+        $dest = $_.FullName
+
+        if (Test-Path -LiteralPath $link) {
+            $item = Get-Item -LiteralPath $link -Force
+            if ($item.LinkType -eq 'Junction') {
+                $current = @($item.Target)[0]
+                if ($current -eq $dest) {
+                    Write-Host "= $name already linked"
+                    return
+                }
+                # Junction points somewhere else (old location or dangling) -> re-point it.
+                Remove-Item -LiteralPath $link -Force -Recurse
+                New-Item -ItemType Junction -Path $link -Target $dest | Out-Null
+                Write-Host "~ Re-linked $name -> $dest (was $current)"
                 return
             }
-            # Junction points somewhere else (old location or dangling) -> re-point it.
-            Remove-Item -LiteralPath $link -Force -Recurse
-            New-Item -ItemType Junction -Path $link -Target $dest | Out-Null
-            Write-Host "~ Re-linked $name -> $dest (was $current)"
+            Write-Warning "$link exists and is not a junction - skipping. Remove it manually to link."
             return
         }
-        Write-Warning "$link exists and is not a junction - skipping. Remove it manually to link."
-        return
-    }
 
-    New-Item -ItemType Junction -Path $link -Target $dest | Out-Null
-    Write-Host "+ Linked $name -> $dest"
+        New-Item -ItemType Junction -Path $link -Target $dest | Out-Null
+        Write-Host "+ Linked $name -> $dest"
+    }
 }
 
-Write-Host "`nDone. Skills available at $Target"
+Write-Host "--- Copilot CLI ($CopilotTarget) ---"
+Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $CopilotTarget
+Write-Host "`n--- Claude Code (.claude/skills) ($ClaudeTarget) ---"
+Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $ClaudeTarget
+
+Write-Host "`nDone."
