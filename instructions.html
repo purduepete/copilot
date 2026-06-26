@@ -193,6 +193,55 @@
 
       </details>
 
+      <details class="subject">
+        <summary>
+          <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+          Copilot CLI
+        </summary>
+
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            The Copilot Toolbox
+          </summary>
+          <div class="links">
+            <a href="#cc-toolbox">1. Capabilities &amp; when to use each</a>
+            <a href="#cc-concepts">2. Key concepts to leverage</a>
+            <a href="#cc-customization">3. The customization stack</a>
+          </div>
+        </details>
+
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            Proactive WorkLog
+          </summary>
+          <div class="links">
+            <a href="#pw-what">1. What it does</a>
+            <a href="#pw-autoarm">2. Auto-arm across machines</a>
+            <a href="#pw-commands">3. Viewing &amp; managing</a>
+            <a href="#pw-gotchas">4. Gotchas</a>
+          </div>
+        </details>
+
+        <details class="topic">
+          <summary>
+            <svg class="chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>
+            WorkLog AI Workflows
+          </summary>
+          <div class="links">
+            <a href="#aw-defaults">1. Smart defaults</a>
+            <a href="#aw-gaps">2. Gap detection</a>
+            <a href="#aw-calendar">3. Calendar import</a>
+          </div>
+        </details>
+
+      </details>
+
       <!-- ============================================================
            ADD A FUTURE SUBJECT: copy this block, place above this comment.
            (For a new TOPIC under an existing subject, copy just the inner
@@ -237,7 +286,7 @@
         <strong>About this hub</strong>
         <p>This is a living reference for things I want to remember how to do. Each <strong>subject</strong> (e.g. Azure DevOps)
         contains one or more <strong>topics</strong>, and each topic has its own sections. New subjects can be added over time.</p>
-        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Time Tracking</strong>, <strong>Copilot Skills</strong>. <span class="future">More to come…</span></p>
+        <p style="margin-bottom:0;color:var(--muted);">Current subjects: <strong>Azure DevOps</strong>, <strong>Time Tracking</strong>, <strong>Copilot Skills</strong>, <strong>Copilot CLI</strong>. <span class="future">More to come…</span></p>
       </div>
     </section>
 
@@ -640,6 +689,106 @@ pwsh -File C:\Files\Dev\main\copilot\worklog\Get-VSCodeWork.ps1 -LastMinutes 60 
         <tr><td><code>C:\Users\jimb\.copilot\skills\</code></td><td>Root for all my user-level skills (available in every repo)</td></tr>
       </tbody>
     </table>
+
+    <!-- ===================== SUBJECT: COPILOT CLI ===================== -->
+    <div class="subject-banner">
+      <span class="badge"><svg class="icon" viewBox="0 0 24 24"><path d="m4 17 6-6-6-6"/><line x1="12" x2="20" y1="19" y2="19"/></svg></span>
+      <h2>Copilot CLI</h2>
+    </div>
+    <p>How GitHub Copilot CLI makes me more productive — its capabilities beyond skills, and the proactive WorkLog system built on top of them. Captured 2026-06-26.</p>
+
+    <!-- TOPIC: The Copilot Toolbox -->
+    <div class="topic-head" id="cc-toolbox-topic">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+      <h3>Topic: The Copilot Toolbox</h3>
+    </div>
+    <p>Skills are just one layer. Copilot CLI offers several "resources," each suited to a different job.</p>
+
+    <h4 id="cc-toolbox">1. Capabilities &amp; when to use each</h4>
+    <table>
+      <thead><tr><th>Capability</th><th>What it is</th><th>Best for</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Memory</strong> <code>/memory</code></td><td>Cross-session facts about me</td><td>Defaults &amp; preferences I shouldn't have to repeat (e.g. "lunch = lunch/personal").</td></tr>
+        <tr><td><strong>Skills</strong> <code>/skills</code></td><td>Triggered procedures + judgment</td><td>Multi-step tasks with conventions (worklog, calendar).</td></tr>
+        <tr><td><strong>Custom instructions</strong></td><td>Always-on rules loaded every session</td><td>Global conventions &amp; session-start behavior (no trigger needed).</td></tr>
+        <tr><td><strong>MCP servers</strong> <code>/mcp</code></td><td>Tools the model calls directly</td><td>Letting any AI surface drive my tools (e.g. WorkLog).</td></tr>
+        <tr><td><strong>Scheduled prompts</strong></td><td>Recurring autonomous prompts (cron/interval)</td><td>Proactive automation — nudges, end-of-day checks.</td></tr>
+        <tr><td><strong>Subagents / fleet</strong> <code>/fleet</code></td><td>Parallel delegated work</td><td>Running independent tasks at once.</td></tr>
+        <tr><td><strong>Session store</strong></td><td>Copilot's record of everything we've done</td><td>"What did I work on?" reconciliation against my own history.</td></tr>
+        <tr><td><strong>Voice</strong> <code>/voice</code></td><td>Dictation</td><td>Hands-free logging.</td></tr>
+        <tr><td><strong>Plan / Research</strong> <code>/plan</code> <code>/research</code></td><td>Structured deep work</td><td>Big tasks &amp; investigations.</td></tr>
+      </tbody>
+    </table>
+
+    <h4 id="cc-concepts">2. Key concepts to leverage</h4>
+    <ul>
+      <li><strong>Context window</strong> — the working memory of a session; manage it with <code>/context</code> and <code>/compact</code>.</li>
+      <li><strong>Mechanism vs judgment</strong> — put deterministic checks in scripts/tools; leave conversational judgment to skills. (Overlap detection is code; "which item did you mean?" is the skill.)</li>
+      <li><strong>Loaded &ne; executed</strong> — a custom instruction is context I read and apply on my next turn; it is not a literal session-start hook.</li>
+      <li><strong>Per-session schedules</strong> — scheduled prompts belong to one session/machine and die when it closes; re-arm via an always-on instruction.</li>
+    </ul>
+
+    <h4 id="cc-customization">3. The customization stack</h4>
+    <p>The real power is combining layers into one workflow:</p>
+    <div class="card"><strong>memory</strong> (knows my defaults) + <strong>scripts</strong> (deterministic mechanism) + <strong>instructions</strong> (always-on behavior) + <strong>scheduled prompts</strong> (proactive trigger) + <strong>git</strong> (cross-machine sync).</div>
+
+    <!-- TOPIC: Proactive WorkLog -->
+    <div class="topic-head" id="pw-topic">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <h3>Topic: Proactive WorkLog</h3>
+    </div>
+    <p>Flips WorkLog from reactive (acts when asked) to proactive (checks in on a clock).</p>
+
+    <h4 id="pw-what">1. What it does</h4>
+    <ul>
+      <li><strong>End-of-day check</strong> — weekdays 6 PM: shows any running task + untracked gaps, offers the close-out routine.</li>
+      <li><strong>Hourly nudge</strong> — weekdays 10 AM&ndash;5 PM: silent unless something needs attention (long-running task, idle untracked time, or gaps).</li>
+    </ul>
+    <p>The deterministic brain is <code>Check-WorkLogStatus.ps1</code>, which returns a <code>nudge</code> verdict with reasons. Thresholds: long task &ge; 150 min, idle &ge; 30 min, gaps &ge; 10 min. It never changes WorkLog without confirmation.</p>
+
+    <h4 id="pw-autoarm">2. Auto-arm across machines</h4>
+    <p>Scheduled prompts are per-session, so they are re-armed at the start of every session by an always-on instruction:</p>
+    <pre><code>~/.copilot/instructions  -->  (junction)  -->  worklog_web/instructions/worklog-proactive.instructions.md</code></pre>
+    <p>The repo is the sync bus: <code>git pull</code> delivers the instruction + scripts to all 3 machines (same junction pattern as skills). On a new machine, create the junction once:</p>
+    <pre><code>git -C C:\Files\Dev\main\worklog_web pull
+New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\instructions" `
+  -Target "C:\Files\Dev\main\worklog_web\instructions"</code></pre>
+
+    <h4 id="pw-commands">3. Viewing &amp; managing</h4>
+    <table>
+      <thead><tr><th>I want to&hellip;</th><th>Say&hellip;</th></tr></thead>
+      <tbody>
+        <tr><td>See active schedules</td><td><em>"list my schedules"</em></td></tr>
+        <tr><td>Stop the nudges (this session)</td><td><em>"stop my worklog schedules"</em></td></tr>
+        <tr><td>Check status now</td><td><em>"what's my worklog status?"</em></td></tr>
+      </tbody>
+    </table>
+
+    <h4 id="pw-gotchas">4. Gotchas</h4>
+    <div class="callout">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+      <div><strong>Scheduled prompts do NOT appear under <code>/tasks</code></strong> (that panel shows only subagents &amp; shell commands). View them by asking <em>"list my schedules."</em></div>
+    </div>
+    <ul>
+      <li>Schedules only fire while a Copilot session is open; close the terminal and they pause until the next session re-arms them.</li>
+      <li>Two open sessions = two armed copies = brief double nudges. Harmless; close one to dedupe.</li>
+    </ul>
+
+    <!-- TOPIC: WorkLog AI Workflows -->
+    <div class="topic-head" id="aw-topic">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>
+      <h3>Topic: WorkLog AI Workflows</h3>
+    </div>
+    <p>Helper scripts (in <code>worklog_web/src</code>) that the worklog skill calls to reduce manual entry.</p>
+
+    <h4 id="aw-defaults">1. Smart defaults</h4>
+    <p><code>Suggest-WorkDefaults.ps1</code> infers category / project / ADO id for a task title from my own history (exact &gt; prefix &gt; token match). The skill infers before asking, and only asks when there's no match.</p>
+
+    <h4 id="aw-gaps">2. Gap detection</h4>
+    <p><code>Find-WorkGaps.ps1</code> finds untracked spans (&ge; 10 min) inside the work day. Triggers: <em>"find gaps"</em>, <em>"untracked time"</em>, <em>"what did I miss"</em>. Also runs automatically as part of the end-of-day routine.</p>
+
+    <h4 id="aw-calendar">3. Calendar import</h4>
+    <p><code>Import-CalendarDay.ps1</code> turns a day's Outlook meetings into WorkLog entries &mdash; one-shot, <strong>preview &rarr; confirm &rarr; apply</strong>. Keeps only organized/accepted, busy, already-started meetings; skips all-day OOO, free/tentative/declined and personal non-meeting blocks. Infers project from history and dedupes against existing entries. Triggers: <em>"import my calendar"</em>, <em>"log my meetings"</em>. Use <code>-OpenDay</code> to back-fill a past day that has no start-of-day marker.</p>
 
     <!-- ===================== ADD FUTURE SUBJECTS BELOW ===================== -->
 
