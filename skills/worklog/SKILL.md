@@ -10,7 +10,8 @@ description: >-
   standup, weekly summary, start work log / open the web dashboard, set
   category/project/ADO id, lunch, commute to campus, create a note, jot a note,
   date-bound note, remember this, notes dashboard, "get calendar tasks",
-  "get sessions tasks", "get vscode tasks".
+  "get sessions tasks", "get vscode tasks", "what am I working on",
+  "log what I'm doing now", "propose a task".
 argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category development")
 ---
 
@@ -161,6 +162,13 @@ Natural-language phrases that map to specific actions:
   the day's existing WorkLog entries are subtracted, so proposed/created blocks never overlap what's already logged (a block straddling a tracked
   span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
   `-MinMinutes` (default 10) are omitted.
+- **Proactive proposal (zero-entry logging).** For "what am I working on" / "log what I'm doing now" / "propose a task" / a scheduled
+  proactive check: run `pwsh -File C:\Files\Dev\main\worklog_web\src\Suggest-CurrentWork.ps1 [-Json]`. It fuses **live signals** — the active
+  Copilot CLI session (`inuse.*.lock`) + recent **git** commits/dirty trees across your repos + WorkLog state — into a single confirm-ready
+  entry for the current untracked stretch (window = first activity after the last tracked time -> now, trimmed by the non-overlap boundary).
+  It **stays silent while a task is already running** and infers title/category/project (reporting a `confidence` of high/medium/low). Show the
+  proposal, let the user confirm/edit, then log with `-Create` (or `-Create -Title "..." -Category <c> -Project <p>` to override). Best used from
+  a scheduled prompt: run with `-Json`; if `propose` is true, surface it; otherwise say nothing.
 - **Dashboard is always live.** The hosted dashboard reads the cloud DB on each load, so
   any write is visible on refresh — there is no HTML file to regenerate.
 - **Data caveat.** In the stored state, `current` must be a **scalar session id or `null`**,
