@@ -226,6 +226,7 @@
             <a href="#aw-defaults">1. Smart defaults</a>
             <a href="#aw-gaps">2. Gap detection</a>
             <a href="#aw-calendar">3. Calendar import</a>
+            <a href="#aw-sessions">4. Session mining</a>
           </div>
         </details>
 
@@ -577,6 +578,14 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.copilot\instructions" `
 
     <h4 id="aw-calendar">3. Calendar import</h4>
     <p><code>Import-CalendarDay.ps1</code> turns a day's Outlook meetings into WorkLog entries &mdash; one-shot, <strong>preview &rarr; confirm &rarr; apply</strong>. Keeps only organized/accepted, busy, already-started meetings; skips all-day OOO, free/tentative/declined and personal non-meeting blocks. Infers project from history and dedupes against existing entries. Triggers: <em>"import my calendar"</em>, <em>"log my meetings"</em>. Use <code>-OpenDay</code> to back-fill a past day that has no start-of-day marker.</p>
+
+    <h4 id="aw-sessions">4. Session mining</h4>
+    <p>Reconstruct what I worked on from an AI session and create tasks for the untracked parts:</p>
+    <ul>
+      <li><strong>VS Code chat</strong> &rarr; <code>Get-VSCodeWork.ps1 -Folder &lt;repo&gt;</code> &mdash; parses Copilot Chat transcripts.</li>
+      <li><strong>Copilot CLI session</strong> &rarr; <code>Get-CopilotWork.ps1</code> &mdash; parses <code>~/.copilot/session-state/*/events.jsonl</code> (default: all of today's sessions; <code>-Current</code> for the live one).</li>
+    </ul>
+    <p>Both chunk the session into blocks on idle gaps (<code>-GapMinutes</code>) and present a numbered table; pick one, then <code>-Create -Block &lt;ID&gt;</code> logs it with the block's exact start/end. <strong>Non-overlap boundary:</strong> both scripts subtract the day's already-tracked WorkLog entries first, so proposed blocks fall only in <em>untracked</em> time &mdash; a block straddling a logged span is split or dropped (<code>-AllowOverlap</code> to disable). Shared logic lives in <code>worklog_web\src\WorkBlocks.psm1</code>.</p>
 
     <!-- ===================== ADD FUTURE SUBJECTS BELOW ===================== -->
 

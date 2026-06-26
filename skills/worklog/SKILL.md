@@ -151,8 +151,15 @@ Natural-language phrases that map to specific actions:
 - **Logging from VS Code chat.** For "log my work from chat" / "what did I do in the last hour":
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-GapMinutes 90] [-Json]`, present a
   numbered table (ID | work | start | end) — the script splits the session into blocks on idle gaps (`-GapMinutes`, default 90) —
-  let the user pick an ID, then `start -At "<exact start>"`
-  (or `-Create`). Don't parse transcripts manually.
+  let the user pick an ID, then `-Create -Block <ID>` (logs the block with its exact start/end). Don't parse transcripts manually.
+- **Logging from a Copilot CLI session.** For "log my Copilot work" / "create tasks from today's session" / "what did I do in this session":
+  run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
+  It reads today's `~/.copilot/session-state/*/events.jsonl` (default = all of today's sessions; `-Current` = the live one), chunks `user.message`
+  events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
+- **Non-overlap boundary (both getters).** By default both `Get-VSCodeWork.ps1` and `Get-CopilotWork.ps1` **trim every block to untracked time** —
+  the day's existing WorkLog entries are subtracted, so proposed/created blocks never overlap what's already logged (a block straddling a tracked
+  span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
+  `-MinMinutes` (default 10) are omitted.
 - **Dashboard is always live.** The hosted dashboard reads the cloud DB on each load, so
   any write is visible on refresh — there is no HTML file to regenerate.
 - **Data caveat.** In the stored state, `current` must be a **scalar session id or `null`**,
