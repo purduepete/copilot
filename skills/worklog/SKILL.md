@@ -9,7 +9,8 @@ description: >-
   "prepare for work day", "since my last item", recreate/rebuild the worklog html, dashboard,
   standup, weekly summary, start work log / open the web dashboard, set
   category/project/ADO id, lunch, commute to campus, create a note, jot a note,
-  date-bound note, remember this, notes dashboard.
+  date-bound note, remember this, notes dashboard, "get calendar tasks",
+  "get sessions tasks", "get vscode tasks".
 argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category development")
 ---
 
@@ -124,7 +125,7 @@ Natural-language phrases that map to specific actions:
   (pass `-At "<yyyy-MM-dd HH:mm>"` to set a specific time). These bound the work day for
   untracked-gap detection and render as divider rows on the dashboard.
 - **"learning about &lt;x>"** → `start "Learning about <x>" -Category education -Project personal`.
-- **"import my calendar" / "import meetings" / "log my meetings" / "calendar to worklog"** →
+- **"get calendar tasks" / "import my calendar" / "import meetings" / "log my meetings" / "calendar to worklog"** →
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Import-CalendarDay.ps1 -Json` (add
   `-Date <yyyy-MM-dd>` for another day). It reads the day's Outlook meetings (organized/
   accepted, busy, already-started only — skips all-day OOO/holds, free/tentative/declined,
@@ -148,11 +149,11 @@ Natural-language phrases that map to specific actions:
   link `[#N Title](url)` plus **milestone, state, and commit hash**.
 - **Prefer a single Markdown note** over many small notes — the dashboard note modal renders
   basic Markdown (bold, `code`, bullet lists, line breaks, links).
-- **Logging from VS Code chat.** For "log my work from chat" / "what did I do in the last hour":
+- **Logging from VS Code chat.** For "get vscode tasks" / "log my work from chat" / "what did I do in the last hour":
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-GapMinutes 90] [-Json]`, present a
   numbered table (ID | work | start | end) — the script splits the session into blocks on idle gaps (`-GapMinutes`, default 90) —
   let the user pick an ID, then `-Create -Block <ID>` (logs the block with its exact start/end). Don't parse transcripts manually.
-- **Logging from a Copilot CLI session.** For "log my Copilot work" / "create tasks from today's session" / "what did I do in this session":
+- **Logging from a Copilot CLI session.** For "get sessions tasks" / "log my Copilot work" / "create tasks from today's session" / "what did I do in this session":
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
   It reads today's `~/.copilot/session-state/*/events.jsonl` (default = all of today's sessions; `-Current` = the live one), chunks `user.message`
   events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
