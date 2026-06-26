@@ -93,10 +93,13 @@ visible on the web dashboard (https://func-worklog-umcla2.azurewebsites.net/).
      only — the **`personal` profile is exempt** and needs no start-of-day marker). If
      `start`/`add` errors with *"No start-of-day marker…"*, run `startday` (at the
      appropriate time) first, then retry.
-   - **A task can't start before the start-of-day marker** time, and **can't end after
-     the end-of-day marker** time (applies to `start`, `add`, and `stop`). Set/adjust the
-     markers (`startday`/`endday -At <when>`) to widen the day if a task legitimately falls
-     outside it.
+   - **A task must fall entirely within the work-day window.** It **can't start (or occur)
+     before the start-of-day marker**, and **can't start or end after the end-of-day marker**
+     — applies to every entry path: `start`, `add`, `stop`, `edit -Start/-End`, duplicates,
+     the session miners (`Get-CopilotWork`/`Get-VSCodeWork`), and the proactive proposer
+     (`Suggest-CurrentWork`). A task that would fall **wholly outside** the day's bounds is
+     rejected. Set/adjust the markers (`startday`/`endday -At <when>`) to widen the day if a
+     task legitimately falls outside it.
 9. **No overlapping tasks.** A new or edited task's time range must **not overlap** any
    existing task on that day (markers, which are 0-minute, don't count). Before any `add`,
    `start … -At`/`-End`, duplicate, or `edit -Start/-End`, list the day (`log -Days 1`,
