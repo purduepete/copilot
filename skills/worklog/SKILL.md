@@ -149,8 +149,9 @@ Natural-language phrases that map to specific actions:
 - **Prefer a single Markdown note** over many small notes — the dashboard note modal renders
   basic Markdown (bold, `code`, bullet lists, line breaks, links).
 - **Logging from VS Code chat.** For "log my work from chat" / "what did I do in the last hour":
-  run `worklog\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-Json]`, present a
-  numbered table (ID | work | start | end), let the user pick an ID, then `start -At "<exact start>"`
+  run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-GapMinutes 90] [-Json]`, present a
+  numbered table (ID | work | start | end) — the script splits the session into blocks on idle gaps (`-GapMinutes`, default 90) —
+  let the user pick an ID, then `start -At "<exact start>"`
   (or `-Create`). Don't parse transcripts manually.
 - **Dashboard is always live.** The hosted dashboard reads the cloud DB on each load, so
   any write is visible on refresh — there is no HTML file to regenerate.
