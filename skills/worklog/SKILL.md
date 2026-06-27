@@ -10,7 +10,7 @@ description: >-
   standup, weekly summary, start work log / open the web dashboard, set
   category/project/ADO id, lunch, commute to campus, create a note, jot a note,
   date-bound note, remember this, notes dashboard, "get calendar tasks",
-  "get sessions tasks", "get vscode tasks", "what am I working on",
+  "get sessions tasks", "get session tasks", "get vscode tasks", "what am I working on",
   "log what I'm doing now", "propose a task".
 argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category development")
 ---
@@ -162,7 +162,7 @@ Natural-language phrases that map to specific actions:
   numbered table (ID | work | start | end) — the script splits the session into blocks on idle gaps (`-GapMinutes`, default 90) —
   let the user pick an ID, then `-Create -Block <ID>` (logs the block with its exact start/end). Don't parse transcripts manually.
   - **Scan all repos, not just the cwd.** "get vscode tasks" means **every repo two levels under `C:\Files\Dev\` (i.e. `C:\Files\Dev\*\*`, e.g. `C:\Files\Dev\main\webbookmarks`), excluding any folder named `clustergit`** — don't ask for / assume a single folder. Enumerate VS Code `workspaceStorage` (`%APPDATA%\Code\User\workspaceStorage\*\workspace.json`), keep the folders that match that pattern and have a `GitHub.copilot-chat\transcripts` dir, then run `Get-VSCodeWork.ps1 -Folder <repo>` against each for the target day (default today). Present blocks grouped by repo; if a repo has no transcripts for the day, skip it. If **no** repo has activity for the day, say so and surface the most-recent untracked block as a fallback.
-- **Logging from a Copilot CLI session.** For "get sessions tasks" / "log my Copilot work" / "create tasks from today's session" / "what did I do in this session":
+- **Logging from a Copilot CLI session.** For "get sessions tasks" / "get session tasks" / "log my Copilot work" / "create tasks from today's session" / "what did I do in this session":
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
   It reads today's `~/.copilot/session-state/*/events.jsonl` (default = all of today's sessions; `-Current` = the live one), chunks `user.message`
   events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
