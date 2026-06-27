@@ -91,12 +91,13 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
    start-time order — not the WorkLog id. Resolve it by listing the day's entries
    (`log -Days 1`, filter to the target date, sort by start) and mapping position N
    to its id, then act on that id. E.g. today's 5th entry → its actual id for `edit`.
-8. **Workday boundaries are enforced (the module throws on violation):**
+8. **Workday boundaries are enforced (the module throws on violation) — `work` profile ONLY;
+   the `personal` profile has no concept of start/end day, so none of these constraints apply to it:**
    - **Nothing can be logged until that day's `startday` marker exists** (work profiles
      only — the **`personal` profile is exempt** and needs no start-of-day marker). If
      `start`/`add` errors with *"No start-of-day marker…"*, run `startday` (at the
      appropriate time) first, then retry.
-   - **A task must fall entirely within the work-day window.** It **can't start (or occur)
+   - **A task must fall entirely within the work-day window** (work profile only). It **can't start (or occur)
      before the start-of-day marker**, and **can't start or end after the end-of-day marker**
      — applies to every entry path: `start`, `add`, `stop`, `edit -Start/-End`, duplicates,
      the session miners (`Get-CopilotWork`/`Get-VSCodeWork`), and the proactive proposer
