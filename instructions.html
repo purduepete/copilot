@@ -370,7 +370,7 @@
         <tr><td>&ldquo;Remember &lt;text&gt;&rdquo; / &ldquo;Note for July 1: &lt;text&gt;&rdquo;</td><td><code>note</code> (standalone, date-bound)</td></tr>
         <tr><td>&ldquo;Edit item 5: category dev / retitle / set project&rdquo;</td><td><code>edit</code></td></tr>
         <tr><td>&ldquo;Standup&rdquo; / &ldquo;Wrap up the week&rdquo; / &ldquo;Status&rdquo; / &ldquo;Start work log&rdquo;</td><td><code>standup</code> / <code>week</code> / <code>status</code> / <code>serve</code></td></tr>
-        <tr><td>&ldquo;Switch to my personal profile&rdquo;</td><td><code>profile personal</code></td></tr>
+        <tr><td>&ldquo;Switch to my home profile&rdquo;</td><td><code>profile home</code></td></tr>
       </tbody>
     </table>
 
@@ -388,7 +388,7 @@ pwsh -File $wl status                 # what's open
 pwsh -File $wl standup                # / week  / dashboard  / log -Days 14
 pwsh -File $wl serve                  # live-edit dashboard (localhost:8787)
 pwsh -File $wl endday
-pwsh -File $wl status -Profile personal</code></pre>
+pwsh -File $wl status -Profile home</code></pre>
     <ul>
       <li><code>-Category</code> = kind of work (development, meeting, review&hellip;); <code>-Project</code> = which product/app. Both are dashboard columns.</li>
       <li><code>switch</code> moves focus and never closes a session; <code>stop</code> closes one with an accomplishment; <code>close</code> bundles gh-issue note + stop + dashboard in one shot.</li>
@@ -399,7 +399,7 @@ pwsh -File $wl status -Profile personal</code></pre>
     <ul>
       <li><strong>Reports:</strong> daily <em>standup</em>, <em>weekly summary</em>, and an interactive calendar <em>dashboard</em> (HTML + Markdown to paste).</li>
       <li><strong>Parallel sessions:</strong> start/switch never close another session &mdash; they stay open until I stop them.</li>
-      <li><strong>Profiles:</strong> <code>work</code> (links ADO) and <code>personal</code> keep separate logs; <code>-Profile &lt;name&gt;</code> overrides per command, <code>profile personal</code> sets this machine's default.</li>
+      <li><strong>Profiles:</strong> <code>work</code> (links ADO) and <code>home</code> keep separate logs; <code>-Profile &lt;name&gt;</code> overrides per command, <code>profile home</code> sets this machine's default.</li>
       <li><strong>State:</strong> cloud-hosted (Azure Functions + SQL); the CLI authenticates via <code>az account get-access-token</code>.</li>
     </ul>
     <table>
@@ -465,7 +465,7 @@ pwsh -File $g -LastMinutes 60 -Create                        # fuzzy "what was I
         <tr><td><code>worklog-item-resolution</code></td><td><em>"delete item 1"</em> (no day = today; empty today = no-op)</td></tr>
         <tr><td><code>worklog-link-github</code></td><td><em>"link this task to its GitHub issue"</em></td></tr>
         <tr><td><code>worklog-endday</code></td><td><em>"end my work day"</em>, <em>"am I ready to close the day?"</em></td></tr>
-        <tr><td><code>worklog-profile</code></td><td><em>"set profile personal"</em>, <em>"what profile am I on?"</em></td></tr>
+        <tr><td><code>worklog-profile</code></td><td><em>"set profile home"</em>, <em>"what profile am I on?"</em></td></tr>
         <tr><td><code>ado-worklist</code></td><td><em>"Regenerate my ADO work item list"</em></td></tr>
         <tr><td><code>github-worklist</code></td><td><em>"show my open GitHub items"</em></td></tr>
         <tr><td><code>calendar</code></td><td><em>"what meeting am I in?"</em>, <em>"read my calendar"</em></td></tr>

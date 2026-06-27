@@ -37,7 +37,7 @@ as that day's WorkLog commentary (shown at the top of the dashboard).
      ForEach-Object { "[$($_.category)/$($_.project)] title='$($_.title)' acc='$($_.accomplishment)'" }
    ```
 
-   (For the `personal` profile, pass `-Profile personal`.)
+   (For the `home` profile, pass `-Profile home`.)
 
 2. **Compose** a <=2-line highlights string following the Rules above, drawing on the
    titles/accomplishments and ignoring travel/lunch/empty rows.

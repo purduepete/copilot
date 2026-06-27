@@ -1,19 +1,19 @@
 ---
 name: worklog-profile
 description: >-
-  Show or set this machine's default WorkLog profile (work, personal, or any
+  Show or set this machine's default WorkLog profile (work, home, or any
   other), and turn each profile's "time bound" (daily start/end-of-day
   constraint) on or off. WHEN: "set profile <x>", "get profile", "set time bound
-  on", "set time bound off", "get time bound", "change profile to personal",
+  on", "set time bound off", "get time bound", "change profile to home",
   "switch to work profile", "what profile am I on", "does this profile use
-  time bounds", "turn time bounds off for <profile>", "use the personal log by
+  time bounds", "turn time bounds off for <profile>", "use the home log by
   default".
 argument-hint: set profile <x> | get profile | set time bound on|off | get time bound
 ---
 
 # WorkLog profile
 
-Each machine has a **default WorkLog profile** (`work`, `personal`, or any other
+Each machine has a **default WorkLog profile** (`work`, `home`, or any other
 name) that decides where time-tracking entries land unless a command overrides it
 with `-Profile`. Each profile also carries a **time bound** flag — whether the daily
 start/end-of-day constraints apply to it. Both are managed through the one WorkLog
@@ -39,7 +39,7 @@ pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile [name] [-Bounds on|o
 When a profile's time bound is **on**, the work-day constraints apply: nothing can be
 logged before that day's `startday` marker exists, and tasks must fall inside the
 `startday`/`endday` window. When **off**, those constraints are skipped entirely — you
-can log any time without markers (this is how `personal` behaves by default).
+can log any time without markers (this is how `home` behaves by default).
 
 The flag is stored **per profile, server-side** (cloud DB), so it's consistent on all
 your machines. Resolution when never set explicitly: **OFF for every profile** — opt a
@@ -51,7 +51,7 @@ profile into the work-day constraints with `set time bound on`.
 
 ```powershell
 pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile
-# -> Current profile: personal
+# -> Current profile: home
 # -> Daily start/end bounds: not enforced (default)
 ```
 
@@ -60,11 +60,11 @@ profile); `(explicit)` means it was set with `-Bounds`.
 
 ## Set / change the profile
 
-"Set profile personal" / "change profile to work" / "switch to the personal log"
+"Set profile home" / "change profile to work" / "switch to the home log"
 
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile personal
-# -> Default profile for this machine set to 'personal'.
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile home
+# -> Default profile for this machine set to 'home'.
 ```
 
 **When setting a profile, ASK whether its time bound will be on or off** (unless the
@@ -92,13 +92,13 @@ pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile work -Bounds default
    bound change, state the profile and its new on/off state.
 2. **Ask about the time bound when setting a new/unfamiliar profile.** For a profile
    that already has a known setting, don't re-ask unless the user brings it up.
-3. **Default names are `work` and `personal`,** but any name is valid (multiple
-   profiles are supported). Normalize obvious phrasings ("the personal log") to the
+3. **Default names are `work` and `home`,** but any name is valid (multiple
+   profiles are supported). Normalize obvious phrasings ("the home log") to the
    bare name.
 4. **Time-bound reminder.** Time bound ON means logging requires that day's `startday`
    marker and tasks must fall inside the work-day window. Turning it OFF removes those
-   constraints (like `personal`).
+   constraints (like `home`).
 5. Don't pass `-Profile` to the `profile` verb — the profile name is a positional
-   argument (`profile personal`), not a `-Profile` switch. Use `-Bounds` for the time
+   argument (`profile home`), not a `-Profile` switch. Use `-Bounds` for the time
    bound.
 

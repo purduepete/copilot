@@ -27,7 +27,7 @@ one entry point, which calls the hosted API (auth via `az` token, no secret):
 pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 <command> [args]
 ```
 
-Profiles keep logs separate: `work` and `personal`. Each machine has a **default
+Profiles keep logs separate: `work` and `home`. Each machine has a **default
 profile** — **don't assume `work`**: read it first with
 `pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile` (prints `Current profile: <name>`)
 and use that as the active profile, overriding with `-Profile <name>` only when the user
@@ -183,7 +183,7 @@ Natural-language phrases that map to specific actions:
   span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
   `-MinMinutes` (default 10) are omitted.
   - **Trimming is now cross-profile by default (no double-counting).** `Get-WorkLogBusy` unions the busy intervals of **all** profiles
-    (`work` + `personal`), so a block is trimmed to time untracked in **any** log regardless of which `-Profile` you preview/log under — the
+    (`work` + `home`), so a block is trimmed to time untracked in **any** log regardless of which `-Profile` you preview/log under — the
     17:18-vs-18:08 cross-profile double-count is fixed. Pass **`-ProfileOnlyTrim`** to restrict trimming to the target `-Profile` only (legacy
     behavior). You still pass the `-Profile` you'll log under (it sets where the entry lands and which markers apply), but the trimmed start no
     longer shifts between profiles. Use `-AllowOverlap` for raw, untrimmed blocks.
@@ -229,7 +229,7 @@ pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add "<copied title>" -Start 
 
 Notes are things to remember tied to a **calendar date**, with **no start/stop time** —
 distinct from time-tracked sessions. They live in the same WorkLog state (so they honor
-the `work` / `personal` profile split) and render to their own **notes-dashboard.html**.
+the `work` / `home` profile split) and render to their own **notes-dashboard.html**.
 
 - **"Create / jot a note", "remember this", "note that…"** → `note "<text>"`. Defaults to
   **today**; pass `-Date <yyyy-MM-dd>` for another day, `-Category <c>`, `-Tags a,b`.
