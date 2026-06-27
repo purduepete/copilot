@@ -209,6 +209,7 @@ Natural-language phrases that map to specific actions:
 |---|---|---|---|
 | `Commute to campus` | travel | work | 07:00–09:30 |
 | `Lunch` | lunch | — | user supplies the range |
+| WorkLog / dashboard side-project work | development | `worklog` | logged under the `home` profile |
 
 Add these with `add "<Item>" -Start <s> -End <e> -Category <cat> [-Project <proj>]`.
 
