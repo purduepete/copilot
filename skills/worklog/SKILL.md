@@ -93,10 +93,9 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
    to its id, then act on that id. E.g. today's 5th entry → its actual id for `edit`.
 8. **Workday boundaries are enforced (the module throws on violation) — per-profile,
    controlled by each profile's `enforceWorkday` flag (see the `worklog-profile` skill).
-   By default `work` (and any non-`personal` profile) enforces; `personal` does not —
-   but this is now configurable per profile via `profile <name> -Bounds on|off`. A
-   profile with bounds OFF has no concept of start/end day, so none of these constraints
-   apply to it:**
+   By default **no profile enforces** (time bound OFF for all); opt a profile in with
+   `profile <name> -Bounds on`. A profile with bounds OFF has no concept of start/end
+   day, so none of these constraints apply to it:**
    - **Nothing can be logged until that day's `startday` marker exists** (bounds-on
      profiles only — a **bounds-off profile is exempt** and needs no start-of-day marker).
      If `start`/`add` errors with *"No start-of-day marker…"*, run `startday` (at the
