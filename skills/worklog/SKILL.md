@@ -11,7 +11,9 @@ description: >-
   category/project/ADO id, lunch, commute to campus, create a note, jot a note,
   date-bound note, remember this, notes dashboard, "get calendar tasks",
   "get sessions tasks", "get session tasks", "get vscode tasks", "what am I working on",
-  "log what I'm doing now", "propose a task".
+  "log what I'm doing now", "propose a task", edit a task/entry, "delete item N",
+  "delete task N", "delete entry N", "remove item N", delete/remove a session,
+  "duplicate item N".
 argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category development")
 ---
 
