@@ -144,6 +144,7 @@
             <a href="#wl-phrases">2. Common phrases</a>
             <a href="#wl-cli">3. Direct CLI</a>
             <a href="#wl-locations">4. Locations</a>
+            <a href="#wl-profiles">5. Managing profiles</a>
           </div>
         </details>
 
@@ -411,6 +412,33 @@ pwsh -File $wl status -Profile home</code></pre>
         <tr><td>github.com/purduepete/worklog_web</td><td>Repo (synced across machines via git)</td></tr>
       </tbody>
     </table>
+
+    <h4 id="wl-profiles">5. Managing profiles</h4>
+    <p>Profiles keep separate logs (e.g. <code>work</code>, <code>home</code>). The CLI supports full
+      lifecycle &mdash; list, create, rename, and delete &mdash; via the <code>profile</code> command:</p>
+    <pre><code>$wl = "C:\Files\Dev\main\worklog_web\cli\wl.ps1"
+pwsh -File $wl profile                         # show this machine's default profile + bounds
+pwsh -File $wl profile home                    # set this machine's default profile
+pwsh -File $wl profile -List                   # all profiles with row counts (sessions/notes/&hellip;)
+pwsh -File $wl profile side -Create            # create a new profile
+pwsh -File $wl profile side -Rename hobby      # rename (moves all of its data)
+pwsh -File $wl profile hobby -Delete           # DRY RUN &mdash; shows what would be deleted, deletes nothing
+pwsh -File $wl profile hobby -Delete -Yes      # actually delete it (and ALL its data)</code></pre>
+    <div class="callout">
+      <strong>Delete guardrails.</strong> Deletion is strict and irreversible: it
+      <strong>cascades to all of that profile's data</strong> (sessions, task-notes, notes, commentary).
+      A bare <code>-Delete</code> is a <strong>dry run</strong> that only previews the row counts &mdash; nothing
+      is removed without <code>-Yes</code>. The CLI <strong>refuses to delete the active/default profile</strong>
+      (switch to another first) and <strong>refuses to delete the last remaining profile</strong>; deleting a
+      nonexistent profile errors.
+    </div>
+    <ul>
+      <li><strong>Names</strong> must match <code>^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$</code> (URL-safe, no spaces).</li>
+      <li><strong>Reads never create profiles</strong> &mdash; viewing <code>?profile=X</code> on the dashboard no
+        longer resurrects an empty ghost row.</li>
+      <li>Start/end-day markers + time-bound constraints apply <strong>only to the <code>work</code> profile</strong>;
+        <code>home</code> has no start/end-day concept (bounds default off &mdash; see the <code>worklog-profile</code> skill).</li>
+    </ul>
 
     <div class="topic-head" id="vc-chats">
       <svg class="icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
