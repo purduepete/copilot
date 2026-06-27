@@ -1,14 +1,16 @@
 ---
 name: worklog-profile
 description: >-
-  Show or set this machine's default WorkLog profile (work, home, or any
-  other), and turn each profile's "time bound" (daily start/end-of-day
-  constraint) on or off. WHEN: "set profile <x>", "get profile", "set time bound
-  on", "set time bound off", "get time bound", "change profile to home",
-  "switch to work profile", "what profile am I on", "does this profile use
-  time bounds", "turn time bounds off for <profile>", "use the home log by
-  default".
-argument-hint: set profile <x> | get profile | set time bound on|off | get time bound
+  Show, set, list, create, rename, or delete WorkLog profiles (work, home, or
+  any other), and turn each profile's "time bound" (daily start/end-of-day
+  constraint) on or off. Deleting a profile removes ALL its data and is strictly
+  guarded. WHEN: "set profile <x>", "get profile", "list profiles", "create a
+  profile", "new profile <x>", "rename profile <x> to <y>", "delete profile <x>",
+  "remove profile <x>", "set time bound on", "set time bound off", "get time
+  bound", "change profile to home", "switch to work profile", "what profile am I
+  on", "does this profile use time bounds", "turn time bounds off for <profile>",
+  "use the home log by default".
+argument-hint: set <x> | get | -List | <x> -Create | <x> -Rename <y> | <x> -Delete [-Yes] | -Bounds on|off
 ---
 
 # WorkLog profile
@@ -85,6 +87,46 @@ pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile work -Bounds default
   (`profile -Bounds on`); add a name to target another (`profile work -Bounds on`).
 - Setting `-Bounds` does **not** by itself change the machine default — pass the
   name too if you also want to switch.
+
+## Manage profiles (list / create / rename / delete)
+
+All profile data lives server-side (cloud DB). These operate on the **named**
+profile (positional or `-Profile`), independent of the machine default.
+
+```powershell
+# List every profile with row counts (* = this machine's default)
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile -List
+
+# Create a new, empty profile (optional -Label / -Org for ADO linking)
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Create
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Create -Label 'Side gig'
+
+# Rename a profile — MIGRATES all of its data (sessions, task-notes, notes,
+# commentary) to the new name in one transaction. Fails if the new name exists.
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Rename hobby
+
+# Delete a profile AND ALL its data — strictly guarded (see below)
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile hobby -Delete        # dry run: shows what WOULD be deleted, deletes nothing
+pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile hobby -Delete -Yes   # actually delete it
+```
+
+### Delete guardrails (all enforced — do not try to bypass)
+
+1. **Two-step by default.** `-Delete` without `-Yes` is a **dry run**: it prints the
+   exact row counts that would be removed and deletes nothing. Only `-Delete -Yes`
+   actually deletes. Always show the user the dry-run counts and get explicit
+   go-ahead before re-running with `-Yes`.
+2. **Server requires an exact-name confirmation** (`confirm == <name>`); a bare
+   delete call is always treated as a preview.
+3. **Cannot delete the machine's active/default profile** — switch to another
+   profile first (`profile <other>`), then delete.
+4. **Cannot delete the last remaining profile** (the server refuses).
+5. Deletion is **permanent and cascades** to every session, task-note, standalone
+   note, and commentary entry for that profile. Treat it like `rm -rf`.
+
+### Naming
+Profile names must be URL-safe: letters, numbers, hyphen or underscore (no spaces),
+starting with a letter or number, max 64 chars.
 
 ## Rules
 
