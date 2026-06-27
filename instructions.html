@@ -425,12 +425,13 @@ pwsh -File $wl profile side -Rename hobby      # rename (moves all of its data)
 pwsh -File $wl profile hobby -Delete           # DRY RUN &mdash; shows what would be deleted, deletes nothing
 pwsh -File $wl profile hobby -Delete -Yes      # actually delete it (and ALL its data)</code></pre>
     <div class="callout">
-      <strong>Delete guardrails.</strong> Deletion is strict and irreversible: it
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+      <div><strong>Delete guardrails.</strong> Deletion is strict and irreversible: it
       <strong>cascades to all of that profile's data</strong> (sessions, task-notes, notes, commentary).
       A bare <code>-Delete</code> is a <strong>dry run</strong> that only previews the row counts &mdash; nothing
       is removed without <code>-Yes</code>. The CLI <strong>refuses to delete the active/default profile</strong>
       (switch to another first) and <strong>refuses to delete the last remaining profile</strong>; deleting a
-      nonexistent profile errors.
+      nonexistent profile errors.</div>
     </div>
     <ul>
       <li><strong>Names</strong> must match <code>^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$</code> (URL-safe, no spaces).</li>
