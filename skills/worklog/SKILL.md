@@ -25,9 +25,12 @@ one entry point, which calls the hosted API (auth via `az` token, no secret):
 pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 <command> [args]
 ```
 
-Profiles keep logs separate: `work` (default) and `personal`. Add `-Profile personal`
-to any command to target the personal log. Everything persists to the cloud DB and is
-visible on the web dashboard (https://func-worklog-umcla2.azurewebsites.net/).
+Profiles keep logs separate: `work` and `personal`. Each machine has a **default
+profile** — **don't assume `work`**: read it first with
+`pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile` (prints `Current profile: <name>`)
+and use that as the active profile, overriding with `-Profile <name>` only when the user
+asks for the other log. Everything persists to the cloud DB and is visible on the web
+dashboard (https://func-worklog-umcla2.azurewebsites.net/).
 
 ## Commands
 
@@ -166,6 +169,12 @@ Natural-language phrases that map to specific actions:
   the day's existing WorkLog entries are subtracted, so proposed/created blocks never overlap what's already logged (a block straddling a tracked
   span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
   `-MinMinutes` (default 10) are omitted.
+  - **Match the getter's `-Profile` to the active profile (read it via `profile` first).** Trimming is **per-profile** — the getters default to
+    `-Profile work` and only subtract that profile's entries. If you preview under one profile but later log under another, the block's start/length
+    **changes** (e.g. a span already tracked under `work` is trimmed away there but reappears untrimmed under `personal`, double-counting it). So pass the
+    **same** `-Profile <name>` you'll log under to **both** the preview and the `-Create` call, and keep the **trimmed** start the preview showed.
+  - **Never combine `-Json` with `-Create`.** `Get-CopilotWork.ps1`/`Get-VSCodeWork.ps1` `return` on `-Json` **before** the create branch, so
+    `-Json -Create` prints JSON and logs **nothing**. Use `-Json` only to read blocks; drop it when creating.
 - **Proactive proposal (zero-entry logging).** For "what am I working on" / "log what I'm doing now" / "propose a task" / a scheduled
   proactive check: run `pwsh -File C:\Files\Dev\main\worklog_web\src\Suggest-CurrentWork.ps1 [-Json]`. It fuses **live signals** — the active
   Copilot CLI session (`inuse.*.lock`) + recent **git** commits/dirty trees across your repos + WorkLog state — into a single confirm-ready
