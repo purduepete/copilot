@@ -50,6 +50,7 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
 | `summary "<text>"` | Set the day's commentary | |
 | `status` | Show open sessions + time logged today | |
 | `log -Days <n>` | List recent entries (ids, start, minutes, title) | |
+| `delete -Id <n>` | Delete a session (`-Id` is the **actual global id**) | |
 | `search "<q>"` | Search all sessions | `-Days <n>` |
 | `standup` / `week` / `dashboard` | Regenerate the respective HTML report | `-NoOpen` |
 | `serve` | Print the hosted dashboard URL (no local server — fully web) | |
@@ -87,10 +88,15 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
    **"Recreate / rebuild the html"** = `dashboard` (just opens that URL — the page is
    always live).
 7. **"Item N" = per-day position, not the global id.** When the user says "item 5"
-   (or "task 3"), they mean the **Nth entry of that day**, counting from **1** in
-   start-time order — not the WorkLog id. Resolve it by listing the day's entries
+   (or "task 3", or just "task 1"), they mean the **Nth entry of that day**, counting from **1** in
+   start-time order — **this is exactly the `Id` shown per-day on the web dashboard**, which
+   restarts at 1 each day and is **not** the WorkLog global id. Resolve it by listing the day's entries
    (`log -Days 1`, filter to the target date, sort by start) and mapping position N
-   to its id, then act on that id. E.g. today's 5th entry → its actual id for `edit`.
+   to its **actual global id**, then act on that id. This applies to **every** id-taking verb —
+   `edit`, `stop -Id`, `switch`, `tasknote -Id`, and **`delete -Id`**. E.g. "delete task 1" →
+   resolve today's 1st entry to its real id, then `delete -Id <thatId>`.
+   **Verify the resolved id exists before deleting** — `delete` reports success even for a
+   nonexistent id, so never pass a raw number straight through without resolving it first.
 8. **Workday boundaries are enforced (the module throws on violation) — per-profile,
    controlled by each profile's `enforceWorkday` flag (see the `worklog-profile` skill).
    By default **no profile enforces** (time bound OFF for all); opt a profile in with
