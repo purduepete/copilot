@@ -170,10 +170,11 @@ Natural-language phrases that map to specific actions:
   the day's existing WorkLog entries are subtracted, so proposed/created blocks never overlap what's already logged (a block straddling a tracked
   span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
   `-MinMinutes` (default 10) are omitted.
-  - **Match the getter's `-Profile` to the active profile (read it via `profile` first).** Trimming is **per-profile** — the getters default to
-    `-Profile work` and only subtract that profile's entries. If you preview under one profile but later log under another, the block's start/length
-    **changes** (e.g. a span already tracked under `work` is trimmed away there but reappears untrimmed under `personal`, double-counting it). So pass the
-    **same** `-Profile <name>` you'll log under to **both** the preview and the `-Create` call, and keep the **trimmed** start the preview showed.
+  - **Trimming is now cross-profile by default (no double-counting).** `Get-WorkLogBusy` unions the busy intervals of **all** profiles
+    (`work` + `personal`), so a block is trimmed to time untracked in **any** log regardless of which `-Profile` you preview/log under — the
+    17:18-vs-18:08 cross-profile double-count is fixed. Pass **`-ProfileOnlyTrim`** to restrict trimming to the target `-Profile` only (legacy
+    behavior). You still pass the `-Profile` you'll log under (it sets where the entry lands and which markers apply), but the trimmed start no
+    longer shifts between profiles. Use `-AllowOverlap` for raw, untrimmed blocks.
   - **Never combine `-Json` with `-Create`.** `Get-CopilotWork.ps1`/`Get-VSCodeWork.ps1` `return` on `-Json` **before** the create branch, so
     `-Json -Create` prints JSON and logs **nothing**. Use `-Json` only to read blocks; drop it when creating.
 - **Proactive proposal (zero-entry logging).** For "what am I working on" / "log what I'm doing now" / "propose a task" / a scheduled
