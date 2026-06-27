@@ -22,8 +22,7 @@
 [CmdletBinding()]
 param(
     [string]$SkillsRepo = $PSScriptRoot,
-    [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills'),
-    [string]$ClaudeTarget = 'C:\Files\Dev\.claude\skills'
+    [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills')
 )
 
 function Install-SkillJunctions {
@@ -61,7 +60,5 @@ function Install-SkillJunctions {
 
 Write-Host "--- Copilot CLI ($CopilotTarget) ---"
 Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $CopilotTarget
-Write-Host "`n--- Claude Code (.claude/skills) ($ClaudeTarget) ---"
-Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $ClaudeTarget
 
 Write-Host "`nDone."

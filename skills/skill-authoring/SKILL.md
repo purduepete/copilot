@@ -15,8 +15,7 @@ argument-hint: The skill name and what it should do / trigger on
 
 All of @jimb's skills live in the **copilot** repo at
 `C:\Files\Dev\main\copilot\skills\<name>\SKILL.md` and are junctioned into
-both `~/.copilot/skills` (GitHub Copilot CLI) and `C:\Files\Dev\.claude\skills`
-(Claude Code). Follow every step below — **do not stop after writing the
+`~/.copilot/skills` (GitHub Copilot CLI). Follow every step below — **do not stop after writing the
 SKILL.md.** Updating the Reference Hub catalog (step 5) is mandatory.
 
 ## 1. Scaffold the skill folder
