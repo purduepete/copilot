@@ -91,19 +91,24 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
    start-time order — not the WorkLog id. Resolve it by listing the day's entries
    (`log -Days 1`, filter to the target date, sort by start) and mapping position N
    to its id, then act on that id. E.g. today's 5th entry → its actual id for `edit`.
-8. **Workday boundaries are enforced (the module throws on violation) — `work` profile ONLY;
-   the `personal` profile has no concept of start/end day, so none of these constraints apply to it:**
-   - **Nothing can be logged until that day's `startday` marker exists** (work profiles
-     only — the **`personal` profile is exempt** and needs no start-of-day marker). If
-     `start`/`add` errors with *"No start-of-day marker…"*, run `startday` (at the
+8. **Workday boundaries are enforced (the module throws on violation) — per-profile,
+   controlled by each profile's `enforceWorkday` flag (see the `worklog-profile` skill).
+   By default `work` (and any non-`personal` profile) enforces; `personal` does not —
+   but this is now configurable per profile via `profile <name> -Bounds on|off`. A
+   profile with bounds OFF has no concept of start/end day, so none of these constraints
+   apply to it:**
+   - **Nothing can be logged until that day's `startday` marker exists** (bounds-on
+     profiles only — a **bounds-off profile is exempt** and needs no start-of-day marker).
+     If `start`/`add` errors with *"No start-of-day marker…"*, run `startday` (at the
      appropriate time) first, then retry.
-   - **A task must fall entirely within the work-day window** (work profile only). It **can't start (or occur)
+   - **A task must fall entirely within the work-day window** (bounds-on profiles only). It **can't start (or occur)
      before the start-of-day marker**, and **can't start or end after the end-of-day marker**
      — applies to every entry path: `start`, `add`, `stop`, `edit -Start/-End`, duplicates,
      the session miners (`Get-CopilotWork`/`Get-VSCodeWork`), and the proactive proposer
      (`Suggest-CurrentWork`). A task that would fall **wholly outside** the day's bounds is
      rejected. Set/adjust the markers (`startday`/`endday -At <when>`) to widen the day if a
-     task legitimately falls outside it.
+     task legitimately falls outside it. (To check/toggle a profile's bounds, use
+     `profile [-Bounds on|off|default]`.)
 9. **No overlapping tasks.** A new or edited task's time range must **not overlap** any
    existing task on that day (markers, which are 0-minute, don't count). Before any `add`,
    `start … -At`/`-End`, duplicate, or `edit -Start/-End`, list the day (`log -Days 1`,
