@@ -81,8 +81,16 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
      missing field(s). Never silently guess without either history or the user.
    - **item (title)** must always come from the user — never invent it.
    (Time can still be inferred per rule 2.)
-4. **Verify before/after.** Run `status` first when context is unclear; after a write,
-   the command echoes the entry id (e.g. `+ Added #37`). Use that id for follow-up edits.
+4. **Verify before/after — confirm the data actually persisted.** Run `status` first when
+   context is unclear; after a write, the command echoes the entry id (e.g. `+ Added #37`).
+   Use that id for follow-up edits. **The echo is not proof the field was stored** — `edit`
+   prints `Edited #N` (and `add` prints `Added #N`) even when a field is silently dropped
+   (e.g. a long free-text `-Accomplishment`/`-Blocker` whose inline quoting trips up the
+   shell). After every write that sets a free-text field, **read the entry back and check the
+   field is present** (e.g. `search "<title fragment>" -Days 1` and confirm the `acc:`/note
+   line, or `log -Days 1`). If it's missing, re-apply it by **passing the text via a
+   PowerShell variable** (`$acc = "..."; wl.ps1 edit -Id N -Accomplishment $acc`) rather than
+   inline, then re-verify.
 5. **Correct obvious typos** in category/project/title (e.g. "Investigatoin" → "Investigation"),
    and tell the user what you changed so they can revert.
 6. **"Start work log"** = the hosted dashboard at
