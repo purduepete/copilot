@@ -4,9 +4,12 @@ description: >-
   Conventions for how WorkLog entries are worded: keep the item TITLE (the "Item"
   column) short and scannable, and put the detail/specifics in the ACCOMPLISHMENT
   field. When the user gives a long descriptive title, split it — concise title +
-  detailed accomplishment. WHEN: creating/starting/closing a WorkLog task, "the
-  item column should be simpler", "shorten the title", "carry this over to the
-  accomplishment", "make the title cleaner", naming a task, writing an accomplishment.
+  detailed accomplishment. Both title AND accomplishment are mandatory — when logging
+  mined work (vscode/session blocks) dig into the transcript to make both representative.
+  WHEN: creating/starting/closing a WorkLog task, "the item column should be simpler",
+  "shorten the title", "carry this over to the accomplishment", "make the title cleaner",
+  "add accomplishments", "title isn't representative", "dig deeper", naming a task,
+  writing an accomplishment.
 argument-hint: e.g. "shorten item 3's title and move detail to accomplishment"
 ---
 
@@ -54,6 +57,29 @@ pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> `
 ```
 
 Resolve "item N" to its id positionally (Nth entry of the day) per the **worklog** skill.
+
+## Both fields are mandatory — dig deeper for mined work
+
+Every entry needs **both** a representative title **and** an accomplishment — never
+ship a title-only entry. The miners (`Get-VSCodeWork.ps1` / `Get-CopilotWork.ps1`)
+default the title to the block's *first* message and set **no** accomplishment, which
+is almost never representative of the whole block.
+
+When logging (or fixing up) a mined block, **read the underlying transcript** before
+wording the entry — don't trust the first/last snippet:
+
+- VS Code: `%APPDATA%\Code\User\workspaceStorage\<hash>\GitHub.copilot-chat\transcripts\*.jsonl`
+  (the hash is the one the miner maps the folder to). Pull `user.message` events
+  (`$o.data.content`) across the block's time window — a block can span multiple
+  transcript files.
+- Copilot CLI: `~/.copilot/session-state/*/events.jsonl` (`user.message` events).
+
+Scan **all** the user messages, identify the recurring themes, and write:
+
+1. A short, scannable **title** covering the dominant theme (split if multi-theme).
+2. An **accomplishment** that lists the concrete things actually done across the block.
+
+Then verify both persisted (read back via `search`/`log`), per the worklog skill's rule 4.
 
 ## Notes
 
