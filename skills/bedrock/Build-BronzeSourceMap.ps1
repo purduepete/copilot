@@ -58,12 +58,47 @@ if (-not $ioFiles) { throw "No repo_inventory_io.csv files under $solDir" }
 # --- classify a storage account / system into a provisioning method -----------
 function Get-Method {
     param([string[]]$Accounts, [string]$System)
-    $blob = (($Accounts -join ' ') + ' ' + $System).ToLower()
-    if ($blob -match 'pme|spme')              { return 'data copy (PME/elevated)' }
-    if ($blob -match 'msit-onelake|\bmsit\b') { return 'data copy (PME/elevated)' }
-    if ($blob -match 'cseoedl|cseo')          { return 'review (cross-tenant?)' }
-    if ($Accounts.Count -eq 0)                { return 'review (no path resolved)' }
-    return 'shortcut'
+    $tenants = @($Accounts | ForEach-Object { Get-Tenant $_ } | Sort-Object -Unique)
+    if (-not $tenants) { return 'review (no path resolved)' }
+    # ECADL is a separate Enterprise-Commerce data lake reached via a Synapse linked
+    # service -> not OneLake-shortcut-able -> scheduled data copy.
+    if ($tenants -contains 'ECADL') { return 'data copy (cross-org: ECADL)' }
+    # FDE + CSEO EDL are same-AAD-tenant ADLS Gen2 -> OneLake shortcut-able.
+    if (($tenants | Where-Object { $_ -in 'FDE','CSEO' }).Count -eq $tenants.Count) { return 'shortcut' }
+    if ($tenants -contains 'FABRIC') { return 'review (Fabric republish, not a source)' }
+    return 'review (confirm tenant)'
+}
+
+# Resolved storage-account -> AAD-tenant grouping (from the WCS/ARR source-repo
+# config: Includes/WCSUtilities.py token->abfss definitions). Same Microsoft AAD
+# tenant (FDE + CSEO) is shortcut-able; ECADL is a separate commerce org.
+function Get-Tenant([string]$Account){
+    if (-not $Account) { return $null }
+    $a = $Account.ToLower()
+    if ($a -match 'fdedatalake|fdestorage|mssalesfdlake|agilebistorage|fdesynapse') { return 'FDE' }
+    if ($a -match 'cseoedl|^dlspme|spme|comsme') { return 'CSEO' }
+    if ($a -match 'ecadl') { return 'ECADL' }
+    if ($a -match 'msit-onelake|fabric') { return 'FABRIC' }
+    return 'OTHER'
+}
+
+# Config-token -> storage account, resolved from the source-repo Includes
+# (lets us classify systems whose io paths recorded only a token, no abfss).
+$TokenAccount = @{
+    'abidataread'='fdedatalakeprod01'; 'abidatawrite'='fdedatalakeprod01'; 'abidata'='fdedatalakeprod01'
+    'conformed'='fdedatalakeprod01'; 'conformedvnext'='fdedatalakeprod01'; 'fdedataproductread'='fdedatalakeprod01'
+    'mssalesfdl'='mssalesfdlakeprod'; 'mssales_fdl'='mssalesfdlakeprod'; 'fdlread'='mssalesfdlakeprod'
+    'spmedlp'='cseoedlprodadlsg2wus230'; 'pathocdm'='cseoedlprodadlsg2wus203'; 'cseofderead'='cseoedlprodadlsg2wus207'
+    'cseo'='cseoedlprodadlsg2wus201'; 'comsmeedl'='cseoedlprodadlsg2wus201'
+    'pathintakelir'='ecadlsprod'; 'datalakestorereaderecadl'='ecadlsprod'; 'ecadl'='ecadlsprod'
+}
+function Resolve-TokenAccount([string]$Path){
+    $t = $null
+    if ($Path -match '^\{([^}]+)\}') { $t = $Matches[1] }
+    elseif ($Path -match '^/?mnt/([^/]+)') { $t = $Matches[1] }
+    elseif ($Path -match '^\$([A-Za-z0-9_]+)') { $t = $Matches[1] }
+    if ($t) { $t = $t.ToLower(); if ($TokenAccount.ContainsKey($t)) { return $TokenAccount[$t] } }
+    return $null
 }
 
 # --- gather external upstream inputs -----------------------------------------
@@ -85,6 +120,7 @@ foreach ($f in $ioFiles) {
                 # config tokens ($var, {var}, redacted, region placeholders) are not resolved accounts
                 if ($acctHost -notmatch '[\${}]' -and $acctHost -notmatch 'redacted' -and $acctHost) { $acct = $acctHost }
             }
+            if (-not $acct) { $acct = Resolve-TokenAccount $p }   # fall back to token->account map
             $dep = 0; [int]::TryParse($row.dependency, [ref]$dep) | Out-Null
             $pathRows.Add([pscustomobject]@{
                 solution = $solution

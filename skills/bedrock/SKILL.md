@@ -95,6 +95,16 @@ pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Build-BronzeSourceMap.ps1 -J
 `-NoOpen`. Outputs `bronze-source-map.html` (visual) + `bronze-source-map.csv`
 (path-grain detail). Re-run as more solutions are analysed to refresh the picture.
 
+**Token resolution.** Many io paths record only a config token (e.g. `{abidataread}`,
+`{pathIntakeLIR}`). The script resolves the common ones to real storage accounts +
+AAD tenant using a built-in map derived from the source-repo includes
+(`FDE_ProcessDataCloud` → `Includes/WCSUtilities.py`): `abidataread/abidatawrite/
+Conformed → fdedatalakeprod01` (FDE), `mssalesfdl → mssalesfdlakeprod` (FDE),
+`spmedlp/pathOcdm/cseofderead → cseoedlprod*` (CSEO, same AAD tenant → still
+shortcut-able), `pathIntakeLIR → ecadlsprod` (ECADL, a separate Enterprise-Commerce
+org reached via a Synapse linked service → **data copy**, not shortcut). Extend
+`$TokenAccount` / `Get-Tenant` as more sources are confirmed.
+
 ## Repo conventions to honor
 
 When editing inside FDE_Revenue_Bedrock, follow its `.github/copilot-instructions.md`:
