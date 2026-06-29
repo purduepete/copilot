@@ -31,6 +31,7 @@ in the table below.
 | Want to… | Run |
 |---|---|
 | Get a repo inventory / structure report | `Get-BedrockRepoInventory.ps1` (below) |
+| Build the bronze source map / provisioning checklist | `Build-BronzeSourceMap.ps1` (below) |
 | _Fabric lakehouse / semantic model_ | _planned — not yet implemented_ |
 
 ## Repo inventory / structure report
@@ -63,6 +64,36 @@ pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Get-BedrockRepoInventory.ps1
 When the user asks about the repo, run the script first (use `-Json` to read it
 yourself), then answer from the live report rather than guessing — the catalogs and
 commit list change as the repo evolves.
+
+## Bronze source map / provisioning checklist
+
+`Build-BronzeSourceMap.ps1` distils every analysed solution's
+`docs/exploratory/data-estate-analysis/solution/*/repo_inventory_io.csv` into one
+**bronze provisioning picture** — the genuine upstream **external** inputs
+(`type=input`, `external_internal=external`), rolled up to one row per **source
+system** (the io `upstream` column):
+
+- **Used by** — which solutions (arr / wcs / mwdetail / …) consume it.
+- **Refs** — summed `dependency` weight (a sizing hint for what to onboard first).
+- **Storage account(s)** — resolved from any `abfss://` path aliases (config-token
+  paths are reported as *unresolved* — resolve them in the source repo first).
+- **Bronze method** — `shortcut` (zero-copy OneLake shortcut, the default) vs
+  `data copy (PME/elevated)` where shortcuts aren't permitted (account name contains
+  `pme`/`spme`, or an elevated tenant like `msit-onelake`), vs `review` when it can't
+  be auto-determined. **The PME/elevated flag is a heuristic — confirm it.**
+
+```powershell
+# Build CSV + visual HTML checklist and open it (writes to %TEMP%, never the repo)
+pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Build-BronzeSourceMap.ps1
+
+# Read the rolled-up systems yourself, no files
+pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Build-BronzeSourceMap.ps1 -Json
+```
+
+**Parameters:** `-RepoPath` (default bedrock clone), `-OutDir` (default
+`%TEMP%\bedrock-bronze-source-map` — kept out of the confidential repo), `-Json`,
+`-NoOpen`. Outputs `bronze-source-map.html` (visual) + `bronze-source-map.csv`
+(path-grain detail). Re-run as more solutions are analysed to refresh the picture.
 
 ## Repo conventions to honor
 
