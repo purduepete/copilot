@@ -1,0 +1,5 @@
+# The hub and its assets are derived from the confidential FDE_Revenue_Bedrock
+# repo. Keep them LOCAL ONLY -- never push to the synced copilot repo.
+# Only Build-BedrockHub.ps1 (the generator) and this .gitignore are committed.
+index.html
+assets/
