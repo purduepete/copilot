@@ -1,0 +1,83 @@
+---
+name: bedrock
+description: >-
+  Work with the FDE_Revenue_Bedrock data-platform repo (C:\Files\Dev\msft\FDE_Revenue_Bedrock).
+  Today it drives repo analysis — a fast inventory/structure report (folders, file
+  types, skills & agents catalog, recent git activity) via Get-BedrockRepoInventory.ps1.
+  Designed to grow toward Fabric lakehouse and Fabric semantic-model interactions.
+  WHEN: "bedrock repo inventory", "analyze the bedrock repo", "what's in the bedrock
+  repo", "bedrock repo structure", "bedrock skills and agents", "bedrock recent
+  activity", "profile FDE_Revenue_Bedrock", "bedrock repo report", "work on bedrock".
+argument-hint: optionally a repo path or "-Json"
+---
+
+# Bedrock
+
+Helper skill for **@jimb's** work on the **FDE_Revenue_Bedrock** finance data
+platform (Azure / Fabric, medallion architecture). Local clone:
+`C:\Files\Dev\msft\FDE_Revenue_Bedrock`.
+
+This skill starts focused on **repo analysis** and is built to expand toward
+**Fabric lakehouse** and **Fabric semantic-model** interactions later. Keep new
+capabilities as separate support scripts under this skill folder and document them
+in the table below.
+
+> The repo is **confidential** (see its `.github/copilot-instructions.md`): never
+> surface connection strings, secrets/PATs, internal URLs/endpoints, or PII in
+> output or examples.
+
+## Capabilities
+
+| Want to… | Run |
+|---|---|
+| Get a repo inventory / structure report | `Get-BedrockRepoInventory.ps1` (below) |
+| _Fabric lakehouse / semantic model_ | _planned — not yet implemented_ |
+
+## Repo inventory / structure report
+
+`Get-BedrockRepoInventory.ps1` profiles the local clone **without** cloning or
+calling any remote service. It reports:
+
+- **Folder layout** — each top-level folder with file + subfolder counts
+  (`.github`, `docs`, `platform`, `shared`, `tenants`).
+- **File-type breakdown** — counts by extension (`.git` excluded).
+- **Skills catalog** — parsed from `.github/skills/*/SKILL.md` frontmatter
+  (`name` + concise purpose, trigger lists trimmed).
+- **Agents catalog** — parsed from `.github/agents/*.agent.md` frontmatter.
+- **Recent git activity** — current branch + the last N commits.
+
+```powershell
+# Formatted report (default repo path)
+pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Get-BedrockRepoInventory.ps1
+
+# Machine-readable, for further reasoning
+pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Get-BedrockRepoInventory.ps1 -Json
+
+# Point at a different clone / more commits
+pwsh -File C:\Files\Dev\main\copilot\skills\bedrock\Get-BedrockRepoInventory.ps1 -RepoPath D:\src\FDE_Revenue_Bedrock -Commits 20
+```
+
+**Parameters:** `-RepoPath` (default `C:\Files\Dev\msft\FDE_Revenue_Bedrock`),
+`-Commits` (default `10`), `-Json` (emit one JSON object instead of text).
+
+When the user asks about the repo, run the script first (use `-Json` to read it
+yourself), then answer from the live report rather than guessing — the catalogs and
+commit list change as the repo evolves.
+
+## Repo conventions to honor
+
+When editing inside FDE_Revenue_Bedrock, follow its `.github/copilot-instructions.md`:
+Python 3.11+, **Ruff** (line-length 88), **pytest**, `click` for CLIs; new data
+engineering as **PySpark notebooks** (Delta Lake, Bronze→Silver→Gold, Sangam
+orchestration); branch names
+`<author>/AB-<id>/<type>/<short-kebab-description>`; conventional commits linking
+`AB#<id>`. That repo's **own** skills are instructions-only (`verb-noun`) with
+runnable artefacts under `docs/exploratory/<name>/` — don't confuse them with this
+personal CLI skill.
+
+## Extending this skill
+
+Add a new support script in this folder (e.g. a Fabric lakehouse query helper),
+give it `-Json` output for agent consumption, add a row to **Capabilities**, then
+commit to the copilot repo. No re-junction needed (scripts live inside the already
+linked skill folder).
