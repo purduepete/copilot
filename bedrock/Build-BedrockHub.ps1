@@ -46,6 +46,10 @@ $sections = @(
       @{ Title = 'Bronze source map';         Path = (Asset 'bronze-source-map.html'); Desc = 'Every upstream source, resolved to storage account + tenant, flagged shortcut vs data-copy.'; Icon = 'sitemap' }
       @{ Title = 'Bronze source map (data)';  Path = (Asset 'bronze-source-map.csv');  Desc = 'Path-grain detail behind the map (763 rows, 17 systems).'; Icon = 'table' }
       @{ Title = 'Notebook lineage explorer'; Path = (Asset 'notebook-lineage.html');  Desc = 'Pick any notebook -> see the bronze sources it reads (inputs) and the tables it writes (outputs).'; Icon = 'sitemap' }
+      @{ Title = 'Repository analysis';        Path = (Asset 'repo-analysis.html');     Desc = 'Per-solution repo, stack & 6-label file classification (ARR, WCS, MWDetail) - extracted from the proposal data model.'; Icon = 'database' }
+  )}
+  @{ Name = 'External'; Icon = 'external'; Blurb = 'Live tools and portals outside this repo.'; Items = @(
+      @{ Title = 'Mira - Revenue Projects'; Url = 'https://mira.microsoft.com/revenueProjects/'; Desc = 'Revenue projects portal on Mira.'; Icon = 'external' }
   )}
   @{ Name = 'Architecture reports'; Icon = 'layers'; Blurb = 'Rendered, browsable architecture views.'; Items = @(
       @{ Title = 'Data architecture v1';      Path = (Repo 'docs\architecture\data-platform\reports\data-architecture-v1.html'); Desc = 'Latest rendered architecture report.'; Icon = 'file' }
@@ -442,13 +446,15 @@ function Build-Glossary {
     @{ T='ADR';         F='Architecture Decision Record';  C='Project'; D='A logged design decision (see the decision log) explaining why the platform is shaped the way it is.' }
 
     @{ T='ARR';         F='Annual Recurring Revenue';      C='Solutions & domains'; D='Legacy revenue solution (Synapse/T-SQL + Serverless SQL + AS cube). One of the three bronze pilot solutions analyzed this session.' }
-    @{ T='WCS';         F='';                              C='Solutions & domains'; D='A revenue reporting solution; one of the three pilot solutions (ARR, WCS, MWDetail) in the data-estate analysis. (Expansion not documented in the repo.)' }
+    @{ T='WCS';         F='Worldwide Commercial Sales';   C='Solutions & domains'; D='Expiration/renewal reporting solution covering EA + NCE. One of the three pilot solutions; repo FDE_ProcessDataCloud, dual Synapse Serverless + dual TMSR cubes.' }
     @{ T='MWDetail';    F='Modern Work Detail';            C='Solutions & domains'; D='Fabric-native solution (PySpark + TMDL + Direct Lake) for Modern Work (M365) revenue detail - the most modern of the pilot solutions.' }
     @{ T='AHR';         F='';                              C='Solutions & domains'; D='A Silver-layer solution in the FINHUB family (repo FDE_CnAI_Reporting, GPSPartnerData). 14 existing Fabric notebooks; no bronze notebook yet (greenfield).' }
     @{ T='FINHUB';      F='Finance Hub';                   C='Solutions & domains'; D='The solution family that AHR belongs to.' }
     @{ T='RevRec';      F='Revenue Recognition';           C='Solutions & domains'; D='A finance solution/domain (has a current-state architecture diagram in this hub).' }
     @{ T='ADG';         F='';                              C='Solutions & domains'; D='A finance solution/domain (listed alongside AHR and RevRec). Expansion not documented.' }
     @{ T='ACR';         F='Annual Contract Revenue';       C='Solutions & domains'; D='A revenue measure used in the semantic models.' }
+    @{ T='EA';          F='Enterprise Agreement';          C='Solutions & domains'; D='A Microsoft commercial licensing motion; one of the two reporting tracks WCS covers.' }
+    @{ T='NCE';         F='New Commerce Experience';       C='Solutions & domains'; D="Microsoft's newer commerce/licensing platform; the other WCS reporting track." }
 
     @{ T='FDE';         F='Finance Data Engineering';      C='Orgs & tenants'; D='The team/tenant owning this Bedrock platform (the FDE_* repo prefix). Shares a tenant with CSEO for shortcut purposes.' }
     @{ T='CSEO';        F='Core Services Engineering & Operations'; C='Orgs & tenants'; D="Microsoft's internal engineering org; owns the OCDM/EDL commerce lakes. Same tenant as FDE -> reachable by shortcut." }
@@ -483,6 +489,11 @@ function Build-Glossary {
     @{ T='Atlas';       F='';                              C='Platform & tech'; D='The semantic-model (cube) usage-analysis dataset/effort.' }
 
     @{ T='Medallion';   F='';                              C='Data concepts'; D='The Bronze -> Silver -> Gold layered data architecture.' }
+    @{ T='Hub-and-spoke'; F='';                            C='Data concepts'; D='The platform topology: one central hub (the spine) + workstream spokes that consume or diverge, with mandatory publish-back.' }
+    @{ T='Spine';       F='';                              C='Data concepts'; D='The hub - the canonical conformed model (shared lakehouses, the Gold uber-grain, the one semantic model, orchestration). Spokes reuse spine facts/dims only by adding lateral columns or slicing rows; a different grain or extra rows earns a carve-out instead. Never mutate the spine (incumbent wins).' }
+    @{ T='Spoke';       F='';                              C='Data concepts'; D='A workstream/solution built on the hub. It either consumes the spine (~90%) or diverges with a spoke-local custom dimension that is crosswalked back to the spine.' }
+    @{ T='Crosswalk';   F='';                              C='Data concepts'; D="A map notebook (the custom mapping) linking a spoke's custom dimension to the spine; broadly useful ones get promoted into the spine." }
+    @{ T='Carve-out';   F='';                              C='Data concepts'; D='A new fact/dim a spoke earns when it needs a different grain or extra rows, rather than mutating a spine table.' }
     @{ T='Bronze';      F='';                              C='Data concepts'; D="Raw ingested source layer - this project's focus. Mostly shortcut-based; greenfield." }
     @{ T='Silver';      F='';                              C='Data concepts'; D='Cleaned/conformed layer (e.g., AHR builds 14 Silver notebooks).' }
     @{ T='Gold';        F='';                              C='Data concepts'; D='Curated serving layer: facts, dims, cubes/semantic models.' }
@@ -592,6 +603,136 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 }
 $null = Build-Glossary
 
+# Parse the legacy "Common Data Model - Proposal" page and extract, per solution,
+# the Repository-analysis block (repo/path/files/stack/description + the 6-label
+# file classification). Emits a comparison page under assets\. Returns path|null.
+function Build-RepoAnalysis {
+  $src = Repo 'docs\exploratory\data-estate-analysis\solution\legacy\proposal_data_model.html'
+  if (-not (Test-Path $src)) { return $null }
+  $h = [IO.File]::ReadAllText($src)
+  function _clean([string]$s) { ([System.Web.HttpUtility]::HtmlDecode(($s -replace '<[^>]+>', ''))).Trim() -replace '\s+', ' ' }
+  $catColor = {
+    param($n)
+    switch -Regex ($n) { 'bronze' { '#c2772f' } 'silver' { '#9aa6bd' } 'gold' { '#f5b301' } 'semantic' { '#8b5cf6' } default { '#6366f1' } }
+  }
+  $cards = New-Object System.Text.StringBuilder
+  $found = 0
+  foreach ($sol in @(
+      @{ id = 'arr';      name = 'ARR' },
+      @{ id = 'wcs';      name = 'WCS (EA + NCE)' },
+      @{ id = 'mwdetail'; name = 'MWDetail' })) {
+    $blk = [regex]::Match($h, "(?is)data-sol=`"$($sol.id)`">(.*?)(?=<div class=`"sol-block`"|`$)").Groups[1].Value
+    if (-not $blk) { continue }
+    $ra = [regex]::Match($blk, '(?is)<summary>Repository analysis</summary>(.*?)</details>').Groups[1].Value
+    if (-not $ra) { continue }
+    $kv = @([regex]::Matches($ra, '(?is)<div class="kv"[^>]*>(.*?)</div>') | ForEach-Object { _clean $_.Groups[1].Value })
+    $repo   = ([regex]::Match(($kv -join ' '), '(?i)Repo:\s*([^\u00B7]+)').Groups[1].Value.Trim())
+    $branch = ([regex]::Match(($kv -join ' '), '(?i)Branch:\s*([^\u00B7]+)').Groups[1].Value.Trim())
+    $path   = ([regex]::Match(($kv -join ' '), '(?i)Path:\s*([^\u00B7]+?)(?:\s+Files:|$)').Groups[1].Value.Trim())
+    $files  = ([regex]::Match(($kv -join ' '), '(?i)Files:\s*([^\u00B7]+)').Groups[1].Value.Trim())
+    $stack  = ([regex]::Match(($kv -join ' '), '(?i)Stack:\s*(.+?)(?:\s{2,}|$)').Groups[1].Value.Trim())
+    $desc   = if ($kv.Count) { $kv[$kv.Count - 1] } else { '' }
+    $rows = @([regex]::Matches($ra, '(?is)<div class="row"><div class="nm">(.*?)</div>.*?<div class="vv">(.*?)</div>') |
+        ForEach-Object { [pscustomobject]@{ nm = (_clean $_.Groups[1].Value); v = [int](_clean $_.Groups[2].Value) } })
+    $max = ($rows | Measure-Object v -Maximum).Maximum; if (-not $max) { $max = 1 }
+    $bronze = ($rows | Where-Object { $_.nm -eq 'data-bronze' } | Select-Object -First 1).v
+    $bars = New-Object System.Text.StringBuilder
+    foreach ($r in $rows) {
+      $pct = [Math]::Max(2, [Math]::Round($r.v / $max * 100))
+      $col = & $catColor $r.nm
+      [void]$bars.Append("<div class='cbar'><div class='cnm'>$(HtmlEnc $r.nm)</div><div class='cbw'><div class='cfill' style='width:$pct%;background:$col'></div></div><div class='cvv'>$($r.v)</div></div>")
+    }
+    [void]$cards.Append(@"
+<div class="sol">
+ <div class="sol-h"><span class="sname">$(HtmlEnc $sol.name)</span><span class="srepo">$(Svg 'database' 14) $(HtmlEnc $repo)</span></div>
+ <div class="meta">
+  <div><span class="ml">Path</span><code>$(HtmlEnc $path)</code></div>
+  <div><span class="ml">Branch</span><code>$(HtmlEnc $branch)</code></div>
+  <div><span class="ml">Files</span><b>$(HtmlEnc $files)</b></div>
+  <div><span class="ml">Bronze</span><b class="bz">$bronze</b></div>
+ </div>
+ <div class="stack">$(HtmlEnc $stack)</div>
+ <p class="desc">$(HtmlEnc $desc)</p>
+ <div class="cl-h">File classification (6-label)</div>
+ <div class="cls">$($bars.ToString())</div>
+</div>
+"@)
+    $found++
+  }
+  if ($found -eq 0) { return $null }
+  $outPath = Join-Path $assets 'repo-analysis.html'
+  $page = @"
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b0e16"/>
+<title>Repository analysis - Bedrock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);
+ document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#f5f7fb':'#0b0e16');}}catch(e){}})();</script>
+<style>
+:root{--radius:0;--bg:#0b0e16;--surface:#141a28;--surface-2:#1d2538;--surface-3:#28324a;--text:#e7ecf5;--muted:#9aa6bd;--border:#28324a;--border-strong:#3a465f;--accent:#6366f1;--accent-2:#8b5cf6;--glass:rgba(20,26,40,0.72);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);}
+:root[data-theme='light']{--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--surface-3:#e5e9f2;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}
+@media (prefers-color-scheme: light){:root:not([data-theme='dark']){--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--surface-3:#e5e9f2;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:5;background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar .in{padding:11px 20px;display:flex;align-items:center;gap:12px;max-width:1240px;margin:0 auto}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--text);text-decoration:none;font-size:13px;font-weight:600;padding:7px 11px;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.back:hover{border-color:var(--accent);color:var(--accent-2)}
+.ttl{font-weight:700;letter-spacing:-.01em}.sub{color:var(--muted);font-size:12.5px}.spacer{flex:1}
+.icon-btn{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.icon-btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 20px 70px}
+.src{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.sol{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);display:flex;flex-direction:column}
+.sol-h{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.sname{display:block;font-weight:700;font-size:16px;letter-spacing:-.01em}
+.srepo{display:inline-flex;align-items:center;gap:6px;color:var(--accent-2);font-size:12px;font-family:'JetBrains Mono',monospace;margin-top:4px}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.meta>div{background:var(--surface);padding:9px 14px;display:flex;flex-direction:column;gap:3px}
+.ml{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:700}
+.meta code{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--text);overflow-wrap:anywhere}
+.meta b{font-size:14px}.bz{color:#c2772f}
+.stack{padding:10px 14px;font-size:12px;color:var(--muted);border-top:1px solid var(--border)}
+.desc{padding:0 14px;font-size:13px;color:var(--text);line-height:1.5;margin:6px 0 12px}
+.cl-h{padding:0 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-2)}
+.cls{padding:8px 14px 16px;display:flex;flex-direction:column;gap:6px}
+.cbar{display:grid;grid-template-columns:96px 1fr 44px;align-items:center;gap:9px}
+.cnm{font-size:11.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbw{height:9px;background:var(--surface-3);overflow:hidden}
+.cfill{height:100%}
+.cvv{font-size:12px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+</style></head>
+<body>
+<header class="topbar"><div class="in">
+ <a class="back" href="../index.html">$(Svg 'compass' 16) Home Base</a>
+ <span class="ttl">Repository analysis</span><span class="sub">per-solution repo, stack &amp; file classification</span>
+ <span class="spacer"></span>
+ <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
+</div></header>
+<div class="wrap">
+ <p class="src">Extracted from the legacy <code>proposal_data_model.html</code> (Common Data Model - Proposal v1).</p>
+ <div class="grid">$($cards.ToString())</div>
+</div>
+<script>
+ var sun="$(SvgJs 'sun')", moon="$(SvgJs 'moon')", btn=document.getElementById('themeBtn');
+ function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
+ function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
+ btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
+  try{localStorage.setItem('theme',n);}catch(e){}
+  document.querySelector('meta[name=theme-color]').setAttribute('content',n==='light'?'#f5f7fb':'#0b0e16');paint();};
+</script>
+</body></html>
+"@
+  [IO.File]::WriteAllText($outPath, $page, (New-Object Text.UTF8Encoding $false))
+  return $outPath
+}
+$null = Build-RepoAnalysis
+
 # Pre-build the lineage explorer so the hub card resolves.
 $null = Build-NotebookLineage @(
   @{ Name='ARR';      Csv='docs\exploratory\data-estate-analysis\solution\arr\repo_inventory_analyzed.csv' }
@@ -606,6 +747,11 @@ foreach ($sec in $sections) {
   [void]$sb.Append("<div class='cards'>")
   foreach ($it in $sec.Items) {
     $total++
+    if ($it.Url) {
+      $present++
+      [void]$sb.Append("<a class='card' href='$([System.Web.HttpUtility]::HtmlAttributeEncode($it.Url))' target='_blank' rel='noopener'><div class='card-ico'>$(Svg $it.Icon 22)</div><div class='card-body'><div class='card-title'>$(HtmlEnc $it.Title) <span class='pill link'>link</span></div><div class='card-desc'>$(HtmlEnc $it.Desc)</div></div><div class='card-go'>$(Svg 'external' 16)</div></a>")
+      continue
+    }
     $exists = Test-Path $it.Path
     if ($exists) { $present++ }
     $ext  = [IO.Path]::GetExtension($it.Path).TrimStart('.').ToLower()
