@@ -5,16 +5,22 @@ description: >-
   stage the right files, write a structured commit message with the Co-authored-by
   trailer, and — BEFORE pushing worklog_web — warn whether the change will trigger
   the Azure Function deploy (per deploy.yml's paths filter) so a dev-script edit
-  never deploys by surprise. WHEN: "commit", "commit and push", "commit/push/deploy",
-  "ship it", "push this", "push my changes", "will this deploy".
+  never deploys by surprise. For the ADO repo (FDE_Revenue_Bedrock) a linked work
+  item is REQUIRED: create/confirm an ADO work item first, branch + commit + PR
+  reference it (AB-<id> / AB#<id>). WHEN: "commit", "commit and push",
+  "commit/push/deploy", "ship it", "push this", "push my changes", "will this
+  deploy", "open a PR", "create a branch", "create a work item".
 argument-hint: Optionally the repo and/or a commit message
 ---
 
 # git-ship — commit / push / deploy safely
 
 @jimb's working repos live under `C:\Files\Dev\main\`: `worklog_web`, `copilot`,
-`config`, `powershell`, `utility`, `work`. Only **worklog_web** has a deploy
-pipeline; the rest are push-only.
+`config`, `powershell`, `utility`, `work` (GitHub, push-only except worklog_web,
+which deploys). A separate **Azure DevOps** repo lives at
+`C:\Files\Dev\msft\FDE_Revenue_Bedrock` (org `starlightagilebi`, project `AgBI`)
+— it has its **own rules** (see "ADO repo" below); only **worklog_web** has a
+deploy pipeline.
 
 ## Steps
 
@@ -79,6 +85,48 @@ API call (run list, issue, pr), source the purduepete token first:
 $cred = "protocol=https`nhost=github.com`n" | git credential fill 2>$null
 $env:GH_TOKEN = ($cred | Select-String '^password=').ToString().Substring(9)
 ```
+
+## ADO repo — FDE_Revenue_Bedrock (org `starlightagilebi`, project `AgBI`)
+
+Path: `C:\Files\Dev\msft\FDE_Revenue_Bedrock`. This repo follows its own
+`.github/copilot-instructions.md`. The non-negotiable extras vs the GitHub repos:
+
+### A work item is REQUIRED (do this FIRST)
+**Every branch / commit / PR here must link an ADO work item — no exceptions.**
+Before creating the branch, **create or confirm a work item** and capture its id.
+Create one via the REST API (auth = the **git credential Bearer token**, see below):
+```powershell
+$wi = @(@{ op="add"; path="/fields/System.Title"; value="<title>" }) | ConvertTo-Json
+# work item type goes in the URL ($type below, e.g. Task / Bug); ask @jimb if unsure
+Invoke-RestMethod -Method Post -Headers (@{ Authorization="Bearer $pw"; 'Content-Type'='application/json-patch+json' }) `
+  -Uri "https://starlightagilebi.visualstudio.com/AgBI/_apis/wit/workitems/`$$type?api-version=7.0" -Body $wi
+```
+Confirm the **type** with @jimb if not given (don't guess silently).
+
+### Branch naming (enforced)
+```
+<author>/AB-<id>/<type>/<short-kebab-description>     # author=jimb, type=feat|fix|chore|docs|refactor|test
+```
+e.g. `jimb/AB-447944/fix/skill-description-length`. (A type-only branch like
+`jimb/chore/...` is a fallback ONLY when @jimb explicitly says there's no work item.)
+
+### Commit messages (conventional commits)
+`type(scope): description`, and link the work item in the body with **`AB#<id>`**.
+Still append the `Co-authored-by: Copilot <…>` trailer.
+
+### Open the PR via REST (not gh — this is ADO, not GitHub)
+`az` tokens are usually a **different identity that 401s** on this org — use the
+**git credential token as a Bearer** instead:
+```powershell
+$cred = "protocol=https`nhost=starlightagilebi.visualstudio.com`n`n" | git credential fill 2>$null
+$pw = (($cred | Select-String '^password=').ToString()).Substring(9)   # this is the token
+$body = @{ sourceRefName="refs/heads/<branch>"; targetRefName="refs/heads/main"
+  title="<conventional title>"; description="<why> AB#<id>" } | ConvertTo-Json
+$r = Invoke-RestMethod -Method Post -Headers (@{ Authorization="Bearer $pw"; 'Content-Type'='application/json' }) `
+  -Uri "https://starlightagilebi.visualstudio.com/AgBI/_apis/git/repositories/FDE_Revenue_Bedrock/pullrequests?api-version=7.0" -Body $body
+Start-Process "https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock/pullrequest/$($r.pullRequestId)"
+```
+Then link the work item to the PR (artifact link) so the AB-<id> trail is complete.
 
 ## Notes
 - Default branch is `main`; pushes go to `origin HEAD`.
