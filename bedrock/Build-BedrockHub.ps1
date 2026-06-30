@@ -67,6 +67,10 @@ $sections = @(
       @{ Title = 'WCS I/O analysis';          Path = (Repo 'docs\exploratory\data-estate-analysis\solution\wcs\repo_inventory_io.csv'); Desc = 'WCS source-to-sink edges.'; Icon = 'table' }
       @{ Title = 'MWDetail I/O analysis';     Path = (Repo 'docs\exploratory\data-estate-analysis\solution\mwdetail\repo_inventory_io.csv'); Desc = 'Modern Work Detail source-to-sink edges.'; Icon = 'table' }
   )}
+  @{ Name = 'Solution -> notebook mapping'; Icon = 'sitemap'; Blurb = 'How existing solution artefacts (incl. AHR) map to Fabric notebooks / unified objects.'; Items = @(
+      @{ Title = 'Unified lakehouse From->To mapping'; Path = (Repo 'docs\exploratory\data-estate-analysis\unified_lakehouse\2nd Iteration\Unified_Lakehouse_FromTo_Mapping.csv'); Desc = 'Existing artefact -> unified path. Filter Solution/ArtefactType (e.g. AHR has 14 Silver Fabric notebooks).'; Icon = 'table' }
+      @{ Title = 'Cross-repo to-be mapping';          Path = (Repo 'docs\exploratory\data-estate-analysis\per-repo-analysis\1st Iteration\crossrepo_tobe_mapping.csv'); Desc = 'Proposed source object -> target unified object (Silver), object-level not notebook.'; Icon = 'table' }
+  )}
 )
 
 # --- Lucide-style stroke icon paths (24x24) ---------------------------------
