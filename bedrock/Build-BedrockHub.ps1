@@ -626,8 +626,8 @@ function Build-RepoAnalysis {
     $ra = [regex]::Match($blk, '(?is)<summary>Repository analysis</summary>(.*?)</details>').Groups[1].Value
     if (-not $ra) { continue }
     $kv = @([regex]::Matches($ra, '(?is)<div class="kv"[^>]*>(.*?)</div>') | ForEach-Object { _clean $_.Groups[1].Value })
-    $repo   = ([regex]::Match(($kv -join ' '), '(?i)Repo:\s*([^\u00B7]+)').Groups[1].Value.Trim())
-    $branch = ([regex]::Match(($kv -join ' '), '(?i)Branch:\s*([^\u00B7]+)').Groups[1].Value.Trim())
+    $repo   = ([regex]::Match(($kv -join ' '), '(?i)Repo:\s*([^\s\u00B7]+)').Groups[1].Value.Trim())
+    $branch = ([regex]::Match(($kv -join ' '), '(?i)Branch:\s*([^\s\u00B7]+)').Groups[1].Value.Trim())
     $path   = ([regex]::Match(($kv -join ' '), '(?i)Path:\s*([^\u00B7]+?)(?:\s+Files:|$)').Groups[1].Value.Trim())
     $files  = ([regex]::Match(($kv -join ' '), '(?i)Files:\s*([^\u00B7]+)').Groups[1].Value.Trim())
     $stack  = ([regex]::Match(($kv -join ' '), '(?i)Stack:\s*(.+?)(?:\s{2,}|$)').Groups[1].Value.Trim())
@@ -642,6 +642,25 @@ function Build-RepoAnalysis {
       $col = & $catColor $r.nm
       [void]$bars.Append("<div class='cbar'><div class='cnm'>$(HtmlEnc $r.nm)</div><div class='cbw'><div class='cfill' style='width:$pct%;background:$col'></div></div><div class='cvv'>$($r.v)</div></div>")
     }
+    # Bronze-layer notebooks: pull the per-file medallion classification and deep-link
+    # each bronze file to its file view in Azure DevOps (org AgBI, repo from the proposal).
+    $adoOrg = 'https://starlightagilebi.visualstudio.com/AgBI/_git'
+    $medCsv = Repo "docs\exploratory\data-estate-analysis\solution\$($sol.id)\repo_inventory_medallion.csv"
+    $bzList = New-Object System.Text.StringBuilder
+    $bzCount = 0
+    if (Test-Path $medCsv) {
+      $bz = @(Import-Csv -LiteralPath $medCsv | Where-Object { $_.medallion -match '(?i)bronze' } | Sort-Object file)
+      $bzCount = $bz.Count
+      foreach ($b in $bz) {
+        $full = (($path.TrimEnd('/') + '/' + $b.file) -replace ' ', '%20')
+        $url = '{0}/{1}?path={2}&version=GB{3}' -f $adoOrg, $repo, $full, ($branch -replace ' ', '')
+        $ext = [IO.Path]::GetExtension($b.file).TrimStart('.').ToLower()
+        $nm  = (Split-Path $b.file -Leaf)
+        $dir = (Split-Path $b.file -Parent) -replace '\\', '/'
+        [void]$bzList.Append("<a class='bz-row' href='$([System.Web.HttpUtility]::HtmlAttributeEncode($url))' target='_blank' rel='noopener'><span class='bz-ext $ext'>$(HtmlEnc $ext)</span><span class='bz-nm'><b>$(HtmlEnc $nm)</b><span class='bz-dir'>$(HtmlEnc $dir)</span></span>$(Svg 'external' 13)</a>")
+      }
+    }
+    $bzBlock = if ($bzCount) { "<details class='bzwrap'><summary>$(Svg 'database' 13) Bronze layer - $bzCount file$(if($bzCount -ne 1){'s'}) <span class='bz-hint'>open in Azure DevOps</span></summary><div class='bzlist'>$($bzList.ToString())</div></details>" } else { '' }
     [void]$cards.Append(@"
 <div class="sol">
  <div class="sol-h"><span class="sname">$(HtmlEnc $sol.name)</span><span class="srepo">$(Svg 'database' 14) $(HtmlEnc $repo)</span></div>
@@ -655,6 +674,7 @@ function Build-RepoAnalysis {
  <p class="desc">$(HtmlEnc $desc)</p>
  <div class="cl-h">File classification (6-label)</div>
  <div class="cls">$($bars.ToString())</div>
+ $bzBlock
 </div>
 "@)
     $found++
@@ -706,6 +726,21 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .cbw{height:9px;background:var(--surface-3);overflow:hidden}
 .cfill{height:100%}
 .cvv{font-size:12px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.bzwrap{margin:0 14px 16px;border:1px solid var(--border)}
+.bzwrap summary{cursor:pointer;list-style:none;padding:9px 12px;font-size:12px;font-weight:700;color:#c2772f;display:flex;align-items:center;gap:7px;background:var(--surface-2);user-select:none}
+.bzwrap summary::-webkit-details-marker{display:none}
+.bzwrap[open] summary{border-bottom:1px solid var(--border)}
+.bz-hint{margin-left:auto;font-weight:500;font-size:11px;color:var(--muted);text-transform:none;letter-spacing:0}
+.bzlist{max-height:280px;overflow:auto}
+.bz-row{display:flex;align-items:center;gap:9px;padding:7px 12px;border-bottom:1px solid var(--border);color:var(--text);text-decoration:none;transition:background .15s}
+.bz-row:last-child{border-bottom:none}
+.bz-row:hover{background:var(--surface-2)}
+.bz-ext{flex:none;font-size:9px;font-weight:700;text-transform:uppercase;padding:2px 5px;border:1px solid var(--border-strong);color:var(--muted);min-width:34px;text-align:center}
+.bz-ext.py{color:var(--accent-2);border-color:var(--accent-2)}.bz-ext.sql{color:#10b981;border-color:#10b981}.bz-ext.json{color:#f59e0b;border-color:#f59e0b}
+.bz-nm{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.bz-nm b{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bz-dir{font-size:10.5px;color:var(--muted);font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bz-row .ico{color:var(--muted);flex:none}
 </style></head>
 <body>
 <header class="topbar"><div class="in">
