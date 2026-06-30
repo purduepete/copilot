@@ -55,6 +55,13 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 summary "<one-to-two line recap>"
   ```
 
+- **Normalize projects (always, before endday):** any of today's entries with **no
+  project** gets **`project = n/a`** — no need to ask. List today via
+  `wl.ps1 state` (filter `sessions` to today), then for each projectless id:
+  ```powershell
+  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Project "n/a"
+  ```
+
 Re-run `Get-DayClose.ps1 -Json` after resolving; loop until `ready:true`.
 
 ## 3. End the day
