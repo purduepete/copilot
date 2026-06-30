@@ -96,6 +96,8 @@ function Svg([string]$name, [int]$size = 20) {
   $p = $ICON[$name]; if (-not $p) { $p = $ICON['file'] }
   "<svg class='ico' width='$size' height='$size' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'>$p</svg>"
 }
+# Same SVG but safe to embed inside a double-quoted JS string (single quotes only).
+function SvgJs([string]$name, [int]$size = 20) { (Svg $name $size) -replace '"', "'" }
 function HtmlEnc([string]$s) { [System.Web.HttpUtility]::HtmlEncode($s) }
 Add-Type -AssemblyName System.Web
 
@@ -159,7 +161,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 $bodyHtml
 </main>
 <script>
- var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)", btn=document.getElementById('themeBtn');
+ var sun="$(SvgJs 'sun')", moon="$(SvgJs 'moon')", btn=document.getElementById('themeBtn');
  function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
  function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
  btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
@@ -246,7 +248,7 @@ tbody tr:hover td{background:var(--surface-2)}
 $tbody
 </tbody></table></div>
 <script>
- var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)", btn=document.getElementById('themeBtn');
+ var sun="$(SvgJs 'sun')", moon="$(SvgJs 'moon')", btn=document.getElementById('themeBtn');
  function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
  function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
  btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
@@ -369,7 +371,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
  <main class="detail" id="detail"><div class="hint">$(Svg 'sitemap' 40)<div style="margin-top:14px">Pick a notebook on the left to see the bronze sources it reads and the tables it writes.</div></div></main>
 </div>
 <script>
- var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)", btn=document.getElementById('themeBtn');
+ var sun="$(SvgJs 'sun')", moon="$(SvgJs 'moon')", btn=document.getElementById('themeBtn');
  function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
  function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
  btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
@@ -534,7 +536,7 @@ h1,h2{letter-spacing:-0.01em;margin:0}
  <p class="foot">Generated $stamp by Build-BedrockHub.ps1. Re-run it any time more analysis lands. Missing items are greyed out.</p>
 </main>
 <script>
- var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)";
+ var sun="$(SvgJs 'sun')", moon="$(SvgJs 'moon')";
  var btn=document.getElementById('themeBtn');
  function cur(){return document.documentElement.getAttribute('data-theme')|| (matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
  function paint(){btn.innerHTML=cur()==='light'?moon:sun;}
