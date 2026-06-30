@@ -94,7 +94,176 @@ function Svg([string]$name, [int]$size = 20) {
 function HtmlEnc([string]$s) { [System.Web.HttpUtility]::HtmlEncode($s) }
 Add-Type -AssemblyName System.Web
 
-# --- Build cards ------------------------------------------------------------
+# Render a markdown file into a house-styled HTML page (Mermaid + theme) under
+# assets\, so it actually renders in the browser. Returns the output path.
+function Render-Markdown([string]$srcPath, [string]$title) {
+  $raw = Get-Content -LiteralPath $srcPath -Raw
+  $bodyHtml = (ConvertFrom-Markdown -InputObject $raw).Html
+  $par  = Split-Path (Split-Path $srcPath -Parent) -Leaf
+  $safe = ("$par-" + [IO.Path]::GetFileNameWithoutExtension($srcPath)) -replace '[^A-Za-z0-9_\-]','_'
+  $outPath = Join-Path $assets "md-$safe.html"
+  $page = @"
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b0e16"/>
+<title>$(HtmlEnc $title)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);
+ document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#f5f7fb':'#0b0e16');}}catch(e){}})();</script>
+<style>
+:root{--radius:0;--bg:#0b0e16;--surface:#141a28;--surface-2:#1d2538;--text:#e7ecf5;--muted:#9aa6bd;--border:#28324a;--border-strong:#3a465f;--accent:#6366f1;--accent-2:#8b5cf6;--accent-grad:linear-gradient(135deg,#6366f1,#8b5cf6);--glass:rgba(20,26,40,0.72);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);--shadow-accent:0 8px 20px rgba(99,102,241,.35);}
+:root[data-theme='light']{--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}
+@media (prefers-color-scheme: light){:root:not([data-theme='dark']){--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:10;background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar .in{max-width:900px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:12px}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--text);text-decoration:none;font-size:13px;font-weight:600;padding:7px 11px;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.back:hover{border-color:var(--accent);color:var(--accent-2)}
+.ttl{font-weight:700;letter-spacing:-.01em}.spacer{flex:1}
+.icon-btn{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.icon-btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.doc{max-width:900px;margin:0 auto;padding:30px 26px 80px}
+.doc h1{font-size:28px;letter-spacing:-.02em;margin:.2em 0 .5em;padding-bottom:.3em;border-bottom:2px solid var(--border)}
+.doc h2{font-size:21px;letter-spacing:-.01em;margin:1.6em 0 .5em;padding-bottom:.25em;border-bottom:1px solid var(--border)}
+.doc h3{font-size:17px;margin:1.3em 0 .4em;color:var(--accent-2)}
+.doc h4{font-size:15px;margin:1.1em 0 .3em}
+.doc p{margin:.7em 0}.doc ul,.doc ol{padding-left:1.4em}.doc li{margin:.25em 0}
+.doc a{color:var(--accent-2);text-decoration:none}.doc a:hover{text-decoration:underline}
+.doc code{font-family:'JetBrains Mono',monospace;font-size:.86em;background:var(--surface-2);border:1px solid var(--border);padding:.1em .4em}
+.doc pre{background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow);padding:14px 16px;overflow:auto}
+.doc pre code{background:none;border:none;padding:0}
+.doc pre.mermaid{background:var(--surface);text-align:center;display:flex;justify-content:center}
+.doc blockquote{margin:1em 0;padding:.4em 1em;border-left:3px solid var(--accent);background:var(--surface-2);color:var(--muted)}
+.doc table{border-collapse:collapse;width:100%;margin:1em 0;font-size:14px}
+.doc th,.doc td{border:1px solid var(--border);padding:7px 11px;text-align:left}
+.doc th{background:var(--surface-2);font-weight:600}
+.doc tr:nth-child(even) td{background:var(--surface)}
+.doc hr{border:none;border-top:1px solid var(--border);margin:1.8em 0}
+.doc img{max-width:100%}
+</style></head>
+<body>
+<header class="topbar"><div class="in">
+ <a class="back" href="../index.html">$(Svg 'compass' 16) Home Base</a>
+ <span class="ttl">$(HtmlEnc $title)</span><span class="spacer"></span>
+ <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
+</div></header>
+<main class="doc">
+$bodyHtml
+</main>
+<script>
+ var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)", btn=document.getElementById('themeBtn');
+ function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
+ function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
+ btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
+  try{localStorage.setItem('theme',n);}catch(e){}
+  document.querySelector('meta[name=theme-color]').setAttribute('content',n==='light'?'#f5f7fb':'#0b0e16');paint();
+  location.reload();};
+</script>
+<script type="module">
+ import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+ document.querySelectorAll('pre>code.language-mermaid').forEach(function(c){
+   var d=document.createElement('pre');d.className='mermaid';d.textContent=c.textContent;c.parentElement.replaceWith(d);});
+ var dark=(document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark'))!=='light';
+ mermaid.initialize({startOnLoad:false,theme:dark?'dark':'neutral',securityLevel:'loose'});
+ mermaid.run();
+</script>
+</body></html>
+"@
+  Set-Content -LiteralPath $outPath -Value $page -Encoding UTF8
+  return $outPath
+}
+
+# Render a CSV into a house-styled, filterable HTML table under assets\, so it
+# actually renders in the browser instead of downloading. Returns output path.
+function Render-Csv([string]$srcPath, [string]$title) {
+  $rows = @(Import-Csv -LiteralPath $srcPath)
+  $cols = if ($rows.Count) { $rows[0].PSObject.Properties.Name } else { @() }
+  $rowCount = $rows.Count
+  $thead = ($cols | ForEach-Object { "<th>$(HtmlEnc $_)</th>" }) -join ''
+  $tb = New-Object System.Text.StringBuilder
+  foreach ($r in $rows) {
+    [void]$tb.Append('<tr>')
+    foreach ($c in $cols) { [void]$tb.Append("<td>$(HtmlEnc ([string]$r.$c))</td>") }
+    [void]$tb.Append('</tr>')
+  }
+  $tbody = $tb.ToString()
+  $par  = Split-Path (Split-Path $srcPath -Parent) -Leaf
+  $safe = ("$par-" + [IO.Path]::GetFileNameWithoutExtension($srcPath)) -replace '[^A-Za-z0-9_\-]','_'
+  $outPath = Join-Path $assets "csv-$safe.html"
+  $page = @"
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b0e16"/>
+<title>$(HtmlEnc $title)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);
+ document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#f5f7fb':'#0b0e16');}}catch(e){}})();</script>
+<style>
+:root{--radius:0;--bg:#0b0e16;--surface:#141a28;--surface-2:#1d2538;--text:#e7ecf5;--muted:#9aa6bd;--border:#28324a;--border-strong:#3a465f;--accent:#6366f1;--accent-2:#8b5cf6;--glass:rgba(20,26,40,0.72);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);}
+:root[data-theme='light']{--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}
+@media (prefers-color-scheme: light){:root:not([data-theme='dark']){--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:10;background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar .in{max-width:1300px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:12px}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--text);text-decoration:none;font-size:13px;font-weight:600;padding:7px 11px;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.back:hover{border-color:var(--accent);color:var(--accent-2)}
+.ttl{font-weight:700;letter-spacing:-.01em}.spacer{flex:1}
+.count{color:var(--muted);font-size:12.5px;padding:6px 10px;border:1px solid var(--border);background:var(--surface)}
+.find{background:var(--surface);border:1px solid var(--border);color:var(--text);font:inherit;font-size:13px;padding:7px 11px;min-width:220px}
+.find:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.icon-btn{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.icon-btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.wrap{max-width:1300px;margin:0 auto;padding:20px 22px 70px;overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:13px;font-family:'JetBrains Mono',monospace}
+thead th{position:sticky;top:60px;background:var(--surface-2);text-align:left;padding:8px 11px;border:1px solid var(--border-strong);font-family:Inter,sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+thead th:hover{color:var(--accent-2)}
+td{border:1px solid var(--border);padding:6px 11px;vertical-align:top;max-width:520px;overflow-wrap:anywhere}
+tbody tr:nth-child(even) td{background:var(--surface)}
+tbody tr:hover td{background:var(--surface-2)}
+</style></head>
+<body>
+<header class="topbar"><div class="in">
+ <a class="back" href="../index.html">$(Svg 'compass' 16) Home Base</a>
+ <span class="ttl">$(HtmlEnc $title)</span>
+ <span class="count" id="cnt">$rowCount rows</span><span class="spacer"></span>
+ <input class="find" id="find" type="search" placeholder="Filter rows..."/>
+ <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
+</div></header>
+<div class="wrap"><table id="tbl"><thead><tr>$thead</tr></thead><tbody>
+$tbody
+</tbody></table></div>
+<script>
+ var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)", btn=document.getElementById('themeBtn');
+ function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
+ function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
+ btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
+  try{localStorage.setItem('theme',n);}catch(e){}
+  document.querySelector('meta[name=theme-color]').setAttribute('content',n==='light'?'#f5f7fb':'#0b0e16');paint();};
+ var tb=document.querySelector('#tbl tbody'), all=[].slice.call(tb.rows), cnt=document.getElementById('cnt');
+ document.getElementById('find').addEventListener('input',function(e){
+  var q=e.target.value.toLowerCase(), n=0;
+  all.forEach(function(r){var hit=r.textContent.toLowerCase().indexOf(q)>-1;r.style.display=hit?'':'none';if(hit)n++;});
+  cnt.textContent=n+' / '+all.length+' rows';});
+ document.querySelectorAll('#tbl thead th').forEach(function(th,i){var asc=true;
+  th.addEventListener('click',function(){var rows=all.slice().sort(function(a,b){
+   var x=a.cells[i].textContent.trim(), y=b.cells[i].textContent.trim();
+   var nx=parseFloat(x), ny=parseFloat(y);
+   if(!isNaN(nx)&&!isNaN(ny)){return asc?nx-ny:ny-nx;}
+   return asc?x.localeCompare(y):y.localeCompare(x);});
+   asc=!asc;rows.forEach(function(r){tb.appendChild(r);});});});
+</script>
+</body></html>
+"@
+  Set-Content -LiteralPath $outPath -Value $page -Encoding UTF8
+  return $outPath
+}
+
 $total = 0; $present = 0
 $sb = New-Object System.Text.StringBuilder
 foreach ($sec in $sections) {
@@ -105,10 +274,13 @@ foreach ($sec in $sections) {
     $total++
     $exists = Test-Path $it.Path
     if ($exists) { $present++ }
-    $cls = if ($exists) { 'card' } else { 'card missing' }
-    $href = if ($exists) { "href='$(Enc $it.Path)' target='_blank' rel='noopener'" } else { "aria-disabled='true'" }
     $ext  = [IO.Path]::GetExtension($it.Path).TrimStart('.').ToLower()
-    $tag  = switch ($ext) { 'html' { 'page' } 'csv' { 'data' } 'md' { 'doc' } default { $ext } }
+    $link = $it.Path
+    if ($exists -and $ext -eq 'md')  { $link = Render-Markdown $it.Path $it.Title }
+    if ($exists -and $ext -eq 'csv') { $link = Render-Csv      $it.Path $it.Title }
+    $cls = if ($exists) { 'card' } else { 'card missing' }
+    $href = if ($exists) { "href='$(Enc $link)' target='_blank' rel='noopener'" } else { "aria-disabled='true'" }
+    $tag  = switch ($ext) { 'html' { 'page' } 'csv' { 'table' } 'md' { 'doc' } default { $ext } }
     $badge = if ($exists) { "<span class='pill $tag'>$tag</span>" } else { "<span class='pill gone'>missing</span>" }
     [void]$sb.Append("<a class='$cls' $href><div class='card-ico'>$(Svg $it.Icon 22)</div><div class='card-body'><div class='card-title'>$(HtmlEnc $it.Title) $badge</div><div class='card-desc'>$(HtmlEnc $it.Desc)</div></div><div class='card-go'>$(Svg 'external' 16)</div></a>")
   }
@@ -176,6 +348,7 @@ h1,h2{letter-spacing:-0.01em;margin:0}
 .pill{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border:1px solid var(--border-strong);color:var(--muted)}
 .pill.page{color:var(--accent-2);border-color:var(--accent-2)}
 .pill.data{color:#10b981;border-color:#10b981}
+.pill.table{color:#10b981;border-color:#10b981}
 .pill.doc{color:#f59e0b;border-color:#f59e0b}
 .pill.gone{color:#ef4444;border-color:#ef4444}
 .foot{color:var(--muted);font-size:12px;border-top:1px solid var(--border);padding-top:16px;margin-top:8px}
