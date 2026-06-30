@@ -42,6 +42,7 @@ $sections = @(
   @{ Name = 'My bronze analysis'; Icon = 'database'; Blurb = 'What I built this session to make the source layer concrete.'; Items = @(
       @{ Title = 'Bronze source map';         Path = (Asset 'bronze-source-map.html'); Desc = 'Every upstream source, resolved to storage account + tenant, flagged shortcut vs data-copy.'; Icon = 'sitemap' }
       @{ Title = 'Bronze source map (data)';  Path = (Asset 'bronze-source-map.csv');  Desc = 'Path-grain detail behind the map (763 rows, 17 systems).'; Icon = 'table' }
+      @{ Title = 'Notebook lineage explorer'; Path = (Asset 'notebook-lineage.html');  Desc = 'Pick any notebook -> see the bronze sources it reads (inputs) and the tables it writes (outputs).'; Icon = 'sitemap' }
   )}
   @{ Name = 'Architecture reports'; Icon = 'layers'; Blurb = 'Rendered, browsable architecture views.'; Items = @(
       @{ Title = 'Data architecture v1';      Path = (Repo 'docs\architecture\data-platform\reports\data-architecture-v1.html'); Desc = 'Latest rendered architecture report.'; Icon = 'file' }
@@ -272,7 +273,163 @@ $tbody
   return $outPath
 }
 
-$total = 0; $present = 0
+# Build a per-notebook lineage explorer: pick a notebook -> see the source data
+# it reads (inputs) and the tables it writes (outputs), parsed from each
+# solution's repo_inventory_analyzed.csv. Returns output path (or $null).
+function Build-NotebookLineage([hashtable[]]$solutions) {
+  $data = New-Object System.Collections.Generic.List[object]
+  foreach ($s in $solutions) {
+    $csv = Repo $s.Csv
+    if (-not (Test-Path $csv)) { continue }
+    foreach ($r in (Import-Csv -LiteralPath $csv)) {
+      $hasIn  = $r.inputs  -and $r.inputs  -ne '[]'
+      $hasOut = $r.outputs -and $r.outputs -ne '[]'
+      if (-not ($hasIn -or $hasOut)) { continue }
+      $in = @(); $out = @()
+      if ($hasIn)  { try { $in  = @($r.inputs  | ConvertFrom-Json) } catch { $in = @() } }
+      if ($hasOut) { try { $out = @($r.outputs | ConvertFrom-Json) } catch { $out = @() } }
+      $data.Add([pscustomobject]@{
+        sol     = $s.Name
+        file    = $r.file
+        ext     = $r.extension
+        purpose = $r.file_purpose
+        grain   = $r.column_grain
+        inputs  = @($in  | ForEach-Object { [pscustomobject]@{ system=$_.system; name=$_.name; path=$_.path; relevancy=$_.relevancy } })
+        outputs = @($out | ForEach-Object { [pscustomobject]@{ system=$_.system; name=$_.name; path=$_.path; relevancy=$_.relevancy } })
+      })
+    }
+  }
+  if ($data.Count -eq 0) { return $null }
+  $json = $data | ConvertTo-Json -Depth 6 -Compress
+  $nbCount = $data.Count
+  $outPath = Join-Path $assets 'notebook-lineage.html'
+  $page = @"
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b0e16"/>
+<title>Notebook lineage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);
+ document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#f5f7fb':'#0b0e16');}}catch(e){}})();</script>
+<style>
+:root{--radius:0;--bg:#0b0e16;--surface:#141a28;--surface-2:#1d2538;--surface-3:#28324a;--text:#e7ecf5;--muted:#9aa6bd;--border:#28324a;--border-strong:#3a465f;--accent:#6366f1;--accent-2:#8b5cf6;--green:#10b981;--amber:#f59e0b;--glass:rgba(20,26,40,0.72);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);}
+:root[data-theme='light']{--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--surface-3:#e5e9f2;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}
+@media (prefers-color-scheme: light){:root:not([data-theme='dark']){--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--surface-3:#e5e9f2;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;height:100vh;display:flex;flex-direction:column}
+.topbar{background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:var(--shadow);flex:none}
+.topbar .in{padding:11px 20px;display:flex;align-items:center;gap:12px}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--text);text-decoration:none;font-size:13px;font-weight:600;padding:7px 11px;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.back:hover{border-color:var(--accent);color:var(--accent-2)}
+.ttl{font-weight:700;letter-spacing:-.01em}.sub{color:var(--muted);font-size:12.5px}.spacer{flex:1}
+.icon-btn{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.icon-btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.main{flex:1;display:flex;min-height:0}
+.side{width:360px;flex:none;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface)}
+.side .find{margin:12px;background:var(--bg);border:1px solid var(--border);color:var(--text);font:inherit;font-size:13px;padding:8px 11px}
+.side .find:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.list{overflow:auto;flex:1;padding:0 8px 16px}
+.sol-h{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent-2);padding:12px 8px 5px}
+.nb{display:flex;align-items:center;gap:8px;padding:8px 9px;cursor:pointer;border:1px solid transparent;font-size:13px}
+.nb:hover{background:var(--surface-2)}
+.nb.sel{background:var(--surface-2);border-color:var(--accent)}
+.nb .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'JetBrains Mono',monospace;font-size:12px}
+.ext{font-size:9.5px;font-weight:700;text-transform:uppercase;padding:1px 5px;border:1px solid var(--border-strong);color:var(--muted)}
+.ext.py{color:var(--accent-2);border-color:var(--accent-2)}.ext.sql{color:var(--green);border-color:var(--green)}
+.detail{flex:1;overflow:auto;padding:24px 28px 60px}
+.detail h2{margin:0;font-size:19px;letter-spacing:-.01em;font-family:'JetBrains Mono',monospace}
+.detail .purpose{color:var(--muted);font-size:14px;margin:8px 0 4px}
+.io{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+@media (max-width:900px){.io{grid-template-columns:1fr}}
+.io h3{display:flex;align-items:center;gap:8px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 8px}
+.io .in h3{color:var(--green)}.io .out h3{color:var(--amber)}
+.io table{border-collapse:collapse;width:100%;font-size:12px}
+.io th,.io td{border:1px solid var(--border);padding:6px 9px;text-align:left;vertical-align:top}
+.io th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+.io td.p{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.io .sys{font-weight:600;color:var(--accent-2);white-space:nowrap}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+.hint{color:var(--muted);display:grid;place-items:center;height:100%;text-align:center;padding:40px}
+.badge{font-size:10px;font-weight:700;border:1px solid var(--border-strong);padding:1px 6px;color:var(--muted);margin-left:6px}
+</style></head>
+<body>
+<header class="topbar"><div class="in">
+ <a class="back" href="../index.html">$(Svg 'compass' 16) Home Base</a>
+ <span class="ttl">Notebook lineage</span><span class="sub">$nbCount notebooks/scripts with traced inputs &amp; outputs</span>
+ <span class="spacer"></span>
+ <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
+</div></header>
+<div class="main">
+ <aside class="side">
+  <input class="find" id="find" type="search" placeholder="Filter notebooks / source / table..."/>
+  <div class="list" id="list"></div>
+ </aside>
+ <main class="detail" id="detail"><div class="hint">$(Svg 'sitemap' 40)<div style="margin-top:14px">Pick a notebook on the left to see the bronze sources it reads and the tables it writes.</div></div></main>
+</div>
+<script>
+ var sun="$(Svg 'sun' 20)", moon="$(Svg 'moon' 20)", btn=document.getElementById('themeBtn');
+ function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
+ function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
+ btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
+  try{localStorage.setItem('theme',n);}catch(e){}
+  document.querySelector('meta[name=theme-color]').setAttribute('content',n==='light'?'#f5f7fb':'#0b0e16');paint();};
+
+ var D=$json;
+ D.forEach(function(n,i){n._i=i;n._hay=((n.file||'')+' '+(n.purpose||'')+' '+JSON.stringify(n.inputs||[])+' '+JSON.stringify(n.outputs||[])).toLowerCase();});
+ function esc(s){var d=document.createElement('div');d.textContent=(s==null?'':s);return d.innerHTML;}
+ function base(f){var p=(f||'').split('/');return p[p.length-1];}
+ var listEl=document.getElementById('list'), detailEl=document.getElementById('detail');
+
+ function buildList(q){
+  q=(q||'').toLowerCase();
+  var shown=D.filter(function(n){return !q||n._hay.indexOf(q)>-1;});
+  var bySol={}; shown.forEach(function(n){(bySol[n.sol]=bySol[n.sol]||[]).push(n);});
+  var html='';
+  Object.keys(bySol).sort().forEach(function(sol){
+   html+='<div class="sol-h">'+esc(sol)+' &middot; '+bySol[sol].length+'</div>';
+   bySol[sol].sort(function(a,b){return base(a.file).localeCompare(base(b.file));}).forEach(function(n){
+    var ex=(n.ext||'').toLowerCase();
+    html+='<div class="nb" data-i="'+n._i+'"><span class="ext '+ex+'">'+esc(ex)+'</span><span class="nm" title="'+esc(n.file)+'">'+esc(base(n.file))+'</span></div>';
+   });
+  });
+  listEl.innerHTML=html||'<div class="empty" style="padding:16px">No matches.</div>';
+ }
+ function ioTable(arr){
+  if(!arr||!arr.length) return '<div class="empty">none</div>';
+  var h='<table><thead><tr><th>System</th><th>Name</th><th>Path</th><th>Relevancy</th></tr></thead><tbody>';
+  arr.forEach(function(o){h+='<tr><td class="sys">'+esc(o.system)+'</td><td>'+esc(o.name)+'</td><td class="p">'+esc(o.path)+'</td><td>'+esc(o.relevancy)+'</td></tr>';});
+  return h+'</tbody></table>';
+ }
+ function show(n){
+  [].forEach.call(listEl.querySelectorAll('.nb'),function(e){e.classList.toggle('sel',e.getAttribute('data-i')==n._i);});
+  var grain=n.grain?'<span class="badge">grain: '+esc(n.grain)+'</span>':'';
+  detailEl.innerHTML='<h2>'+esc(base(n.file))+'<span class="badge">'+esc(n.sol)+'</span>'+grain+'</h2>'
+   +'<div class="purpose">'+esc(n.purpose||'(no stated purpose)')+'</div>'
+   +'<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--muted)">'+esc(n.file)+'</div>'
+   +'<div class="io">'
+     +'<div class="in"><h3>&#9660; Inputs &mdash; bronze sources it reads ('+((n.inputs||[]).length)+')</h3>'+ioTable(n.inputs)+'</div>'
+     +'<div class="out"><h3>&#9650; Outputs &mdash; tables it writes ('+((n.outputs||[]).length)+')</h3>'+ioTable(n.outputs)+'</div>'
+   +'</div>';
+ }
+ listEl.addEventListener('click',function(e){var el=e.target.closest('.nb');if(!el)return;show(D[+el.getAttribute('data-i')]);});
+ document.getElementById('find').addEventListener('input',function(e){buildList(e.target.value);});
+ buildList('');
+</script>
+</body></html>
+"@
+  Set-Content -LiteralPath $outPath -Value $page -Encoding UTF8
+  return $outPath
+}
+
+# Pre-build the lineage explorer so the hub card resolves.
+$null = Build-NotebookLineage @(
+  @{ Name='ARR';      Csv='docs\exploratory\data-estate-analysis\solution\arr\repo_inventory_analyzed.csv' }
+  @{ Name='WCS';      Csv='docs\exploratory\data-estate-analysis\solution\wcs\repo_inventory_analyzed.csv' }
+  @{ Name='MWDetail'; Csv='docs\exploratory\data-estate-analysis\solution\mwdetail\repo_inventory_analyzed.csv' }
+)
+
 $sb = New-Object System.Text.StringBuilder
 foreach ($sec in $sections) {
   [void]$sb.Append("<section class='grp'><div class='grp-head'>$(Svg $sec.Icon 18)<h2>$(HtmlEnc $sec.Name)</h2></div>")
