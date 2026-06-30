@@ -223,11 +223,12 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
 .find:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
 .icon-btn{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
 .icon-btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
-.wrap{max-width:1300px;margin:0 auto;padding:20px 22px 70px;overflow:auto}
-table{border-collapse:collapse;width:100%;font-size:13px;font-family:'JetBrains Mono',monospace}
-thead th{position:sticky;top:60px;background:var(--surface-2);text-align:left;padding:8px 11px;border:1px solid var(--border-strong);font-family:Inter,sans-serif;font-weight:600;cursor:pointer;white-space:nowrap}
+.wrap{max-width:100%;margin:0;padding:0;overflow:auto;height:calc(100vh - 61px)}
+table{border-collapse:collapse;width:max-content;min-width:100%;font-size:12.5px;font-family:'JetBrains Mono',monospace}
+thead th{position:sticky;top:0;background:var(--surface-2);color:var(--text);text-align:left;padding:10px 13px;border:1px solid var(--border-strong);border-bottom:2px solid var(--accent);font-family:Inter,sans-serif;font-size:13px;font-weight:700;letter-spacing:-.01em;cursor:pointer;white-space:nowrap;z-index:2}
 thead th:hover{color:var(--accent-2)}
-td{border:1px solid var(--border);padding:6px 11px;vertical-align:top;max-width:520px;overflow-wrap:anywhere}
+td{border:1px solid var(--border);padding:7px 13px;vertical-align:top;white-space:nowrap}
+table.wrapped td{white-space:normal;overflow-wrap:anywhere;max-width:360px}
 tbody tr:nth-child(even) td{background:var(--surface)}
 tbody tr:hover td{background:var(--surface-2)}
 </style></head>
@@ -237,6 +238,7 @@ tbody tr:hover td{background:var(--surface-2)}
  <span class="ttl">$(HtmlEnc $title)</span>
  <span class="count" id="cnt">$rowCount rows</span><span class="spacer"></span>
  <input class="find" id="find" type="search" placeholder="Filter rows..."/>
+ <button class="back" id="wrapBtn" title="Toggle text wrapping">Wrap</button>
  <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
 </div></header>
 <div class="wrap"><table id="tbl"><thead><tr>$thead</tr></thead><tbody>
@@ -250,6 +252,8 @@ $tbody
   try{localStorage.setItem('theme',n);}catch(e){}
   document.querySelector('meta[name=theme-color]').setAttribute('content',n==='light'?'#f5f7fb':'#0b0e16');paint();};
  var tb=document.querySelector('#tbl tbody'), all=[].slice.call(tb.rows), cnt=document.getElementById('cnt');
+ var wb=document.getElementById('wrapBtn');
+ wb.onclick=function(){document.getElementById('tbl').classList.toggle('wrapped');wb.style.borderColor=document.getElementById('tbl').classList.contains('wrapped')?'var(--accent)':'';};
  document.getElementById('find').addEventListener('input',function(e){
   var q=e.target.value.toLowerCase(), n=0;
   all.forEach(function(r){var hit=r.textContent.toLowerCase().indexOf(q)>-1;r.style.display=hit?'':'none';if(hit)n++;});
