@@ -22,7 +22,12 @@
 [CmdletBinding()]
 param(
     [string]$SkillsRepo = $PSScriptRoot,
-    [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills')
+    [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills'),
+    # Additional skill source folders from other repos. Each is linked only if the
+    # local path exists (the repo may not be cloned on every machine).
+    [string[]]$ExtraSkillRepos = @(
+        'C:\Files\Dev\msft\FDE_Revenue_Bedrock\.github\skills'
+    )
 )
 
 function Install-SkillJunctions {
@@ -60,5 +65,15 @@ function Install-SkillJunctions {
 
 Write-Host "--- Copilot CLI ($CopilotTarget) ---"
 Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $CopilotTarget
+
+foreach ($extra in $ExtraSkillRepos) {
+    if (Test-Path -LiteralPath $extra) {
+        Write-Host "`n--- Extra skills ($extra) ---"
+        Install-SkillJunctions -SkillsRepo $extra -Target $CopilotTarget
+    }
+    else {
+        Write-Host "`n- Skipping (not present): $extra"
+    }
+}
 
 Write-Host "`nDone."
