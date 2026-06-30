@@ -105,10 +105,14 @@ Confirm the **type** with @jimb if not given (don't guess silently).
 
 ### Branch naming (enforced)
 ```
-<author>/AB-<id>/<type>/<short-kebab-description>     # author=jimb, type=feat|fix|chore|docs|refactor|test
+<author>/AB-<id>/<short-kebab-description>     # author=jimb; description may start with a verb (fix-, add-, ...)
 ```
-e.g. `jimb/AB-447944/fix/skill-description-length`. (A type-only branch like
-`jimb/chore/...` is a fallback ONLY when @jimb explicitly says there's no work item.)
+e.g. `jimb/AB-455549/fix-skill-description-length`. Three segments only —
+**no separate type segment**. (A branch without the `AB-<id>` is allowed ONLY
+when @jimb explicitly says there's no work item.)
+> Note: the repo's `.github/copilot-instructions.md` documents a 4-segment
+> `<author>/AB-<id>/<type>/<desc>` form; @jimb's standing preference is the
+> 3-segment form above — follow it unless @jimb says otherwise.
 
 ### Commit messages (conventional commits)
 `type(scope): description`, and link the work item in the body with **`AB#<id>`**.
