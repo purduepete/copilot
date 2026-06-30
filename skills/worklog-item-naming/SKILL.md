@@ -61,7 +61,20 @@ Resolve "item N" to its id positionally (Nth entry of the day) per the **worklog
 ## Both fields are mandatory — dig deeper for mined work
 
 Every entry needs **both** a representative title **and** an accomplishment — never
-ship a title-only entry. The miners (`Get-VSCodeWork.ps1` / `Get-CopilotWork.ps1`)
+ship a title-only entry.
+
+**The only exemptions** (an accomplishment is *not* required) are non-work / idle
+entries:
+
+- **Lunch** (and other breaks worded as such), and
+- any entry whose **project is `n/a`** (e.g. "Away from work", breaks, idle time).
+
+Start-of-day / end-of-day markers are also exempt (they carry no project and no
+accomplishment by design). **Every other entry** — anything with a real project —
+**must** have an accomplishment; if it's missing, fill it in (mine the transcript
+if needed) before closing the entry or the day.
+
+The miners (`Get-VSCodeWork.ps1` / `Get-CopilotWork.ps1`)
 default the title to the block's *first* message and set **no** accomplishment, which
 is almost never representative of the whole block.
 
