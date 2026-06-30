@@ -40,9 +40,14 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   ```
   (Add `-At "<yyyy-MM-dd HH:mm>"` to back-date the stop.)
 
-- **Untracked gaps** (`gaps[]`): follow the gap-fill flow — propose an entry per
-  gap (use session mining / the proposer for titles), confirm, then `wl.ps1 add
-  -Start -End -Category -Project`. Don't invent work; ask if a gap is break/idle.
+- **Untracked gaps** (`gaps[]`): by default, fill **every** untracked gap as a
+  single non-work entry titled **"Away from work"** with **category `personal`**
+  — no need to ask per gap:
+  ```powershell
+  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add -Text "Away from work" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category personal
+  ```
+  Only diverge from this default if the user has already told you what a specific
+  gap was (then use that title/category instead). Never invent billable work.
 
 - **No day summary** (`summarySet:false`): generate a crisp highlights line (invoke
   the **worklog-highlights** skill) or ask the user, then:
