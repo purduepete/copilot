@@ -39,6 +39,9 @@ $sections = @(
       @{ Title = 'Data architecture (doc)';   Path = (Repo 'docs\architecture\data-platform\data-architecture.md'); Desc = 'Authoritative Sources -> Bronze -> Silver -> Gold design, shortcut mechanics, nb_ naming.'; Icon = 'layers' }
       @{ Title = 'Decision log (ADR)';        Path = (Repo 'docs\adr\data-platform\decision_log.md'); Desc = 'Why the platform is shaped the way it is.'; Icon = 'gavel' }
   )}
+  @{ Name = 'Reference'; Icon = 'glossary'; Blurb = 'Quick lookups for the alphabet soup.'; Items = @(
+      @{ Title = 'Glossary (acronyms & TLAs)'; Path = (Asset 'glossary.html'); Desc = 'Searchable list of the projects acronyms, systems and jargon - what each one means.'; Icon = 'glossary' }
+  )}
   @{ Name = 'My bronze analysis'; Icon = 'database'; Blurb = 'What I built this session to make the source layer concrete.'; Items = @(
       @{ Title = 'Bronze source map';         Path = (Asset 'bronze-source-map.html'); Desc = 'Every upstream source, resolved to storage account + tenant, flagged shortcut vs data-copy.'; Icon = 'sitemap' }
       @{ Title = 'Bronze source map (data)';  Path = (Asset 'bronze-source-map.csv');  Desc = 'Path-grain detail behind the map (763 rows, 17 systems).'; Icon = 'table' }
@@ -79,6 +82,8 @@ $ICON = @{
   compass   = '<circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>'
   map       = '<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>'
   book      = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>'
+  glossary  = '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 6.5h7M8 9.5h5"/>'
+  search    = '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>'
   layers    = '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>'
   gavel     = '<path d="m14 13-7.5 7.5a2.12 2.12 0 0 1-3-3L11 10"/><path d="m16 16 6-6"/><path d="m8 8 6-6"/><path d="m9 7 8 8"/><path d="m21 11-8-8"/>'
   database  = '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>'
@@ -424,6 +429,168 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
   Set-Content -LiteralPath $outPath -Value $page -Encoding UTF8
   return $outPath
 }
+
+# Build a searchable glossary page (acronyms / TLAs / project terms) under assets\.
+# Content is rendered server-side so it shows even if JS is disabled; the search
+# box just hides non-matching rows. Returns the output path.
+function Build-Glossary {
+  # Term | Expansion (blank if not documented) | Category | Definition
+  $entries = @(
+    @{ T='Bedrock';     F='';                              C='Project'; D='This project / repo (FDE_Revenue_Bedrock): the new finance source-data (bronze) platform on Microsoft Fabric.' }
+    @{ T='MVP';         F='Minimum Viable Product';        C='Project'; D='The initial deliverable scope this onboarding targets - MVP + the bronze (source) layer first.' }
+    @{ T='TLA';         F='Three-Letter Acronym';          C='Project'; D='...like most of the entries on this page.' }
+    @{ T='ADR';         F='Architecture Decision Record';  C='Project'; D='A logged design decision (see the decision log) explaining why the platform is shaped the way it is.' }
+
+    @{ T='ARR';         F='Annual Recurring Revenue';      C='Solutions & domains'; D='Legacy revenue solution (Synapse/T-SQL + Serverless SQL + AS cube). One of the three bronze pilot solutions analyzed this session.' }
+    @{ T='WCS';         F='';                              C='Solutions & domains'; D='A revenue reporting solution; one of the three pilot solutions (ARR, WCS, MWDetail) in the data-estate analysis. (Expansion not documented in the repo.)' }
+    @{ T='MWDetail';    F='Modern Work Detail';            C='Solutions & domains'; D='Fabric-native solution (PySpark + TMDL + Direct Lake) for Modern Work (M365) revenue detail - the most modern of the pilot solutions.' }
+    @{ T='AHR';         F='';                              C='Solutions & domains'; D='A Silver-layer solution in the FINHUB family (repo FDE_CnAI_Reporting, GPSPartnerData). 14 existing Fabric notebooks; no bronze notebook yet (greenfield).' }
+    @{ T='FINHUB';      F='Finance Hub';                   C='Solutions & domains'; D='The solution family that AHR belongs to.' }
+    @{ T='RevRec';      F='Revenue Recognition';           C='Solutions & domains'; D='A finance solution/domain (has a current-state architecture diagram in this hub).' }
+    @{ T='ADG';         F='';                              C='Solutions & domains'; D='A finance solution/domain (listed alongside AHR and RevRec). Expansion not documented.' }
+    @{ T='ACR';         F='Annual Contract Revenue';       C='Solutions & domains'; D='A revenue measure used in the semantic models.' }
+
+    @{ T='FDE';         F='Finance Data Engineering';      C='Orgs & tenants'; D='The team/tenant owning this Bedrock platform (the FDE_* repo prefix). Shares a tenant with CSEO for shortcut purposes.' }
+    @{ T='CSEO';        F='Core Services Engineering & Operations'; C='Orgs & tenants'; D="Microsoft's internal engineering org; owns the OCDM/EDL commerce lakes. Same tenant as FDE -> reachable by shortcut." }
+    @{ T='ECADL';       F='';                              C='Orgs & tenants'; D='Cross-org commerce data lake reached via the Synapse linked service ECADL_PROD; an Intake source consumed by data copy (cross-org, not a shortcut).' }
+    @{ T='GPSPartnerData'; F='Global Partner Solutions partner data'; C='Orgs & tenants'; D='Data family for AHR / partner-seller solutions.' }
+
+    @{ T='ADLS';        F='Azure Data Lake Storage (Gen2)'; C='Lakes & storage'; D='The underlying data-lake storage behind most upstream sources.' }
+    @{ T='OneLake';     F='';                              C='Lakes & storage'; D="Microsoft Fabric's single, tenant-wide data lake - the storage under every Fabric workspace. Bronze tables/shortcuts live here." }
+    @{ T='FDL';         F='Financial Data Lake';           C='Lakes & storage'; D='A finance data lake (e.g., the MSSales FDL; fdedatalakeprod01).' }
+    @{ T='EDL';         F='Enterprise Data Lake';          C='Lakes & storage'; D="CSEO's enterprise data lake." }
+    @{ T='EDLP';        F='EDL (data products)';           C='Lakes & storage'; D='The data-products surface layered over the EDL.' }
+    @{ T='OCDM';        F='One Commercial Data Model';     C='Lakes & storage'; D='CSEO commercial data-products model on the EDL; a bronze source (shortcut).' }
+    @{ T='SPME / SPMEDLP'; F='Seller & Partner Marketplace Experience EDL'; C='Lakes & storage'; D='CSEO commerce partner-seller experience lake (note: NOT the Microsoft-PME tenant).' }
+    @{ T='MSSales';     F='';                              C='Lakes & storage'; D='Microsoft Sales source data, consumed via the MSSales FDL (shortcut).' }
+    @{ T='Conformed';   F='';                              C='Lakes & storage'; D='The conformed/prod curated layer (fdedatalakeprod01 / abidata); consumed into bronze via a OneLake shortcut.' }
+    @{ T='Intake';      F='';                              C='Lakes & storage'; D='The INTAKE stage of the legacy medallion pipeline; cross-org (via ECADL) so it arrives by data copy, not shortcut.' }
+    @{ T='DATAPROD';    F='Data Production (curated)';     C='Lakes & storage'; D='The curated data-prod output layer (e.g., ARRDataProd) that serving views/cubes read from.' }
+
+    @{ T='Fabric';      F='Microsoft Fabric';              C='Platform & tech'; D='The target analytics SaaS platform: OneLake + Lakehouse + notebooks + semantic models.' }
+    @{ T='Lakehouse';   F='';                              C='Platform & tech'; D='A Fabric artifact combining Delta tables + a files area - where bronze data lands.' }
+    @{ T='Shortcut';    F='';                              C='Platform & tech'; D='A OneLake/Fabric shortcut: a virtual pointer to external storage so data is read in place (no copy). Preferred when same-tenant.' }
+    @{ T='Direct Lake'; F='';                              C='Platform & tech'; D='A Fabric semantic-model mode that reads Delta tables straight from OneLake (no import, no DirectQuery).' }
+    @{ T='Synapse';     F='Azure Synapse Analytics';       C='Platform & tech'; D="Legacy platform for ARR: Spark notebooks + Serverless SQL." }
+    @{ T='ADF';         F='Azure Data Factory';            C='Platform & tech'; D='Pipeline orchestration service.' }
+    @{ T='AAS';         F='Azure Analysis Services';       C='Platform & tech'; D='Hosts AS-Tabular cubes (legacy serving layer).' }
+    @{ T='TMDL';        F='Tabular Model Definition Language'; C='Platform & tech'; D='Text format for Fabric/Power BI semantic models (tables, columns, measures).' }
+    @{ T='TMSR';        F='';                              C='Platform & tech'; D='The AS-Tabular cube/semantic format used by ARR (legacy serving). Expansion not documented.' }
+    @{ T='PySpark';     F='';                              C='Platform & tech'; D='The Python Spark API used by the modern (Fabric/Synapse) notebooks.' }
+    @{ T='T-SQL';       F='Transact-SQL';                  C='Platform & tech'; D='The SQL dialect used by the legacy Synapse notebooks/stored procs.' }
+    @{ T='OPENROWSET';  F='';                              C='Platform & tech'; D='A Synapse Serverless SQL function that queries ADLS files directly as a table.' }
+    @{ T='SSDT';        F='SQL Server Data Tools';         C='Platform & tech'; D='.sqlproj projects for the legacy on-prem SQL estate (INTAKE -> STAGING -> DATAPROD).' }
+    @{ T='Atlas';       F='';                              C='Platform & tech'; D='The semantic-model (cube) usage-analysis dataset/effort.' }
+
+    @{ T='Medallion';   F='';                              C='Data concepts'; D='The Bronze -> Silver -> Gold layered data architecture.' }
+    @{ T='Bronze';      F='';                              C='Data concepts'; D="Raw ingested source layer - this project's focus. Mostly shortcut-based; greenfield." }
+    @{ T='Silver';      F='';                              C='Data concepts'; D='Cleaned/conformed layer (e.g., AHR builds 14 Silver notebooks).' }
+    @{ T='Gold';        F='';                              C='Data concepts'; D='Curated serving layer: facts, dims, cubes/semantic models.' }
+    @{ T='DIM';         F='Dimension';                     C='Data concepts'; D='A dimension table - descriptive attributes you slice facts by.' }
+    @{ T='FACT';        F='';                              C='Data concepts'; D='A fact table - transactions / measures (the numbers you aggregate).' }
+    @{ T='BRIDGE';      F='';                              C='Data concepts'; D='A bridge table resolving a many-to-many relationship between dimensions.' }
+    @{ T='ETL';         F='Extract, Transform, Load';      C='Data concepts'; D='The data-movement pattern that fills each medallion layer.' }
+    @{ T='nb_';         F='';                              C='Data concepts'; D='Naming-prefix convention for bronze notebooks (per the data-architecture doc).' }
+  )
+
+  $order = @('Project','Solutions & domains','Orgs & tenants','Lakes & storage','Platform & tech','Data concepts')
+  $rows = New-Object System.Text.StringBuilder
+  foreach ($cat in $order) {
+    $grp = @($entries | Where-Object { $_.C -eq $cat })
+    if ($grp.Count -eq 0) { continue }
+    $grp = $grp | Sort-Object { $_.T.ToLower() }
+    [void]$rows.Append("<div class='cat' data-cat='$(HtmlEnc $cat)'><h2>$(HtmlEnc $cat) <span class='n'>$($grp.Count)</span></h2>")
+    foreach ($e in $grp) {
+      $hay = (($e.T + ' ' + $e.F + ' ' + $e.D).ToLower())
+      $full = if ($e.F) { "<span class='full'>$(HtmlEnc $e.F)</span>" } else { '' }
+      [void]$rows.Append("<div class='term' data-h='$(HtmlEnc $hay)'><div class='t'>$(HtmlEnc $e.T)$full</div><div class='d'>$(HtmlEnc $e.D)</div></div>")
+    }
+    [void]$rows.Append("</div>")
+  }
+  $rowsHtml = $rows.ToString()
+  $count = $entries.Count
+  $outPath = Join-Path $assets 'glossary.html'
+  $page = @"
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="theme-color" content="#0b0e16"/>
+<title>Glossary - Bedrock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>(function(){try{var t=localStorage.getItem('theme');if(t){document.documentElement.setAttribute('data-theme',t);
+ document.querySelector('meta[name=theme-color]').setAttribute('content',t==='light'?'#f5f7fb':'#0b0e16');}}catch(e){}})();</script>
+<style>
+:root{--radius:0;--bg:#0b0e16;--surface:#141a28;--surface-2:#1d2538;--surface-3:#28324a;--text:#e7ecf5;--muted:#9aa6bd;--border:#28324a;--border-strong:#3a465f;--accent:#6366f1;--accent-2:#8b5cf6;--glass:rgba(20,26,40,0.72);--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.28);}
+:root[data-theme='light']{--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--surface-3:#e5e9f2;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}
+@media (prefers-color-scheme: light){:root:not([data-theme='dark']){--bg:#f5f7fb;--surface:#fff;--surface-2:#f1f3f9;--surface-3:#e5e9f2;--text:#1a2233;--muted:#5b6678;--border:#e5e9f2;--border-strong:#cdd5e4;--glass:rgba(255,255,255,0.72);}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:5;background:var(--glass);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+.topbar .in{padding:11px 20px;display:flex;align-items:center;gap:12px;max-width:1100px;margin:0 auto}
+.back{display:inline-flex;align-items:center;gap:7px;color:var(--text);text-decoration:none;font-size:13px;font-weight:600;padding:7px 11px;border:1px solid var(--border);background:var(--surface);transition:.15s}
+.back:hover{border-color:var(--accent);color:var(--accent-2)}
+.ttl{font-weight:700;letter-spacing:-.01em}.sub{color:var(--muted);font-size:12.5px}.spacer{flex:1}
+.icon-btn{width:36px;height:36px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--border);color:var(--text);cursor:pointer}
+.icon-btn:hover{border-color:var(--border-strong);background:var(--surface-2)}
+.wrap{max-width:1100px;margin:0 auto;padding:22px 20px 70px}
+.searchbox{position:relative;margin:0 0 22px}
+.searchbox .si{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.find{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font:inherit;font-size:14px;padding:11px 13px 11px 40px}
+.find:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+.cat{margin:0 0 26px}
+.cat h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--accent-2);margin:0 0 11px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.cat h2 .n{color:var(--muted);font-weight:600;margin-left:6px}
+.grid{}
+.term{display:grid;grid-template-columns:220px 1fr;gap:16px;padding:11px 12px;border:1px solid transparent;border-bottom:1px solid var(--border)}
+.term:hover{background:var(--surface-2);border-color:var(--border)}
+.term .t{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:14px;color:var(--text);display:flex;flex-direction:column;gap:3px}
+.term .full{font-family:Inter,sans-serif;font-weight:500;font-size:12px;color:var(--accent-2)}
+.term .d{color:var(--muted);font-size:13.5px;line-height:1.5}
+.nohit{display:none;color:var(--muted);font-style:italic;padding:30px 4px}
+@media (max-width:640px){.term{grid-template-columns:1fr;gap:4px}}
+</style></head>
+<body>
+<header class="topbar"><div class="in">
+ <a class="back" href="../index.html">$(Svg 'compass' 16) Home Base</a>
+ <span class="ttl">Glossary</span><span class="sub">$count terms - acronyms, TLAs &amp; project jargon</span>
+ <span class="spacer"></span>
+ <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme"></button>
+</div></header>
+<div class="wrap">
+ <div class="searchbox"><span class="si">$(Svg 'search' 18)</span>
+  <input class="find" id="find" type="search" placeholder="Filter terms, expansions or meanings... (e.g. shortcut, lake, ARR)" autofocus/></div>
+ <div id="glist">$rowsHtml</div>
+ <div class="nohit" id="nohit">No terms match your filter.</div>
+</div>
+<script>
+ var sun="$(SvgJs 'sun')", moon="$(SvgJs 'moon')", btn=document.getElementById('themeBtn');
+ function cur(){return document.documentElement.getAttribute('data-theme')||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');}
+ function paint(){btn.innerHTML=cur()==='light'?moon:sun;} paint();
+ btn.onclick=function(){var n=cur()==='light'?'dark':'light';document.documentElement.setAttribute('data-theme',n);
+  try{localStorage.setItem('theme',n);}catch(e){}
+  document.querySelector('meta[name=theme-color]').setAttribute('content',n==='light'?'#f5f7fb':'#0b0e16');paint();};
+ var find=document.getElementById('find'), nohit=document.getElementById('nohit');
+ find.addEventListener('input',function(){
+  var q=find.value.trim().toLowerCase(), any=false;
+  var cats=document.querySelectorAll('.cat');
+  for(var i=0;i<cats.length;i++){
+   var terms=cats[i].querySelectorAll('.term'), shown=0;
+   for(var j=0;j<terms.length;j++){
+    var hit=!q||terms[j].getAttribute('data-h').indexOf(q)>-1;
+    terms[j].style.display=hit?'':'none'; if(hit){shown++;any=true;}
+   }
+   cats[i].style.display=shown?'':'none';
+  }
+  nohit.style.display=any?'none':'block';
+ });
+</script>
+</body></html>
+"@
+  [IO.File]::WriteAllText($outPath, $page, (New-Object Text.UTF8Encoding $false))
+  return $outPath
+}
+$null = Build-Glossary
 
 # Pre-build the lineage explorer so the hub card resolves.
 $null = Build-NotebookLineage @(
