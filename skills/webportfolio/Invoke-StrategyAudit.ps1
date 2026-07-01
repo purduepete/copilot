@@ -70,10 +70,44 @@ param(
     [string]$EnvFile = 'C:\Files\Dev\main\webportfolio\.env.development.local',
     [string]$OutDir  = (Join-Path $env:TEMP 'webportfolio-strategy-audit'),
     [switch]$Json,
-    [switch]$NoOpen
+    [switch]$NoOpen,
+    [switch]$IncludeAccepted
 )
 
 $ErrorActionPreference = 'Stop'
+
+# --- accepted (known-good) exceptions ----------------------------------------
+# Findings the user has reviewed and deemed acceptable. Each entry is matched
+# against a check's result rows by ALL of its column=value pairs (case-insensitive,
+# trimmed). Matching rows are suppressed from Findings/Impact and the report
+# unless -IncludeAccepted is passed. Keyed by check Id.
+$AcceptedExceptions = @{
+    C3 = @(
+        # BRKB (account 7): transaction strategy vs snapshot strategy disagree on
+        # purpose. Reviewed 2026-07-01 and confirmed acceptable.
+        @{ Account = '7'; Symbol = 'BRKB' }
+    )
+}
+
+# --- accepted unassigned (C7) -------------------------------------------------
+# (account, symbol) pairs whose *unassigned-strategy* transactions are known-good
+# and should be excluded from the C7 "no strategy assigned" check (e.g. a bond with
+# no equity holding to inherit from). Suppressed unless -IncludeAccepted; the count
+# of suppressed rows is reported as C7's `accepted`.
+$AcceptedUnassigned = @(
+    # CUSIP 123990BL6 in account 10: monthly Interest Income, no reference holding
+    # to inherit a strategy from. Reviewed 2026-07-01 - intentionally left unassigned.
+    @{ Account = '10'; Symbol = '123990BL6' }
+)
+
+# SQL predicate that removes the accepted-unassigned rows from C7 (empty when the
+# user passes -IncludeAccepted or the list is empty).
+$c7ExcludeSql = ''
+if (-not $IncludeAccepted -and $AcceptedUnassigned.Count -gt 0) {
+    $c7ExcludeSql = ($AcceptedUnassigned | ForEach-Object {
+        "  AND NOT (account_id = '$($_.Account)' AND symbol = '$($_.Symbol)')"
+    }) -join "`n"
+}
 
 # --- resolve the timeframe ----------------------------------------------------
 if ($AllTime) {
@@ -278,19 +312,46 @@ ORDER BY COUNT(DISTINCT strategy_id) DESC, symbol;
 $checks.Add([pscustomobject]@{ Id='C7'; Severity='INFO'; Counts=$false
   Title='Transactions with no strategy assigned'
   Desc='Transactions in the window that have a symbol but no strategy_id, grouped by how strategy assignment was (or was not) attempted.'
-  Sql=@'
+  Sql=@"
 SELECT ISNULL(strategy_assigned_method,'(none)') AS [Assignment Method],
        COUNT(*) AS [Rows]
 FROM transactions
 WHERE strategy_id IS NULL AND symbol IS NOT NULL AND transaction_date >= @since
+$c7ExcludeSql
 GROUP BY strategy_assigned_method
 ORDER BY COUNT(*) DESC;
-'@ })
+"@ })
 
 # --- run every check ----------------------------------------------------------
 foreach ($c in $checks) {
     $dt = Invoke-Q $c.Sql
+    # Suppress accepted (known-good) findings unless the user asks to include them.
+    $acceptedCount = 0
+    if (-not $IncludeAccepted -and $AcceptedExceptions.ContainsKey($c.Id) -and $dt.Rows.Count -gt 0) {
+        $rules = $AcceptedExceptions[$c.Id]
+        $toRemove = @()
+        foreach ($row in $dt.Rows) {
+            foreach ($rule in $rules) {
+                $match = $true
+                foreach ($col in $rule.Keys) {
+                    if (-not $dt.Columns.Contains($col)) { $match = $false; break }
+                    if (([string]$row[$col]).Trim() -ne ([string]$rule[$col]).Trim()) { $match = $false; break }
+                }
+                if ($match) { $toRemove += $row; break }
+            }
+        }
+        foreach ($row in $toRemove) { $dt.Rows.Remove($row) }
+        $acceptedCount = @($toRemove).Count
+    }
+    # C7 uses an accepted-unassigned allowlist applied in-SQL; count what it suppressed.
+    if ($c.Id -eq 'C7' -and -not $IncludeAccepted -and $AcceptedUnassigned.Count -gt 0) {
+        $pred = ($AcceptedUnassigned | ForEach-Object {
+            "(account_id = '$($_.Account)' AND symbol = '$($_.Symbol)')" }) -join ' OR '
+        $cntDt = Invoke-Q "SELECT COUNT(*) AS n FROM transactions WHERE strategy_id IS NULL AND symbol IS NOT NULL AND transaction_date >= @since AND ($pred)"
+        $acceptedCount = [int]$cntDt.Rows[0]['n']
+    }
     Add-Member -InputObject $c -NotePropertyName Data -NotePropertyValue $dt -Force
+    Add-Member -InputObject $c -NotePropertyName Accepted -NotePropertyValue $acceptedCount -Force
     $rowsAffected = ($dt | Measure-Object).Count
     # For grouped checks the "impact" is the sum of a Rows column when present.
     $impact = $rowsAffected
@@ -319,7 +380,7 @@ if ($Json) {
         medium        = $medCount
         checks        = @($checks | ForEach-Object {
             [pscustomobject]@{ id=$_.Id; title=$_.Title; severity=$_.Severity
-                counts=$_.Counts; findings=$_.Findings; impact=$_.Impact }
+                counts=$_.Counts; findings=$_.Findings; impact=$_.Impact; accepted=$_.Accepted }
         })
     } | ConvertTo-Json -Depth 5
     return
@@ -354,9 +415,11 @@ $sections = foreach ($c in $checks) {
              else { "<span class='pill sev-ok'>CLEAN</span>" }
     $impactNote = if ($c.Findings -gt 0 -and $c.Impact -ne $c.Findings) {
         " &middot; $($c.Impact) row(s) affected" } else { '' }
+    $acceptedNote = if ($c.Accepted -gt 0) {
+        " <span class='pill sev-ok'>$($c.Accepted) accepted</span>" } else { '' }
     @"
   <section class='$(if($c.Findings -eq 0){'clean'})'>
-    <h2><span class='cid'>$($c.Id)</span> $(Enc $c.Title) $badge
+    <h2><span class='cid'>$($c.Id)</span> $(Enc $c.Title) $badge$acceptedNote
       <span class='cnt'>$($c.Findings) finding$(if($c.Findings -ne 1){'s'})$impactNote</span></h2>
     <p class='desc'>$(Enc $c.Desc)</p>
     $(Render-Table $c.Data)
@@ -435,7 +498,8 @@ Write-Host "Strategy audit ($windowLabel):" -ForegroundColor Cyan
 Write-Host ("  {0} check(s) with findings  ({1} high, {2} medium)" -f $totalFindings, $highCount, $medCount)
 foreach ($c in $checks) {
     $mark = if ($c.Findings -gt 0) { '!' } else { ' ' }
-    Write-Host ("  [{0}] {1} {2,-52} {3} finding(s)" -f $mark, $c.Id, $c.Title, $c.Findings)
+    $acc  = if ($c.Accepted -gt 0) { " ($($c.Accepted) accepted)" } else { '' }
+    Write-Host ("  [{0}] {1} {2,-52} {3} finding(s){4}" -f $mark, $c.Id, $c.Title, $c.Findings, $acc)
 }
 Write-Host "Wrote $htmlPath" -ForegroundColor Green
 if (-not $NoOpen) { Start-Process $htmlPath }

@@ -85,7 +85,35 @@ pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Invoke-StrategyAudit.ps
 
 **Parameters:** `-Months` (default `3`), `-Since <date>` (overrides `-Months`),
 `-AllTime`, `-EnvFile` (default the repo's `.env.development.local`), `-OutDir`
-(default `%TEMP%\webportfolio-strategy-audit`), `-Json`, `-NoOpen`.
+(default `%TEMP%\webportfolio-strategy-audit`), `-Json`, `-NoOpen`,
+`-IncludeAccepted` (show suppressed known-good findings, see below).
+
+### Accepted (known-good) exceptions
+
+Some findings are **intentional** and reviewed-as-acceptable, so the script suppresses
+them from `findings`/`impact` (and the HTML/console) by default. They live in the
+`$AcceptedExceptions` hashtable near the top of `Invoke-StrategyAudit.ps1`, keyed by
+check `Id`; each entry matches result rows by **all** of its column=value pairs
+(case-insensitive). Currently accepted:
+
+| Check | Accepted finding | Why |
+|-------|------------------|-----|
+| C3 | account `7`, symbol `BRKB` (transaction vs snapshot strategy) | Reviewed 2026-07-01 — intentional |
+
+The count of suppressed rows is reported per check (`accepted` in `-Json`, an
+`N accepted` pill in HTML, `(N accepted)` in the console). Pass **`-IncludeAccepted`**
+to see them anyway. To accept a new finding, add a row-matcher under its check `Id` in
+`$AcceptedExceptions`.
+
+**C7 accepted-unassigned:** because C7 is aggregated by assignment method, its
+known-good rows are excluded in-SQL via a separate `$AcceptedUnassigned` list of
+`@{ Account; Symbol }` pairs (also near the top of the script). Those transactions are
+left out of the C7 count and reported as C7's `accepted` (restored with
+`-IncludeAccepted`). Currently accepted-unassigned:
+
+| Account | Symbol | Why |
+|---------|--------|-----|
+| `10` | `123990BL6` | Monthly bond Interest Income with no reference holding to inherit a strategy — intentionally left unassigned (reviewed 2026-07-01) |
 
 **How to use in a conversation:** when the user asks for a strategy audit, parse any
 timeframe they mention into `-Months`/`-Since`/`-AllTime`, run the script (it opens the
