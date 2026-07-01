@@ -26,6 +26,9 @@
 .PARAMETER Json          Emit a machine-readable summary instead of HTML.
 .PARAMETER NoOpen        Don't open the HTML in a browser.
 .PARAMETER OutDir        Where to write the HTML report.
+.PARAMETER AdvisorIgnore Extra regex patterns to suppress in H5 (added to the
+                         built-in ignore list of low-value HA upsells).
+.PARAMETER ShowIgnored   Include the normally-suppressed H5 recommendations.
 #>
 [CmdletBinding()]
 param(
@@ -33,8 +36,24 @@ param(
     [string]$Subscription,
     [switch]$Json,
     [switch]$NoOpen,
-    [string]$OutDir = (Join-Path $env:TEMP 'azure-health-check')
+    [string]$OutDir = (Join-Path $env:TEMP 'azure-health-check'),
+    [string[]]$AdvisorIgnore = @(),
+    [switch]$ShowIgnored
 )
+
+# --- H5 Advisor ignore list ---------------------------------------------------
+# Low-value recommendations we deliberately don't surface: they're all "spend
+# MORE for enterprise HA" upsells (extra instances, higher tiers, multi-zone
+# redundancy) that don't fit a single-region personal subscription and run
+# counter to keeping cost down. Anything genuinely actionable (API retirements,
+# free health checks, service-health alerts) is NOT in this list.
+$AdvisorIgnoreDefault = @(
+    'Set minimum instance count for App Service',
+    'Use Standard or Premium tier',
+    'Use zone-supported App Service Plan',
+    'Enable zone redundancy'                       # storage, SQL, managed env, etc.
+)
+$AdvisorIgnorePatterns = @($AdvisorIgnoreDefault + $AdvisorIgnore)
 
 $ErrorActionPreference = 'Stop'
 function Say([string]$m,[string]$c='Cyan'){ if (-not $Json) { Write-Host $m -ForegroundColor $c } }
@@ -215,21 +234,26 @@ try {
 # H5 - Advisor (Cost + HighAvailability, high impact)
 # ==============================================================================
 Say "Reading Advisor recommendations..."
-$advisor = @(); $advErr = $null
+$advisor = @(); $advIgnored = @(); $advErr = $null
 try {
     $recs = az advisor recommendation list -o json 2>$null | ConvertFrom-Json
     foreach ($r in $recs) {
         $cat = $r.category; $imp = $r.impact
         if (($cat -eq 'Cost' -or $cat -eq 'HighAvailability') -and $imp -eq 'High') {
-            $advisor += [pscustomobject]@{
+            $prob = $r.shortDescription.problem
+            $rec  = [pscustomobject]@{
                 Category = $cat; Impact = $imp
-                Problem  = $r.shortDescription.problem
+                Problem  = $prob
                 Resource = (Leaf $r.resourceMetadata.resourceId)
             }
+            $ignore = $false
+            foreach ($pat in $AdvisorIgnorePatterns) { if ($prob -match $pat) { $ignore = $true; break } }
+            if ($ignore -and -not $ShowIgnored) { $advIgnored += $rec } else { $advisor += $rec }
         }
     }
 } catch { $advErr = $_.Exception.Message; Say "  advisor check skipped: $advErr" 'Yellow' }
 $advisor = @($advisor | Sort-Object Category, Resource)
+$advIgnored = @($advIgnored | Sort-Object Category, Resource)
 
 # ==============================================================================
 # Severity roll-up
@@ -262,6 +286,7 @@ if ($Json) {
         h3_failed        = @($failed | Select-Object Time,Caller,Operation,Resource,Status)
         h4_scaleIssues   = @($scaleIssues)
         h5_advisor       = @($advisor)
+        h5_advisorSuppressed = @($advIgnored)
     } | ConvertTo-Json -Depth 8
     return
 }
@@ -388,7 +413,7 @@ $html = @"
 
   <section>
     <h2>H5 &middot; Advisor (high-impact Cost &amp; HA)</h2>
-    <p class='hint'>Azure Advisor recommendations filtered to high-impact Cost and HighAvailability.</p>
+    <p class='hint'>Azure Advisor recommendations filtered to high-impact Cost and HighAvailability.$(if($advIgnored.Count){" <em>$($advIgnored.Count) low-value HA upsell$(if($advIgnored.Count -ne 1){'s'}) suppressed &mdash; re-run with <code>-ShowIgnored</code> to see them.</em>"})</p>
     <table><thead><tr><th>Category</th><th>Recommendation</th><th>Resource</th></tr></thead>
     <tbody>$($advRows -join "`n")</tbody></table>
   </section>
@@ -411,7 +436,7 @@ Write-Host "Azure health check - $subName (last $Days days)" -ForegroundColor Cy
 Write-Host ("  Cost step-ups   : {0} service, {1} resource" -f $svcSteps.Count, $resSteps.Count)
 Write-Host ("  Failed ops      : {0}" -f $failed.Count)
 Write-Host ("  Scale regr.     : {0}" -f $scaleIssues.Count)
-Write-Host ("  Advisor (high)  : {0}" -f $advisor.Count)
+Write-Host ("  Advisor (high)  : {0}{1}" -f $advisor.Count, $(if($advIgnored.Count){" ($($advIgnored.Count) HA upsells suppressed)"}))
 if ($resSteps.Count) {
     Write-Host "  Top cost step-ups:" -ForegroundColor Yellow
     foreach ($s in ($resSteps | Select-Object -First 5)) {

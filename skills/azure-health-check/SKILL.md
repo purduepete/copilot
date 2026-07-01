@@ -36,7 +36,8 @@ pwsh -File C:\Files\Dev\main\copilot\skills\azure-health-check\Invoke-AzureHealt
 ```
 
 Parameters: `-Days` (default 7), `-Subscription` (defaults to the current
-`az account`), `-Json`, `-NoOpen`, `-OutDir`.
+`az account`), `-Json`, `-NoOpen`, `-OutDir`, `-AdvisorIgnore <patterns>` (extra
+H5 suppression regexes), `-ShowIgnored` (reveal the normally-suppressed H5 items).
 
 ## What it checks
 
@@ -46,7 +47,18 @@ Parameters: `-Days` (default 7), `-Subscription` (defaults to the current
 | **H2** | Notable changes | Activity-Log create/update/delete/scale **writes** (who = `caller`, what, when), with a `cost-linked` tag when the change hit a resource that also stepped up in cost. |
 | **H3** | Failed operations | Activity-Log entries with `status = Failed`. |
 | **H4** | Scale-to-zero regressions | Container Apps with `minReplicas > 0` (won't scale to zero). |
-| **H5** | Advisor | High-impact **Cost** + **HighAvailability** recommendations. |
+| **H5** | Advisor | High-impact **Cost** + **HighAvailability** recommendations, **minus** low-value HA upsells (see below). |
+
+### H5 ignore list (deliberately suppressed)
+
+H5 hides "spend MORE for enterprise HA" recommendations that don't fit a
+single-region personal subscription and run counter to keeping cost down. Built-in
+ignore patterns: *Set minimum instance count for App Service*, *Use Standard or
+Premium tier*, *Use zone-supported App Service Plan*, *Enable zone redundancy*
+(storage / SQL / managed env). The report shows a "*N low-value HA upsells
+suppressed*" note; run with `-ShowIgnored` to see them, or add more patterns with
+`-AdvisorIgnore`. Genuinely actionable items (API retirements, free health checks,
+service-health alerts) are **never** suppressed.
 
 ## How to use the output
 
@@ -57,6 +69,7 @@ Parameters: `-Days` (default 7), `-Subscription` (defaults to the current
   stay warm 24/7 — confirm that's intended.
 - Pair with the **webportfolio-azure-cost** skill for a billing-cycle-accurate cost
   projection of the `investmentportfolio` RG specifically.
+
 
 ## Notes
 
