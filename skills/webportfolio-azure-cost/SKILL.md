@@ -31,11 +31,11 @@ resource. Auth is whatever `az account show` is signed into (no secret needed).
 no `costmanagement` extension required) to pull *actual* cost for the resource group,
 then:
 
-- **By service** — this month-to-date vs **last full month**, plus a **projected**
-  month total from the run-rate (`MTD ÷ days elapsed × days in month`) and the
-  **Δ vs last month**.
-- **By resource** — this month-to-date per resource (leaf name), top 20.
-- **Overspend list** — every service whose *projection* exceeds last month, biggest
+- **By service** — this cycle-to-date vs **last full cycle**, plus a **projected**
+  cycle total from the run-rate (`spend so far ÷ days elapsed × days in cycle`) and the
+  **Δ vs last cycle**.
+- **By resource** — this cycle-to-date per resource (leaf name), top 20.
+- **Overspend list** — every service whose *projection* exceeds last cycle, biggest
   first, each with a **concrete reduction lever** (e.g. SQL → serverless auto-pause;
   Container Apps → scale-to-zero; Log Analytics → retention/daily cap; OpenAI →
   right-size model/TPM; Automation/Logic Apps → trim schedule frequency).
@@ -43,10 +43,17 @@ then:
 It writes a self-contained **HTML report** (@jimb's house style: indigo→violet accent,
 light/dark, squared corners) to `%TEMP%\webportfolio-azure-cost\` and **opens it**.
 
-> ⚠️ **Early-month caveat.** Azure usage lands with a lag and the run-rate projection
-> is **noisy in the first few days** of a month (little data ÷ small elapsed fraction).
-> Treat day-1/2 projections as directional; they firm up as the month progresses. The
-> *last-month actual* and *by-service* comparisons are reliable immediately.
+> 💳 **Billing cycle, not calendar month.** @jimb's invoice period runs from **day 9
+> through day 8** of the next month, so the script's "current"/"previous" windows are
+> the **billing cycle** (default `-BillingAnchorDay 9`), *not* the calendar month.
+> Comparing calendar months would badly misread spend (e.g. on the 1st it looks like
+> day-0 with no data, when you're really ~3 weeks into the cycle). Pass
+> `-BillingAnchorDay <n>` if the cycle ever changes.
+
+> ⚠️ **Early-cycle caveat.** Azure usage lands with a lag and the run-rate projection
+> is **noisy in the first few days** of a cycle (little data ÷ small elapsed fraction).
+> Treat early projections as directional; they firm up as the cycle progresses. The
+> *last-cycle actual* and *by-service* comparisons are reliable immediately.
 
 ## Run it
 
@@ -62,14 +69,15 @@ pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio-azure-cost\Analyze-Azur
 ```
 
 **Parameters:** `-ResourceGroup` (default `investmentportfolio`), `-Subscription`
-(default the current `az` account), `-OutDir` (default
-`%TEMP%\webportfolio-azure-cost`), `-Json`, `-NoOpen`.
+(default the current `az` account), `-BillingAnchorDay` (default `9` — cycle runs day
+9 → day 8), `-OutDir` (default `%TEMP%\webportfolio-azure-cost`), `-Json`, `-NoOpen`.
 
 **How to use in a conversation:** when the user asks about Azure cost / cutting the
 bill, run the script (it opens the report). To *summarise* in chat, run once more with
 `-Json -NoOpen` and read `totals`, `overspend` (service + Δ + lever), and the top
-`resources`. Lead with the **projected vs last month** delta and the overspend levers,
-and add the early-month caveat if it's the first few days of the month.
+`resources`. Lead with the **projected vs last cycle** delta and the overspend levers,
+and add the early-cycle caveat if it's the first few days of the billing cycle (i.e.
+just after day 9).
 
 ## Notes / gotchas
 

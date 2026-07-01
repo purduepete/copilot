@@ -5,11 +5,14 @@
 .DESCRIPTION
   Read-only. Uses the Cost Management Query REST API (via `az rest`, no extension
   needed) to pull actual cost for a resource group, then:
-    * breaks this month's cost (month-to-date) down by service and by resource,
-    * compares each service against last full month,
-    * projects this month's total from the current run-rate, and
-    * flags where we're trending OVER last month (the whole point: we cut cost last
-      month but are pacing higher this month) with concrete reduction levers.
+    * breaks this cycle's cost (to-date) down by service and by resource,
+    * compares each service against last full cycle,
+    * projects this cycle's total from the current run-rate, and
+    * flags where we're trending OVER last cycle (the whole point: we cut cost last
+      cycle but are pacing higher this cycle) with concrete reduction levers.
+
+  The invoice period is a BILLING CYCLE (day 9 -> day 8 by default, -BillingAnchorDay),
+  not the calendar month.
 
   Writes a self-contained HTML report and opens it. -Json prints a machine summary
   for agent consumption; -NoOpen skips the browser.
@@ -22,7 +25,8 @@ param(
     [string]$Subscription,                       # defaults to the current az account
     [string]$OutDir = (Join-Path $env:TEMP 'webportfolio-azure-cost'),
     [switch]$Json,
-    [switch]$NoOpen
+    [switch]$NoOpen,
+    [int]$BillingAnchorDay = 9          # invoicing cycle runs day 9 -> day 8 of next month
 )
 
 $ErrorActionPreference = 'Stop'
@@ -33,14 +37,24 @@ if (-not $Subscription) {
     if (-not $Subscription) { throw "Not signed in to Azure. Run 'az login'." }
 }
 
-# --- timeframe boundaries -----------------------------------------------------
-$now       = Get-Date
-$curStart  = Get-Date -Year $now.Year -Month $now.Month -Day 1 -Hour 0 -Minute 0 -Second 0
+# --- billing-cycle boundaries -------------------------------------------------
+# The invoice period is not the calendar month: it runs from day $BillingAnchorDay
+# of one month through day ($BillingAnchorDay - 1) of the next (e.g. anchor 9 =>
+# the 9th through the 8th). "Current" cycle = the one containing today.
+$now = Get-Date
+$anchor = [Math]::Max(1, [Math]::Min(28, $BillingAnchorDay))
+if ($now.Day -ge $anchor) {
+    $curStart = Get-Date -Year $now.Year -Month $now.Month -Day $anchor -Hour 0 -Minute 0 -Second 0
+} else {
+    $curStart = (Get-Date -Year $now.Year -Month $now.Month -Day $anchor -Hour 0 -Minute 0 -Second 0).AddMonths(-1)
+}
+$curEnd    = $curStart.AddMonths(1).AddSeconds(-1)   # end of day ($anchor - 1)
 $prevStart = $curStart.AddMonths(-1)
 $prevEnd   = $curStart.AddSeconds(-1)
-$daysInMonth = [DateTime]::DaysInMonth($now.Year, $now.Month)
+$daysInCycle = [Math]::Round(($curEnd - $curStart).TotalDays)
 $elapsed   = ($now - $curStart).TotalDays
 if ($elapsed -le 0) { $elapsed = 0.5 }
+if ($elapsed -gt $daysInCycle) { $elapsed = $daysInCycle }
 
 function Fmt-Iso([datetime]$d){ $d.ToString('yyyy-MM-ddTHH:mm:ssZ') }
 
@@ -95,7 +109,7 @@ function Invoke-CostQuery {
     return $result
 }
 
-Write-Host "Querying Cost Management for '$ResourceGroup'..." -ForegroundColor Cyan
+if (-not $Json) { Write-Host "Querying Cost Management for '$ResourceGroup'..." -ForegroundColor Cyan }
 $curByService  = Invoke-CostQuery -From $curStart  -To $now     -Dimension 'ServiceName'
 $prevByService = Invoke-CostQuery -From $prevStart -To $prevEnd -Dimension 'ServiceName'
 $curByResource = Invoke-CostQuery -From $curStart  -To $now     -Dimension 'ResourceId'
@@ -105,7 +119,7 @@ $allServices = @($curByService.Keys + $prevByService.Keys | Sort-Object -Unique)
 $services = foreach ($s in $allServices) {
     $mtd  = [double]($curByService[$s]);  if (-not $curByService.ContainsKey($s))  { $mtd = 0 }
     $prev = [double]($prevByService[$s]); if (-not $prevByService.ContainsKey($s)) { $prev = 0 }
-    $proj = [Math]::Round($mtd / $elapsed * $daysInMonth, 2)
+    $proj = [Math]::Round($mtd / $elapsed * $daysInCycle, 2)
     [pscustomobject]@{
         Service    = $s
         LastMonth  = [Math]::Round($prev, 2)
@@ -118,7 +132,7 @@ $services = $services | Sort-Object Projected -Descending
 
 $totalPrev = [Math]::Round((($prevByService.Values | Measure-Object -Sum).Sum), 2)
 $totalMtd  = [Math]::Round((($curByService.Values  | Measure-Object -Sum).Sum), 2)
-$totalProj = [Math]::Round($totalMtd / $elapsed * $daysInMonth, 2)
+$totalProj = [Math]::Round($totalMtd / $elapsed * $daysInCycle, 2)
 $totalDelta= [Math]::Round($totalProj - $totalPrev, 2)
 
 # --- per-resource breakdown (leaf name) ---------------------------------------
@@ -164,9 +178,11 @@ if ($Json) {
         subscription  = $Subscription
         generated     = $now.ToString('s')
         currency      = 'USD'
-        window        = @{ current = "$($curStart.ToString('yyyy-MM-dd')) to $($now.ToString('yyyy-MM-dd'))"
+        window        = @{ anchorDay = $anchor
+                            current  = "$($curStart.ToString('yyyy-MM-dd')) to $($curEnd.ToString('yyyy-MM-dd')) (cycle)"
+                            currentToDate = "$($curStart.ToString('yyyy-MM-dd')) to $($now.ToString('yyyy-MM-dd'))"
                             previous = "$($prevStart.ToString('yyyy-MM-dd')) to $($prevEnd.ToString('yyyy-MM-dd'))"
-                            daysElapsed = [Math]::Round($elapsed,2); daysInMonth = $daysInMonth }
+                            daysElapsed = [Math]::Round($elapsed,2); daysInCycle = $daysInCycle }
         totals        = @{ lastMonth = $totalPrev; mtd = $totalMtd; projected = $totalProj; delta = $totalDelta }
         services      = @($services)
         resources     = @($resources)
@@ -197,7 +213,7 @@ $overRows = foreach ($o in $overspend) {
     "<tr><td>$(Enc $o.Service)</td><td class='num up'>+$($o.Delta.ToString('N2'))</td>" +
     "<td class='num'>$(Money $o.Projected)</td><td class='lever'>$(Enc (Get-Lever $o.Service))</td></tr>"
 }
-if (-not $overRows) { $overRows = "<tr><td colspan='4' class='ok'>&#10003; Nothing is projected to exceed last month. On track.</td></tr>" }
+if (-not $overRows) { $overRows = "<tr><td colspan='4' class='ok'>&#10003; Nothing is projected to exceed last cycle. On track.</td></tr>" }
 
 $trendClass = if ($totalDelta -gt 0.01) { 'up' } elseif ($totalDelta -lt -0.01) { 'down' } else { '' }
 $trendWord  = if ($totalDelta -gt 0.01) { 'OVER' } elseif ($totalDelta -lt -0.01) { 'under' } else { 'on par with' }
@@ -238,37 +254,39 @@ $html = @"
 </style></head><body>
   <h1>WebPortfolio &mdash; Azure Cost Analysis</h1>
   <p class='sub'>Resource group <code>$(Enc $ResourceGroup)</code> &middot; generated $gen &middot;
-     this month <strong>$($curStart.ToString('MMM d'))&ndash;$($now.ToString('MMM d'))</strong>
-     ($([Math]::Round($elapsed,1)) of $daysInMonth days) &middot; all figures USD, read-only</p>
+     billing cycle (day $anchor&ndash;$($anchor-1)) <strong>$($curStart.ToString('MMM d'))&ndash;$($curEnd.ToString('MMM d'))</strong>,
+     $([Math]::Round($elapsed,1)) of $daysInCycle days elapsed &middot; all figures USD, read-only</p>
   <div class='cards'>
-    <div class='c'><div class='n'>$(Money $totalPrev)</div><div class='l'>Last month (actual)</div></div>
-    <div class='c accent'><div class='n'>$(Money $totalMtd)</div><div class='l'>This month to date</div></div>
-    <div class='c $trendClass'><div class='n'>$(Money $totalProj)</div><div class='l'>Projected this month</div></div>
-    <div class='c $trendClass'><div class='n big $trendClass'>$(if($totalDelta -ge 0){'+'})$($totalDelta.ToString('N2'))</div><div class='l'>Projected vs last month</div></div>
+    <div class='c'><div class='n'>$(Money $totalPrev)</div><div class='l'>Last cycle (actual)</div></div>
+    <div class='c accent'><div class='n'>$(Money $totalMtd)</div><div class='l'>This cycle to date</div></div>
+    <div class='c $trendClass'><div class='n'>$(Money $totalProj)</div><div class='l'>Projected this cycle</div></div>
+    <div class='c $trendClass'><div class='n big $trendClass'>$(if($totalDelta -ge 0){'+'})$($totalDelta.ToString('N2'))</div><div class='l'>Projected vs last cycle</div></div>
   </div>
 
   <section>
-    <h2>Where we're trending over last month</h2>
+    <h2>Where we're trending over last cycle</h2>
     <table><thead><tr><th>Service</th><th class='num'>Projected &Delta;</th><th class='num'>Projected</th><th>Reduction lever</th></tr></thead>
     <tbody>$($overRows -join "`n")</tbody></table>
   </section>
 
   <section>
-    <h2>By service &mdash; last month vs this month (projected)</h2>
-    <table><thead><tr><th>Service</th><th class='num'>Last month</th><th class='num'>MTD</th><th class='num'>Projected</th><th class='num'>&Delta; vs last</th></tr></thead>
+    <h2>By service &mdash; last cycle vs this cycle (projected)</h2>
+    <table><thead><tr><th>Service</th><th class='num'>Last cycle</th><th class='num'>To date</th><th class='num'>Projected</th><th class='num'>&Delta; vs last</th></tr></thead>
     <tbody>$($svcRows -join "`n")</tbody></table>
   </section>
 
   <section>
-    <h2>By resource &mdash; this month to date (top 20)</h2>
-    <table><thead><tr><th>Resource</th><th class='num'>MTD</th></tr></thead>
+    <h2>By resource &mdash; this cycle to date (top 20)</h2>
+    <table><thead><tr><th>Resource</th><th class='num'>To date</th></tr></thead>
     <tbody>$($resRows -join "`n")</tbody></table>
   </section>
 
-  <p class='note'><strong>How to read:</strong> <em>Projected</em> = this month's run-rate
-  (spend so far &divide; days elapsed &times; days in month). A positive <em>&Delta; vs last</em>
-  means that service is pacing to cost more than last full month &mdash; those are the rows to attack,
-  with a concrete lever suggested. Projections are noisy early in the month. Read-only &mdash; nothing was changed.</p>
+  <p class='note'><strong>How to read:</strong> the invoice <strong>billing cycle</strong> runs
+  day $anchor &rarr; day $($anchor-1) of the next month (not the calendar month). <em>Projected</em> =
+  this cycle's run-rate (spend so far &divide; days elapsed &times; days in cycle). A positive
+  <em>&Delta; vs last</em> means that service is pacing to cost more than last full cycle &mdash;
+  those are the rows to attack, with a concrete lever suggested. Projections are noisy in the first
+  few days of a cycle. Read-only &mdash; nothing was changed.</p>
 </body></html>
 "@
 
@@ -279,19 +297,20 @@ Set-Content -LiteralPath $htmlPath -Value $html -Encoding UTF8
 
 # --- console summary ----------------------------------------------------------
 Write-Host ""
-Write-Host "Azure cost - $ResourceGroup (USD)" -ForegroundColor Cyan
-Write-Host ("  Last month actual : {0}" -f (Money $totalPrev))
-Write-Host ("  This month to date: {0}  ({1:N1}/{2} days)" -f (Money $totalMtd), $elapsed, $daysInMonth)
+Write-Host "Azure cost - $ResourceGroup (USD) - billing cycle day $anchor->$($anchor-1)" -ForegroundColor Cyan
+Write-Host ("  Cycle             : {0} -> {1}" -f $curStart.ToString('MMM d'), $curEnd.ToString('MMM d'))
+Write-Host ("  Last cycle actual : {0}" -f (Money $totalPrev))
+Write-Host ("  This cycle to date: {0}  ({1:N1}/{2} days)" -f (Money $totalMtd), $elapsed, $daysInCycle)
 $projColor = if ($totalDelta -gt 0.01) { 'Red' } elseif ($totalDelta -lt -0.01) { 'Green' } else { 'Gray' }
 $deltaStr  = if ($totalDelta -ge 0) { "+$($totalDelta.ToString('N2'))" } else { $totalDelta.ToString('N2') }
-Write-Host ("  Projected total   : {0}  ({1} vs last month, trending {2})" -f (Money $totalProj), $deltaStr, $trendWord) -ForegroundColor $projColor
+Write-Host ("  Projected total   : {0}  ({1} vs last cycle, trending {2})" -f (Money $totalProj), $deltaStr, $trendWord) -ForegroundColor $projColor
 if ($overspend.Count -gt 0) {
-    Write-Host "  Trending over last month:"
+    Write-Host "  Trending over last cycle:"
     foreach ($o in $overspend) {
         Write-Host ("    ! {0,-26} +{1,7:N2}  -> {2}" -f $o.Service, $o.Delta, (Get-Lever $o.Service)) -ForegroundColor Yellow
     }
 } else {
-    Write-Host "  Nothing projected over last month - on track." -ForegroundColor Green
+    Write-Host "  Nothing projected over last cycle - on track." -ForegroundColor Green
 }
 Write-Host "Wrote $htmlPath" -ForegroundColor Green
 if (-not $NoOpen) { Start-Process $htmlPath }
