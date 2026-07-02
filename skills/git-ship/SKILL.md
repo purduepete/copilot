@@ -86,6 +86,26 @@ $cred = "protocol=https`nhost=github.com`n" | git credential fill 2>$null
 $env:GH_TOKEN = ($cred | Select-String '^password=').ToString().Substring(9)
 ```
 
+## utility repo — "ship it" ALSO means publish
+
+For `C:\Files\Dev\main\utility` (the Jimler/WinUtility apps), shipping isn't done
+at `git push` — the live apps are elevated installed copies in `exe\` launched by
+the `WinUtility` scheduled task, so a push alone changes nothing on the machine.
+After the commit + push, **also publish and relaunch** — from an **ELEVATED**
+PowerShell:
+```powershell
+cd C:\Files\Dev\main\utility
+.\Scripts\Publish.ps1 -NoRelease        # kills the 4 procs, republishes Release to exe\, bumps <Version>
+Start-ScheduledTask -TaskName WinUtility  # relaunches WinUtility -> relaunches the trio (new code)
+```
+- `Publish.ps1` auto-bumps `WinUtility/WinUtility.csproj` `<Version>`; that bump is
+  part of the same change, so stage + commit it together with the code fix.
+- Use `-ReleaseNote "..."` (implies `-Release`) instead of `-NoRelease` when @jimb
+  also wants a `gh` release cut.
+- Publish + `Start-ScheduledTask` need an elevated shell; a non-elevated shell
+  silently fails to replace/relaunch the elevated processes. See the
+  **jimler-utility-run** skill for the full why/how.
+
 ## ADO repo — FDE_Revenue_Bedrock (org `starlightagilebi`, project `AgBI`)
 
 Path: `C:\Files\Dev\msft\FDE_Revenue_Bedrock`. This repo follows its own
