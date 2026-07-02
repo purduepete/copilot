@@ -49,7 +49,7 @@ H5 suppression regexes), `-ShowIgnored` (reveal the normally-suppressed H5 items
 | **H4** | Scale-to-zero regressions | Container Apps with `minReplicas > 0` (won't scale to zero). |
 | **H5** | Advisor | High-impact **Cost** + **HighAvailability** recommendations, **minus** low-value HA upsells (see below). |
 | **H6** | Scheduled automation | **Logic App run history**: **failed/cancelled** runs, and **Enabled** workflows with **zero runs** in the window (missed-schedule signal). Catches data-plane failures the Activity Log (H3) never sees. |
-| **H7** | Function apps | **Function execution failures** via Application Insights (classic and **workspace-based** components): per-operation execution count, failure count, and last run. Surfaces price-update / timer functions that are erroring where the Activity Log (H3) sees nothing. |
+| **H7** | Function apps | **Function execution failures** via Application Insights (classic and **workspace-based** components), **plus per-timer schedule health**: each timer trigger's CRON schedule is used to estimate expected runs, flagging timers that are **disabled** or **missed their schedule** entirely. Surfaces price-update / timer functions that erred or didn't fire where the Activity Log (H3) sees nothing. Timestamps shown in **Pacific** time. |
 
 ### H5 ignore list (deliberately suppressed)
 

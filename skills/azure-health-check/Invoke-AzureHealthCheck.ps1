@@ -333,6 +333,60 @@ $autoIssues = @($autoIssues | Sort-Object Name)
 Say "Checking Function App executions (App Insights)..."
 $funcIssues = @(); $funcAll = @(); $funcErr = $null
 function Get-Ikey([string]$s){ if ($s -match 'InstrumentationKey=([0-9a-fA-F-]+)') { $Matches[1] } else { $s } }
+
+# DST-aware Pacific time formatting for report timestamps.
+$ptZone = try { [TimeZoneInfo]::FindSystemTimeZoneById('Pacific Standard Time') }
+          catch { try { [TimeZoneInfo]::FindSystemTimeZoneById('America/Los_Angeles') } catch { $null } }
+function Format-PT($utcish){
+    if (-not $utcish) { return '' }
+    try {
+        $u = ([datetime]$utcish).ToUniversalTime()
+        if ($ptZone) { return ([TimeZoneInfo]::ConvertTimeFromUtc($u, $ptZone)).ToString('MMM d HH:mm') + ' PT' }
+        return $u.ToString('MMM d HH:mm') + ' UTC'
+    } catch { return [string]$utcish }
+}
+
+# Expand one NCRONTAB field ("*", "*/n", "a-b", "a,b", "a-b/n", "a") to a set of ints.
+function Expand-CronField([string]$f, [int]$min, [int]$max){
+    $vals = New-Object 'System.Collections.Generic.HashSet[int]'
+    foreach ($part in ($f -split ',')) {
+        $step = 1; $range = $part
+        if ($part -match '^(.*)/(\d+)$') { $range = $Matches[1]; $step = [int]$Matches[2] }
+        if     ($range -eq '*')            { $lo = $min; $hi = $max }
+        elseif ($range -match '^(\d+)-(\d+)$') { $lo = [int]$Matches[1]; $hi = [int]$Matches[2] }
+        elseif ($range -match '^\d+$')      { $lo = [int]$range; $hi = [int]$range }
+        else { continue }
+        for ($v = $lo; $v -le $hi; $v += $step) { [void]$vals.Add($v) }
+    }
+    return ,$vals
+}
+
+# Estimate how many times a 6-field NCRONTAB schedule fires in [startUtc, endUtc].
+# Returns $null when the schedule can't be parsed (so callers don't false-flag).
+function Get-CronExpectedRuns([string]$cron, [datetime]$startUtc, [datetime]$endUtc){
+    if (-not $cron) { return $null }
+    $parts = ($cron -replace '\s+',' ').Trim() -split ' '
+    # Azure NCRONTAB is 6-field (with seconds); a 5-field expression omits seconds.
+    if     ($parts.Count -eq 5) { $parts = ,'0' + $parts }
+    elseif ($parts.Count -ne 6) { return $null }
+    $sec  = Expand-CronField $parts[0] 0 59
+    $mins = Expand-CronField $parts[1] 0 59
+    $hrs  = Expand-CronField $parts[2] 0 23
+    $doms = Expand-CronField $parts[3] 1 31
+    $mons = Expand-CronField $parts[4] 1 12
+    $dows = Expand-CronField $parts[5] 0 6
+    if ($dows.Contains(7)) { [void]$dows.Add(0) }
+    $secCount = [Math]::Max(1, $sec.Count)
+    $count = 0
+    $t = $startUtc.AddSeconds(-$startUtc.Second).AddMilliseconds(-$startUtc.Millisecond)
+    while ($t -le $endUtc) {
+        if ($mins.Contains($t.Minute) -and $hrs.Contains($t.Hour) -and
+            $mons.Contains($t.Month) -and $doms.Contains($t.Day) -and
+            $dows.Contains([int]$t.DayOfWeek)) { $count += $secCount }
+        $t = $t.AddMinutes(1)
+    }
+    return $count
+}
 try {
     $faList = az functionapp list -o json 2>$null | ConvertFrom-Json
     $comps  = az monitor app-insights component show -o json 2>$null | ConvertFrom-Json
@@ -380,15 +434,52 @@ try {
                 }
             }
         }
-        $lastFmt = if ($lastRun) { try { ([datetime]$lastRun).ToString('MMM d HH:mm') } catch { '' } } else { '' }
-        $verdict = if ($failed -gt 0) { 'failed' } elseif ($note) { 'unknown' } else { 'ok' }
+
+        # ---- Timer-trigger schedule health -----------------------------------
+        # Enumerate the app's timer functions, cross-reference each against its
+        # execution count, and derive expected runs from the CRON schedule so we
+        # can catch a DISABLED timer or one that MISSED its schedule entirely -
+        # signals a failure-only check can never see.
+        $timers = @(); $missingCount = 0; $disabledCount = 0; $underCount = 0
+        if ($comp) {
+            $opTotals = @{}
+            if ($rows) { foreach ($r in $rows) { $opTotals[[string]$r.OperationName] = [int]$r.total } }
+            $fnList = az functionapp function list -n $fa.name -g $fa.resourceGroup -o json 2>$null | ConvertFrom-Json
+            foreach ($fn in @($fnList)) {
+                $bind = @($fn.config.bindings) | Where-Object { $_.type -eq 'timerTrigger' } | Select-Object -First 1
+                if (-not $bind) { continue }
+                $fname    = $fn.config.name
+                $disabled = [bool]$fn.isDisabled
+                $actual   = if ($opTotals.ContainsKey($fname)) { [int]$opTotals[$fname] } else { 0 }
+                $expected = if ($disabled) { $null } else { Get-CronExpectedRuns $bind.schedule $from.ToUniversalTime() $now.ToUniversalTime() }
+                $tstatus  = 'ok'
+                if     ($disabled)                                          { $tstatus = 'disabled'; $disabledCount++ }
+                elseif ($actual -eq 0 -and $expected -ne $null -and $expected -ge 1) { $tstatus = 'missing';  $missingCount++ }
+                elseif ($expected -ne $null -and $expected -ge 4 -and $actual -lt [Math]::Floor($expected * 0.5)) { $tstatus = 'under'; $underCount++ }
+                $timers += [pscustomobject]@{ Name = $fname; Schedule = $bind.schedule; Disabled = $disabled; Expected = $expected; Actual = $actual; Status = $tstatus }
+            }
+        }
+        $timerNote = @()
+        if ($missingCount)  { $timerNote += "$missingCount timer(s) MISSED schedule" }
+        if ($disabledCount) { $timerNote += "$disabledCount timer(s) disabled" }
+        if ($underCount)    { $timerNote += "$underCount timer(s) under expected" }
+
+        $lastFmt = Format-PT $lastRun
+        $verdict = if     ($failed -gt 0)       { 'failed' }
+                   elseif ($missingCount -gt 0) { 'missing' }
+                   elseif ($disabledCount -gt 0){ 'disabled' }
+                   elseif ($note)               { 'unknown' }
+                   else                         { 'ok' }
         $row = [pscustomobject]@{
             Name = $fa.name; ResourceGroup = $fa.resourceGroup
             Executions = $total; Failed = $failed; FailedOps = ($badOps -join ', ')
             LastRun = $lastFmt; Note = $note; Verdict = $verdict
+            Timers = @($timers); TimerSummary = ($timerNote -join '; ')
+            MissedTimers = @($timers | Where-Object { $_.Status -in @('missing','under') } | ForEach-Object { $_.Name })
+            DisabledTimers = @($timers | Where-Object { $_.Status -eq 'disabled' } | ForEach-Object { $_.Name })
         }
         $funcAll += $row
-        if ($verdict -eq 'failed') { $funcIssues += $row }
+        if ($verdict -in @('failed','missing')) { $funcIssues += $row }
     }
 } catch { $funcErr = $_.Exception.Message; Say "  function app check skipped: $funcErr" 'Yellow' }
 $funcAll    = @($funcAll    | Sort-Object @{e={$_.Verdict -eq 'ok'}}, Name)
@@ -475,11 +566,14 @@ if (-not $advRows) { $advRows = "<tr><td colspan='3' class='ok'>&#10003; No high
 # status glyph: green check, red cross, amber warning
 function StatusGlyph([string]$verdict){
     switch ($verdict) {
-        'ok'      { "<span class='st ok' title='healthy'>&#10003;</span>" }
-        'failed'  { "<span class='st bad' title='failures'>&#10007;</span>" }
-        'norun'   { "<span class='st warn' title='no runs'>&#9888;</span>" }
-        'unknown' { "<span class='st warn' title='no telemetry'>&#9888;</span>" }
-        default   { "<span class='st warn'>&#9888;</span>" }
+        'ok'       { "<span class='st ok' title='healthy'>&#10003;</span>" }
+        'failed'   { "<span class='st bad' title='failures'>&#10007;</span>" }
+        'missing'  { "<span class='st bad' title='missed schedule'>&#10007;</span>" }
+        'norun'    { "<span class='st warn' title='no runs'>&#9888;</span>" }
+        'disabled' { "<span class='st warn' title='timer disabled'>&#9888;</span>" }
+        'under'    { "<span class='st warn' title='under expected'>&#9888;</span>" }
+        'unknown'  { "<span class='st warn' title='no telemetry'>&#9888;</span>" }
+        default    { "<span class='st warn'>&#9888;</span>" }
     }
 }
 
@@ -495,11 +589,18 @@ $autoRows = foreach ($a in $autoAll) {
 if (-not $autoRows) { $autoRows = "<tr><td colspan='6' class='ok'>&#10003; No Logic App workflows found.</td></tr>" }
 
 $funcRows = foreach ($f in $funcAll) {
-    $sc = if ($f.Verdict -eq 'failed') { 'up' } else { '' }
-    $detail = if ($f.Verdict -eq 'failed') { "<span class='tag'>$(Enc $f.FailedOps)</span>" } elseif ($f.Note) { "<span class='tag'>$(Enc $f.Note)</span>" } else { '' }
-    "<tr><td>$(StatusGlyph $f.Verdict)$(Enc $f.Name) $detail</td><td>$(Enc $f.ResourceGroup)</td><td class='num'>$($f.Executions)</td><td class='num $sc'>$($f.Failed)</td><td>$(Enc $f.LastRun)</td></tr>"
+    $sc = if ($f.Verdict -in @('failed','missing')) { 'up' } else { '' }
+    $detail = if     ($f.Verdict -eq 'failed')  { "<span class='tag'>$(Enc $f.FailedOps)</span>" }
+              elseif ($f.Verdict -eq 'missing') { "<span class='tag'>missed: $(Enc (($f.MissedTimers) -join ', '))</span>" }
+              elseif ($f.Note)                  { "<span class='tag'>$(Enc $f.Note)</span>" }
+              else { '' }
+    $tcount = @($f.Timers).Count
+    $timerCell = if ($tcount -eq 0) { '<span class="hint">&mdash;</span>' }
+                 elseif ($f.TimerSummary) { "$(Enc $f.TimerSummary)" }
+                 else { "<span class='ok'>&#10003; $tcount timer$(if($tcount -ne 1){'s'}) ok</span>" }
+    "<tr><td>$(StatusGlyph $f.Verdict)$(Enc $f.Name) $detail</td><td>$(Enc $f.ResourceGroup)</td><td class='num'>$($f.Executions)</td><td class='num $sc'>$($f.Failed)</td><td>$timerCell</td><td>$(Enc $f.LastRun)</td></tr>"
 }
-if (-not $funcRows) { $funcRows = "<tr><td colspan='5' class='ok'>&#10003; No Function Apps found.</td></tr>" }
+if (-not $funcRows) { $funcRows = "<tr><td colspan='6' class='ok'>&#10003; No Function Apps found.</td></tr>" }
 
 $verdictClass = if ($issueCount -gt 0) { 'up' } else { 'down' }
 $verdictWord  = if ($issueCount -gt 0) { "$issueCount finding$(if($issueCount -ne 1){'s'})" } else { 'All clear' }
@@ -549,7 +650,7 @@ $html = @"
     <div class='c'><div class='n'>$($failed.Count)</div><div class='l'>Failed ops</div></div>
     <div class='c'><div class='n'>$($scaleIssues.Count)</div><div class='l'>Scale regressions</div></div>
     <div class='c'><div class='n'>$($autoIssues.Count)</div><div class='l'>Automation issues</div></div>
-    <div class='c'><div class='n'>$($funcIssues.Count)</div><div class='l'>Function failures</div></div>
+    <div class='c'><div class='n'>$($funcIssues.Count)</div><div class='l'>Function issues</div></div>
     <div class='c'><div class='n'>$($advisor.Count)</div><div class='l'>Advisor (high)</div></div>
   </div>
 
@@ -597,8 +698,8 @@ $html = @"
 
   <section>
     <h2>H7 &middot; Function Apps (execution health)</h2>
-    <p class='hint'>Function executions from Application Insights (timer &amp; HTTP). <span class='st bad'>&#10007;</span> = a function with failed executions in the window (the failing operation names are tagged). <span class='st warn'>&#9888;</span> = no App Insights telemetry. Function failures never appear in the Activity Log.</p>
-    <table><thead><tr><th>Function App</th><th>Resource group</th><th class='num'>Executions</th><th class='num'>Failed</th><th>Last run</th></tr></thead>
+    <p class='hint'>Function executions from Application Insights (timer &amp; HTTP), with per-timer schedule health. <span class='st bad'>&#10007;</span> = failed executions <em>or</em> a timer that <strong>missed its schedule</strong> (expected runs derived from each timer's CRON). <span class='st warn'>&#9888;</span> = a disabled timer, under-expected runs, or no App Insights telemetry. None of these appear in the Activity Log.</p>
+    <table><thead><tr><th>Function App</th><th>Resource group</th><th class='num'>Executions</th><th class='num'>Failed</th><th>Timers</th><th>Last run</th></tr></thead>
     <tbody>$($funcRows -join "`n")</tbody></table>
   </section>
 
@@ -628,7 +729,7 @@ Write-Host ("  Cost step-ups   : {0} service, {1} resource" -f $svcSteps.Count, 
 Write-Host ("  Failed ops      : {0}" -f $failed.Count)
 Write-Host ("  Scale regr.     : {0}" -f $scaleIssues.Count)
 Write-Host ("  Automation      : {0} issue(s) across {1} Logic App(s)" -f $autoIssues.Count, $autoAll.Count)
-Write-Host ("  Function apps   : {0} with failures across {1} app(s)" -f $funcIssues.Count, $funcAll.Count)
+Write-Host ("  Function apps   : {0} issue(s) (failed/missed) across {1} app(s)" -f $funcIssues.Count, $funcAll.Count)
 Write-Host ("  Advisor (high)  : {0}{1}" -f $advisor.Count, $(if($advIgnored.Count){" ($($advIgnored.Count) HA upsells suppressed)"}))
 if ($autoIssues.Count) {
     Write-Host "  Automation problems:" -ForegroundColor Yellow
@@ -638,9 +739,20 @@ if ($autoIssues.Count) {
     }
 }
 if ($funcIssues.Count) {
-    Write-Host "  Function failures:" -ForegroundColor Yellow
+    Write-Host "  Function problems:" -ForegroundColor Yellow
     foreach ($f in $funcIssues) {
-        Write-Host ("    ! {0,-30} {1} failed: {2}" -f $f.Name, $f.Failed, $f.FailedOps) -ForegroundColor Yellow
+        if ($f.Verdict -eq 'missing') {
+            Write-Host ("    ! {0,-30} missed schedule: {1}" -f $f.Name, (($f.MissedTimers) -join ', ')) -ForegroundColor Yellow
+        } else {
+            Write-Host ("    ! {0,-30} {1} failed: {2}" -f $f.Name, $f.Failed, $f.FailedOps) -ForegroundColor Yellow
+        }
+    }
+}
+$disabledApps = @($funcAll | Where-Object { $_.DisabledTimers.Count })
+if ($disabledApps.Count) {
+    Write-Host "  Disabled timers:" -ForegroundColor DarkYellow
+    foreach ($f in $disabledApps) {
+        Write-Host ("    ~ {0,-30} {1}" -f $f.Name, (($f.DisabledTimers) -join ', ')) -ForegroundColor DarkYellow
     }
 }
 if ($resSteps.Count) {
