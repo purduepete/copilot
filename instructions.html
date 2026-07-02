@@ -1149,12 +1149,11 @@ pwsh -File $g -LastMinutes 60 -Create                        # fuzzy "what was I
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><code>worklog-endday</code></td>
-                                    <td><em>"end my work day"</em>, <em>"am I ready to close the day?"</em></td>
-                                </tr>
-                                <tr>
-                                    <td><code>worklog-highlights</code></td>
-                                    <td><em>"generate today's highlights"</em>, <em>"recap my day"</em></td>
+                                    <td><code>worklog-day</code></td>
+                                    <td>
+                                        <em>"start of work day"</em>, <em>"recap my day"</em>,
+                                        <em>"end my work day"</em> (start · highlights · end; idempotent)
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td><code>worklog-item-conventions</code></td>
@@ -1167,13 +1166,6 @@ pwsh -File $g -LastMinutes 60 -Create                        # fuzzy "what was I
                                 <tr>
                                     <td><code>worklog-profile</code></td>
                                     <td><em>"set profile home"</em>, <em>"what profile am I on?"</em></td>
-                                </tr>
-                                <tr>
-                                    <td><code>worklog-startday</code></td>
-                                    <td>
-                                        <em>"start of work day"</em>, <em>"clock in"</em> (idempotent — won't
-                                        double-mark)
-                                    </td>
                                 </tr>
                                 <tr>
                                     <td><code>worklog-walk</code></td>
