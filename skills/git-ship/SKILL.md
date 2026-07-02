@@ -89,14 +89,13 @@ $env:GH_TOKEN = ($cred | Select-String '^password=').ToString().Substring(9)
 ## utility repo — "ship it" ALSO means publish
 
 For `C:\Files\Dev\main\utility` (the Jimler/WinUtility apps), shipping isn't done
-at `git push` — the live apps are elevated installed copies in `exe\` launched by
-the `WinUtility` scheduled task, so a push alone changes nothing on the machine.
-After the commit + push, **also publish (as a release) and relaunch** — from an
-**ELEVATED** PowerShell. Here "publish" means cut a **gh release** (not `-NoRelease`):
+at `git push` — the live apps are elevated installed copies in `exe\`, so a push
+alone changes nothing on the machine. After the commit + push, **also publish (as a
+release) and relaunch**. Here "publish" means cut a **gh release** (not `-NoRelease`):
 ```powershell
 cd C:\Files\Dev\main\utility
-.\Scripts\Publish.ps1 -ReleaseNote "<what changed>"   # kills the 4 procs, republishes Release to exe\, bumps <Version>, cuts a gh release
-Start-ScheduledTask -TaskName WinUtility               # relaunches WinUtility -> relaunches the trio (new code)
+.\Scripts\Publish.ps1 -ReleaseNote "<what changed>"   # stops the 4 procs, republishes Release to exe\, bumps <Version>, cuts a gh release
+Start-ScheduledTask -TaskName WinUtility               # OR: Start-Process exe\WinUtility.exe (auto-elevates via UAC)
 ```
 - **"ship it" for utility ⇒ a full release**: run with `-ReleaseNote "..."` (implies
   `-Release`, so it publishes a `gh` release). Only use `-NoRelease` when @jimb is
@@ -105,9 +104,13 @@ Start-ScheduledTask -TaskName WinUtility               # relaunches WinUtility -
   a `gh` release (local-only install). Use this phrasing to skip the release.
 - `Publish.ps1` auto-bumps `WinUtility/WinUtility.csproj` `<Version>`; that bump is
   part of the same change, so stage + commit it together with the code fix.
-- Publish + `Start-ScheduledTask` need an elevated shell; a non-elevated shell
-  silently fails to replace/relaunch the elevated processes. See the
-  **jimler-utility-run** skill for the full why/how.
+- **Elevation:** relaunch does NOT need an elevated shell — `exe\WinUtility.exe` has a
+  **RUNASADMIN** AppCompat layer, so `Start-Process`/the task auto-elevate it (and the
+  trio it spawns) via UAC. Elevation is only needed for `Publish.ps1`'s `Stop-Process`
+  step **when elevated instances are already running** (a Medium shell can't kill them,
+  and their running exes stay locked so `dotnet publish` can't overwrite). If the apps
+  aren't running, a non-elevated Publish works fine. See **jimler-utility-run** for the
+  full why/how.
 
 ## ADO repo — FDE_Revenue_Bedrock (org `starlightagilebi`, project `AgBI`)
 
