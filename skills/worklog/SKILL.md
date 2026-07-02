@@ -133,6 +133,15 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
    item(s) it collides with and ask how to resolve (e.g. shorten/move the new task, trim
    the existing one, or chain it after the last entry's end per rule 2). An in-progress
    task (no end) occupies from its start to *now* for this check.
+10. **Never run WorkLog writes in parallel — one at a time.** Every write
+    (`start`, `stop`, `add`, `edit`, `switch`, `delete`, `note`, `summary`, and the miners'
+    `-Create`) is a **read-modify-write on the shared cloud state**, with no locking. Firing
+    two writes concurrently (e.g. two `add`s in the same batched tool call, or across parallel
+    shells) causes a **lost-write race**: both read the same base state, the second overwrites
+    the first, and one entry silently vanishes (a tell-tale sign is **two writes echoing the
+    same new id**, e.g. both `Added #82`). Always **await each write and verify it persisted
+    (`log -Days 1`) before issuing the next.** Reads (`log`, `status`, `search`, the miners
+    without `-Create`, `Suggest-*`) are safe to parallelize.
 
 ## Phrase triggers
 
