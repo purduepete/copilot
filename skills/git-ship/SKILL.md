@@ -91,17 +91,18 @@ $env:GH_TOKEN = ($cred | Select-String '^password=').ToString().Substring(9)
 For `C:\Files\Dev\main\utility` (the Jimler/WinUtility apps), shipping isn't done
 at `git push` — the live apps are elevated installed copies in `exe\` launched by
 the `WinUtility` scheduled task, so a push alone changes nothing on the machine.
-After the commit + push, **also publish and relaunch** — from an **ELEVATED**
-PowerShell:
+After the commit + push, **also publish (as a release) and relaunch** — from an
+**ELEVATED** PowerShell. Here "publish" means cut a **gh release** (not `-NoRelease`):
 ```powershell
 cd C:\Files\Dev\main\utility
-.\Scripts\Publish.ps1 -NoRelease        # kills the 4 procs, republishes Release to exe\, bumps <Version>
-Start-ScheduledTask -TaskName WinUtility  # relaunches WinUtility -> relaunches the trio (new code)
+.\Scripts\Publish.ps1 -ReleaseNote "<what changed>"   # kills the 4 procs, republishes Release to exe\, bumps <Version>, cuts a gh release
+Start-ScheduledTask -TaskName WinUtility               # relaunches WinUtility -> relaunches the trio (new code)
 ```
+- **"ship it" for utility ⇒ a full release**: run with `-ReleaseNote "..."` (implies
+  `-Release`, so it publishes a `gh` release). Only use `-NoRelease` when @jimb is
+  merely testing locally and explicitly says "no release".
 - `Publish.ps1` auto-bumps `WinUtility/WinUtility.csproj` `<Version>`; that bump is
   part of the same change, so stage + commit it together with the code fix.
-- Use `-ReleaseNote "..."` (implies `-Release`) instead of `-NoRelease` when @jimb
-  also wants a `gh` release cut.
 - Publish + `Start-ScheduledTask` need an elevated shell; a non-elevated shell
   silently fails to replace/relaunch the elevated processes. See the
   **jimler-utility-run** skill for the full why/how.
