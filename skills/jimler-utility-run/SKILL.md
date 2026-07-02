@@ -25,9 +25,16 @@ Repo: `C:\Files\Dev\main\utility`. Four WinForms apps share one solution:
 - `WinUtility.exe` is the launcher/manager. On startup (`WinUtility/Jimler.cs`
   `StartJimlerProcesses`) it starts `JimlerWorker`, `JimlerShowHide`,
   `JimlerWindowManager` from the **`exe\` folder** (`Config.GetJimlerFolder()`).
-- The live apps run **elevated** (the `WinUtility` scheduled task is
-  RunLevel=Highest, LogonType=Interactive) and point at
-  `C:\Files\Dev\main\utility\exe\WinUtility.exe`.
+- The live apps run **elevated (High integrity)** — NOT from a manifest
+  (WinUtility's manifest is `asInvoker`) but because `exe\WinUtility.exe` has a
+  per-user **RUNASADMIN** AppCompat layer
+  (`HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers`).
+  Any ShellExecute launch (`Start-Process`, double-click, the scheduled task)
+  makes Windows **auto-elevate it via UAC**, and the trio WinUtility spawns
+  inherit High. So they come up elevated regardless of the launching shell's
+  integrity. (The `WinUtility` scheduled task is also RunLevel=Highest, but the
+  RUNASADMIN layer is why even a manual `Start-Process` from a Medium shell yields
+  High.)
 - Each app is **single-instance** (a mutex, e.g. `Local\JimlerWorker_SingleInstance`)
   **and** registers **exclusive global hotkeys** via `RegisterHotKey`.
 
@@ -39,12 +46,17 @@ unchanged because the OLD elevated `exe\` build is still what's running. Tell-ta
 `(Get-Process ...).Path` comes back EMPTY for the running PIDs (they're higher
 integrity than your shell).
 
-## To actually test a change — from an ELEVATED PowerShell
+## To actually test a change
+
+You do NOT need an elevated shell to *launch* — `WinUtility.exe` auto-elevates
+itself (RUNASADMIN, above). The only thing that needs elevation is **killing the
+already-running elevated apps** (a Medium shell can't `Stop-Process` a
+higher-integrity process).
 
 ```powershell
 cd C:\Files\Dev\main\utility
-.\Scripts\Publish.ps1 -NoRelease        # kills all 4 procs, publishes Release to exe\, bumps version
-Start-ScheduledTask -TaskName WinUtility  # relaunches WinUtility -> relaunches the trio (new code)
+.\Scripts\Publish.ps1 -NoRelease         # stops the 4 procs, publishes Release to exe\, bumps version
+Start-ScheduledTask -TaskName WinUtility  # OR: Start-Process exe\WinUtility.exe (auto-elevates via UAC)
 ```
 
 - `Publish.ps1` (see `Scripts\Publish.ps1`) stops
@@ -52,9 +64,13 @@ Start-ScheduledTask -TaskName WinUtility  # relaunches WinUtility -> relaunches 
   `dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true`
   each project into `exe\`, and copies `substitutions.json` / `autocorrect.json`
   next to `JimlerWorker.exe`.
-- `Publish.ps1` does NOT restart the apps. The `WinUtility` task relaunches at logon,
-  so kick it manually with `Start-ScheduledTask -TaskName WinUtility` (or run
-  `exe\WinUtility.exe` elevated yourself).
+- **Publish must stop the apps first.** A running single-file exe locks
+  `exe\*.exe`, so `dotnet publish` can't overwrite it. If elevated instances are
+  running, run Publish from an **elevated** shell (a Medium `Stop-Process` can't kill
+  them → files stay locked → publish fails). If the apps aren't running, a
+  non-elevated Publish is fine.
+- **Relaunch needs no elevation** — launching `WinUtility.exe` (or the task)
+  auto-elevates via the RUNASADMIN layer (UAC may prompt).
 - `-NoRelease` skips cutting a GitHub release. Use `-ReleaseNote "..."` (implies
   `-Release`) to also publish a `gh` release.
 
@@ -74,16 +90,14 @@ cd C:\Files\Dev\main\utility
 - Use this to pull down a release that was already cut (e.g. after a `ship it`), or
   to sync a machine to the newest published build. It does NOT build from source.
 - Needs a GitHub token (gh CLI or git credential).
-- **Elevation caveat:** it is NOT inherently non-elevated. `Update.ps1` `Stop-Process`
-  can only kill processes at the SAME integrity level as the shell. If the live apps
-  are the NORMAL **elevated** copies (started by the `WinUtility` scheduled task at
-  logon), a non-elevated `Update.ps1` **silently fails** to kill them (`-EA
-  SilentlyContinue`), the single-instance mutex blocks the new copy, and nothing
-  changes. It only "works" non-elevated when the currently-running copies are ALSO
-  non-elevated (e.g. launched during a prior non-elevated test) — and it then
-  relaunches them **non-elevated** via `Start-Process`, so they can't manage
-  elevated foreground windows. To restore the proper elevated state, run from an
-  **elevated** shell (or `Start-ScheduledTask -TaskName WinUtility` elevated).
+- **Elevation:** `Update.ps1` relaunches `WinUtility.exe` via `Start-Process`
+  (ShellExecute), which triggers the **RUNASADMIN auto-elevation** — so the
+  relaunched WinUtility + trio come up **elevated even from a non-elevated shell**
+  (UAC may prompt). Verified: run from a Medium shell, the new `WinUtility.exe` is
+  High integrity. The only catch is its `Stop-Process` step — from a non-elevated
+  shell it can't kill an already-running elevated instance, so run `Update.ps1` when
+  the apps are stopped (otherwise the old elevated copy keeps running and the
+  single-instance mutex blocks the fresh launch).
 
 ## Versioning
 
@@ -96,5 +110,7 @@ cd C:\Files\Dev\main\utility
 - If you only need a compile check (not a runtime test), a plain
   `dotnet build <project>.csproj -c Debug` is fine — just don't expect launching the
   loose exe to exercise the change.
-- Always run the publish + task relaunch from an **elevated** shell, or it silently
-  won't replace/relaunch the elevated processes.
+- `exe\WinUtility.exe` carries a **RUNASADMIN** AppCompat layer, so it (and the trio
+  it spawns) always run **elevated** regardless of the launching shell. Elevation is
+  only needed to *kill* those elevated processes (e.g. Publish's `Stop-Process`) —
+  never to launch them.
