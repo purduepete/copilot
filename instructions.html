@@ -658,7 +658,7 @@
                         </div>
                         <p>
                             Refresh my open Azure DevOps work-item list as an HTML report. Handled by the
-                            <code>ado-worklist</code> skill.
+                            <code>worklist</code> skill (ADO section).
                         </p>
 
                         <h4 id="ado-regenerate">1. Regenerate the report</h4>
@@ -1063,10 +1063,6 @@ pwsh -File $g -LastMinutes 60 -Create                        # fuzzy "what was I
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><code>ado-worklist</code></td>
-                                    <td><em>"Regenerate my ADO work item list"</em></td>
-                                </tr>
-                                <tr>
                                     <td><code>azure-health-check</code></td>
                                     <td>
                                         <em>"run a health check on my azure subscription"</em>,
@@ -1094,10 +1090,6 @@ pwsh -File $g -LastMinutes 60 -Create                        # fuzzy "what was I
                                     <td>
                                         <em>"commit and push"</em>, <em>"ship it"</em>, <em>"will this deploy?"</em>
                                     </td>
-                                </tr>
-                                <tr>
-                                    <td><code>github-worklist</code></td>
-                                    <td><em>"show my open GitHub items"</em></td>
                                 </tr>
                                 <tr>
                                     <td><code>jimler-utility-run</code></td>
@@ -1139,6 +1131,13 @@ pwsh -File $g -LastMinutes 60 -Create                        # fuzzy "what was I
                                     <td>
                                         <em>"analyze azure cost"</em>, <em>"reduce my azure bill"</em>,
                                         <em>"are we spending more this month?"</em>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><code>worklist</code></td>
+                                    <td>
+                                        <em>"regenerate my ADO work item list"</em>,
+                                        <em>"show my open GitHub items"</em> (ADO + GitHub dashboards)
                                     </td>
                                 </tr>
                                 <tr>
