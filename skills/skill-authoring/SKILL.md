@@ -81,8 +81,12 @@ The hub at `C:\Files\Dev\main\copilot\instructions.html` lists every skill in it
 <tr><td><code><name></code></td><td><em>"<a representative trigger phrase>"</em></td></tr>
 ```
 
-- Insert it in the `#sk-catalog` table, grouped sensibly (worklog-family rows
-  together, then ADO/GitHub/calendar, then meta skills).
+- The catalog `<table class="skills">` is sorted **alphabetically by skill name** —
+  insert the new row in its correct alphabetical position (do NOT append to the
+  bottom).
+- The skill-name column must not wrap: this is handled by the CSS rule
+  `table.skills td:first-child { white-space: nowrap; }`, so keep the
+  `class="skills"` on the table and the name in a `<td><code>…</code></td>` cell.
 - When **removing** a skill, delete its row instead.
 - Validate before committing — every nav `href="#id"` must still resolve and tags
   must balance:
