@@ -9,7 +9,8 @@ description: >-
   via the WinUtility scheduled task. WHEN: "run the exe so I can test", "launch the
   utility", "test this change", "run WinUtility", "run the jimler apps", "restart
   jimler", "why isn't my change taking effect", "test JimlerShowHide",
-  "test JimlerWorker", "test JimlerWindowManager", "deploy the utility".
+  "test JimlerWorker", "test JimlerWindowManager", "deploy the utility",
+  "update win utility", "update the utility", "pull the latest release".
 argument-hint: What you changed (which of WinUtility / JimlerWorker / JimlerShowHide / JimlerWindowManager)
 ---
 
@@ -56,6 +57,24 @@ Start-ScheduledTask -TaskName WinUtility  # relaunches WinUtility -> relaunches 
   `exe\WinUtility.exe` elevated yourself).
 - `-NoRelease` skips cutting a GitHub release. Use `-ReleaseNote "..."` (implies
   `-Release`) to also publish a `gh` release.
+
+## "update win utility" — install the latest published release
+
+`Scripts\Update.ps1` is the INSTALL-from-release path (distinct from Publish, which
+builds locally). It stops the 4 procs, downloads the latest `gh` release's `.exe`
+assets from `jimlertech/utility` into `exe\`, then relaunches `WinUtility.exe`
+directly (via `Start-Process`, NOT the scheduled task).
+
+```powershell
+cd C:\Files\Dev\main\utility
+.\Scripts\Update.ps1
+```
+
+- Trigger phrase: **"update win utility"** ⇒ run `Update.ps1`.
+- Use this to pull down a release that was already cut (e.g. after a `ship it`), or
+  to sync a machine to the newest published build. It does NOT build from source.
+- Needs a GitHub token (gh CLI or git credential); it relaunches WinUtility itself,
+  so no `Start-ScheduledTask` step is required.
 
 ## Versioning
 
