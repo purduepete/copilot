@@ -263,16 +263,29 @@ if ($Apply -and $actionable.Count -gt 0) {
 $conn.Close()
 
 # --- change-description helpers ----------------------------------------------
+function ChangeHtml($fromText, $toText, $isNone, $tag) {
+    $wasCls = if ($isNone) { 'was none' } else { 'was' }
+    "<span class='chg'><span class='$wasCls'>$(Enc $fromText)</span>" +
+    "<span class='arr'>&rarr;</span><span class='now'>$(Enc $toText)</span>$tag</span>"
+}
+function NoPrior() {
+    "<span class='chg'><span class='was none'>unset</span>" +
+    "<span class='arr'>&rarr;</span><span class='miss'>no prior data</span></span>"
+}
 function StrategyChange($x) {
-    if     ($x.SetStrategy)       { "(none) &rarr; $($x.PriorStrategy)" }
-    elseif ($x.NeedStrategyUnmet) { "(none) &rarr; <em>no prior data</em>" }
-    else                          { '&mdash;' }
+    if     ($x.SetStrategy)       { ChangeHtml 'unset' $x.PriorStrategy $true '' }
+    elseif ($x.NeedStrategyUnmet) { NoPrior }
+    else                          { "<span class='nochg'>&mdash;</span>" }
 }
 function AssetChange($x) {
-    $from = if ($null -eq $x.CurAsset) { '(none)' } else { $x.CurAsset }
-    if     ($x.SetAsset)        { "$from &rarr; $($x.PriorAsset)$(if($x.AssetOverwrite){' <span class=""tag"">overwrite</span>'})" }
-    elseif ($x.NeedAssetUnmet)  { "(none) &rarr; <em>no prior data</em>" }
-    else                        { '&mdash;' }
+    if ($x.SetAsset) {
+        $tag    = if ($x.AssetOverwrite) { " <span class='tag'>overwrite</span>" } else { '' }
+        $isNone = ($null -eq $x.CurAsset)
+        $from   = if ($isNone) { 'unset' } else { $x.CurAsset }
+        ChangeHtml $from $x.PriorAsset $isNone $tag
+    }
+    elseif ($x.NeedAssetUnmet) { NoPrior }
+    else                       { "<span class='nochg'>&mdash;</span>" }
 }
 
 # --- JSON shortcut ------------------------------------------------------------
@@ -318,14 +331,13 @@ function Render-Actionable {
     param([object[]]$Rows)
     if ($Rows.Count -eq 0) { return "<p class='ok'>&#10003; None.</p>" }
     $body = foreach ($x in $Rows) {
-        $qty  = if ($null -eq $x.Quantity) { '' } else { $x.Quantity }
         $from = @($x.StrategyFrom, $x.AssetFrom | Where-Object { $_ } | Select-Object -Unique) -join ', '
         "<tr><td>$(Enc $x.Account)</td><td>$(Enc $x.Symbol)</td>" +
-        "<td class='num'>$(Enc $qty)</td><td>$(StrategyChange $x)</td>" +
+        "<td>$(StrategyChange $x)</td>" +
         "<td>$(AssetChange $x)</td><td>$(Enc $from)</td>" +
         "<td class='num'>$($x.PositionId)</td></tr>"
     }
-    "<table><thead><tr><th>Account</th><th>Symbol</th><th class='num'>Quantity</th>" +
+    "<table><thead><tr><th>Account</th><th>Symbol</th>" +
     "<th>Strategy</th><th>Asset Type</th><th>From Snapshot</th><th class='num'>Position Id</th></tr></thead>" +
     "<tbody>$($body -join "`n")</tbody></table>"
 }
@@ -337,12 +349,11 @@ function Render-Unresolvable {
         $miss = @()
         if ($x.NeedStrategyUnmet) { $miss += 'strategy' }
         if ($x.NeedAssetUnmet)    { $miss += 'asset type' }
-        $qty = if ($null -eq $x.Quantity) { '' } else { $x.Quantity }
         "<tr><td>$(Enc $x.Account)</td><td>$(Enc $x.Symbol)</td>" +
-        "<td class='num'>$(Enc $qty)</td><td>$(Enc ($miss -join ', '))</td>" +
+        "<td>$(Enc ($miss -join ', '))</td>" +
         "<td class='num'>$($x.PositionId)</td></tr>"
     }
-    "<table><thead><tr><th>Account</th><th>Symbol</th><th class='num'>Quantity</th>" +
+    "<table><thead><tr><th>Account</th><th>Symbol</th>" +
     "<th>Still missing</th><th class='num'>Position Id</th></tr></thead>" +
     "<tbody>$($body -join "`n")</tbody></table>"
 }
@@ -387,6 +398,11 @@ $html = @"
   .pill.sev-applied{background:var(--okBg);color:var(--ok)}
   .pill.sev-dry{background:var(--infoBg);color:var(--info)}
   .tag{display:inline-block;padding:0 6px;font-size:10.5px;font-weight:700;background:var(--medBg);color:var(--med)}
+  .chg .was{color:var(--muted)} .chg .none{font-style:italic;opacity:.8}
+  .chg .arr{color:var(--muted);padding:0 8px}
+  .chg .now{font-weight:600;color:var(--accent)}
+  .chg .miss{color:var(--med);font-style:italic}
+  .nochg{color:var(--muted)}
   .ok{color:var(--ok);font-size:13px;margin:6px 0 0}
   .note{margin-top:20px;color:var(--muted);font-size:12.5px;max-width:960px}
   code{background:rgba(127,127,150,.14);padding:1px 6px;font-size:12.5px}
