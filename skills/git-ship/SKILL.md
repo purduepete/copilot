@@ -101,6 +101,8 @@ Start-ScheduledTask -TaskName WinUtility               # relaunches WinUtility -
 - **"ship it" for utility ⇒ a full release**: run with `-ReleaseNote "..."` (implies
   `-Release`, so it publishes a `gh` release). Only use `-NoRelease` when @jimb is
   merely testing locally and explicitly says "no release".
+- **"debug release" ⇒ `-NoRelease`**: republish to `exe\` + relaunch WITHOUT cutting
+  a `gh` release (local-only install). Use this phrasing to skip the release.
 - `Publish.ps1` auto-bumps `WinUtility/WinUtility.csproj` `<Version>`; that bump is
   part of the same change, so stage + commit it together with the code fix.
 - Publish + `Start-ScheduledTask` need an elevated shell; a non-elevated shell
