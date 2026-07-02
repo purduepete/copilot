@@ -602,6 +602,23 @@ $funcRows = foreach ($f in $funcAll) {
 }
 if (-not $funcRows) { $funcRows = "<tr><td colspan='6' class='ok'>&#10003; No Function Apps found.</td></tr>" }
 
+# Per-timer schedule detail (flattened across all function apps).
+$timerRows = foreach ($f in $funcAll) {
+    foreach ($t in @($f.Timers)) {
+        $sc  = switch ($t.Status) { 'missing' { 'up' } 'under' { 'up' } default { '' } }
+        $exp = if ($t.Expected -ne $null) { $t.Expected } else { '&mdash;' }
+        $stTxt = switch ($t.Status) {
+            'ok'       { "<span class='ok'>ok</span>" }
+            'missing'  { "<span class='tag'>MISSED</span>" }
+            'disabled' { "<span class='tag'>disabled</span>" }
+            'under'    { "<span class='tag'>under expected</span>" }
+            default    { $t.Status }
+        }
+        "<tr><td>$(StatusGlyph $t.Status)$(Enc $t.Name)</td><td>$(Enc $f.Name)</td><td><code>$(Enc $t.Schedule)</code></td><td class='num'>$exp</td><td class='num $sc'>$($t.Actual)</td><td>$stTxt</td></tr>"
+    }
+}
+if (-not $timerRows) { $timerRows = "<tr><td colspan='6' class='hint'>No timer-triggered functions found.</td></tr>" }
+
 $verdictClass = if ($issueCount -gt 0) { 'up' } else { 'down' }
 $verdictWord  = if ($issueCount -gt 0) { "$issueCount finding$(if($issueCount -ne 1){'s'})" } else { 'All clear' }
 $gen = $now.ToString('yyyy-MM-dd HH:mm')
@@ -627,7 +644,7 @@ $html = @"
   .c.accent{border-top:3px solid var(--accent)}
   .c.up{border-top:3px solid var(--up)} .c.down{border-top:3px solid var(--down)}
   section{background:var(--card);border:1px solid var(--line);padding:16px 20px;margin-bottom:16px}
-  h2{font-size:16px;margin:0 0 4px} .hint{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+  h2{font-size:16px;margin:0 0 4px} h3{font-size:13.5px;margin:18px 0 4px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em} .hint{color:var(--muted);font-size:12.5px;margin:0 0 12px}
   table{width:100%;border-collapse:collapse;border:1px solid var(--line);font-size:13.5px}
   th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
   th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted)}
@@ -701,6 +718,10 @@ $html = @"
     <p class='hint'>Function executions from Application Insights (timer &amp; HTTP), with per-timer schedule health. <span class='st bad'>&#10007;</span> = failed executions <em>or</em> a timer that <strong>missed its schedule</strong> (expected runs derived from each timer's CRON). <span class='st warn'>&#9888;</span> = a disabled timer, under-expected runs, or no App Insights telemetry. None of these appear in the Activity Log.</p>
     <table><thead><tr><th>Function App</th><th>Resource group</th><th class='num'>Executions</th><th class='num'>Failed</th><th>Timers</th><th>Last run</th></tr></thead>
     <tbody>$($funcRows -join "`n")</tbody></table>
+    <h3>Timer schedule detail</h3>
+    <p class='hint'>Every timer trigger, its CRON schedule, and expected vs. actual runs over the window. <strong>Expected</strong> is estimated from the schedule; a blank expected means a disabled timer or an unparseable schedule. Small expected-vs-actual gaps near the window edges are normal.</p>
+    <table><thead><tr><th>Timer</th><th>Function App</th><th>Schedule (CRON)</th><th class='num'>Expected</th><th class='num'>Actual</th><th>Status</th></tr></thead>
+    <tbody>$($timerRows -join "`n")</tbody></table>
   </section>
 
   <section>
