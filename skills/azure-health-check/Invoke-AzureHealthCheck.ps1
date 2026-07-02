@@ -22,6 +22,8 @@
     H6  Scheduled automation- Logic App run history: failed/cancelled runs, and
                               Enabled workflows with zero runs (missed schedule).
                               Catches data-plane failures the Activity Log misses.
+    H7  Function Apps       - Function execution failures via Application Insights
+                              (classic or workspace-based), per function operation.
 
   Auth: whatever `az account show` is signed into.
 
@@ -319,6 +321,79 @@ try {
 $autoAll    = @($autoAll    | Sort-Object @{e={$_.Verdict -eq 'ok'}}, Name)
 $autoIssues = @($autoIssues | Sort-Object Name)
 
+# ==============================================================================
+# H7 - Function Apps (execution failures via Application Insights)
+# ==============================================================================
+# Function executions log to Application Insights, not the Activity Log. Each app
+# has an AI component that is EITHER classic (query by appId) OR workspace-based
+# (ingestionMode=LogAnalytics -> query the Log Analytics workspace, where the
+# table is AppRequests instead of requests). We match each function app to its AI
+# component by instrumentation key, run the right query, and flag any function
+# operation with failed executions in the window.
+Say "Checking Function App executions (App Insights)..."
+$funcIssues = @(); $funcAll = @(); $funcErr = $null
+function Get-Ikey([string]$s){ if ($s -match 'InstrumentationKey=([0-9a-fA-F-]+)') { $Matches[1] } else { $s } }
+try {
+    $faList = az functionapp list -o json 2>$null | ConvertFrom-Json
+    $comps  = az monitor app-insights component show -o json 2>$null | ConvertFrom-Json
+    foreach ($fa in $faList) {
+        $settings = az functionapp config appsettings list -n $fa.name -g $fa.resourceGroup -o json 2>$null | ConvertFrom-Json
+        $cs   = ($settings | Where-Object { $_.name -eq 'APPLICATIONINSIGHTS_CONNECTION_STRING' }).value
+        $ikey = ($settings | Where-Object { $_.name -eq 'APPINSIGHTS_INSTRUMENTATIONKEY' }).value
+        $wantKey = if ($cs) { Get-Ikey $cs } elseif ($ikey) { $ikey } else { $null }
+        $comp = $null
+        if ($wantKey) {
+            $match = $comps | Where-Object { $_.instrumentationKey -eq $wantKey } | Select-Object -First 1
+            # the list projection omits workspaceResourceId/ingestionMode - re-show the
+            # matched component individually to get reliable workspace + ingestion fields.
+            if ($match) {
+                $comp = az monitor app-insights component show --app $match.name -g $match.resourceGroup -o json 2>$null | ConvertFrom-Json
+            }
+        }
+
+        $total = 0; $failed = 0; $lastRun = ''; $badOps = @(); $note = ''
+        if (-not $comp) {
+            $note = 'no App Insights linked'
+        } else {
+            $rows = $null
+            if ($comp.ingestionMode -eq 'LogAnalytics' -and $comp.workspaceResourceId) {
+                $wsGuid = az monitor log-analytics workspace show --ids $comp.workspaceResourceId --query customerId -o tsv 2>$null
+                $q = "AppRequests | where TimeGenerated > ago(${Days}d) | summarize total=count(), failed=countif(Success==false), lastRun=max(TimeGenerated) by OperationName | order by failed desc, total desc"
+                if ($wsGuid) {
+                    $raw = az monitor log-analytics query -w $wsGuid --analytics-query $q -o json 2>$null
+                    if ($raw) { $rows = $raw | ConvertFrom-Json }
+                }
+            } else {
+                $q = "requests | where timestamp > ago(${Days}d) | summarize total=count(), failed=countif(success==false), lastRun=max(timestamp) by operation_Name | order by failed desc, total desc"
+                $raw = az monitor app-insights query --app $comp.appId --analytics-query $q --query "tables[0].rows" -o json 2>$null
+                if ($raw) {
+                    $arr = $raw | ConvertFrom-Json
+                    $rows = foreach ($r in $arr) { [pscustomobject]@{ OperationName=$r[0]; total=$r[1]; failed=$r[2]; lastRun=$r[3] } }
+                }
+            }
+            if ($rows) {
+                foreach ($r in $rows) {
+                    $t = [int]$r.total; $f = [int]$r.failed
+                    $total += $t; $failed += $f
+                    if ($r.lastRun -and ([string]$r.lastRun -gt [string]$lastRun)) { $lastRun = [string]$r.lastRun }
+                    if ($f -gt 0) { $badOps += "$($r.OperationName) ($f)" }
+                }
+            }
+        }
+        $lastFmt = if ($lastRun) { try { ([datetime]$lastRun).ToString('MMM d HH:mm') } catch { '' } } else { '' }
+        $verdict = if ($failed -gt 0) { 'failed' } elseif ($note) { 'unknown' } else { 'ok' }
+        $row = [pscustomobject]@{
+            Name = $fa.name; ResourceGroup = $fa.resourceGroup
+            Executions = $total; Failed = $failed; FailedOps = ($badOps -join ', ')
+            LastRun = $lastFmt; Note = $note; Verdict = $verdict
+        }
+        $funcAll += $row
+        if ($verdict -eq 'failed') { $funcIssues += $row }
+    }
+} catch { $funcErr = $_.Exception.Message; Say "  function app check skipped: $funcErr" 'Yellow' }
+$funcAll    = @($funcAll    | Sort-Object @{e={$_.Verdict -eq 'ok'}}, Name)
+$funcIssues = @($funcIssues | Sort-Object Name)
+
 
 # ==============================================================================
 # Severity roll-up
@@ -329,7 +404,8 @@ if ($failed.Count)      { $issues += 'failed' }
 if ($scaleIssues.Count) { $issues += 'scale' }
 if ($advisor.Count)     { $issues += 'advisor' }
 if ($autoIssues.Count)  { $issues += 'automation' }
-$issueCount = $svcSteps.Count + $resSteps.Count + $failed.Count + $scaleIssues.Count + $advisor.Count + $autoIssues.Count
+if ($funcIssues.Count)  { $issues += 'functions' }
+$issueCount = $svcSteps.Count + $resSteps.Count + $failed.Count + $scaleIssues.Count + $advisor.Count + $autoIssues.Count + $funcIssues.Count
 
 # ==============================================================================
 # JSON output
@@ -342,7 +418,7 @@ if ($Json) {
         windowDays   = $Days
         window       = @{ from = $from.ToString('yyyy-MM-dd'); to = $now.ToString('yyyy-MM-dd') }
         issueCount   = $issueCount
-        errors       = @{ cost = $costErr; activityLog = $alErr; containerApps = $caErr; advisor = $advErr; automation = $autoErr }
+        errors       = @{ cost = $costErr; activityLog = $alErr; containerApps = $caErr; advisor = $advErr; automation = $autoErr; functions = $funcErr }
         h1_costStepUps = @{
             byService  = @($svcSteps)
             byResource = @($resSteps | Select-Object Name,Key,EarlyAvgPerDay,LateAvgPerDay,DeltaPerDay,WindowExtra,Total)
@@ -354,6 +430,7 @@ if ($Json) {
         h5_advisor       = @($advisor)
         h5_advisorSuppressed = @($advIgnored)
         h6_automation    = @($autoAll)
+        h7_functions     = @($funcAll)
     } | ConvertTo-Json -Depth 8
     return
 }
@@ -395,6 +472,17 @@ $advRows = foreach ($a in $advisor) {
 }
 if (-not $advRows) { $advRows = "<tr><td colspan='3' class='ok'>&#10003; No high-impact Cost/HA recommendations.</td></tr>" }
 
+# status glyph: green check, red cross, amber warning
+function StatusGlyph([string]$verdict){
+    switch ($verdict) {
+        'ok'      { "<span class='st ok' title='healthy'>&#10003;</span>" }
+        'failed'  { "<span class='st bad' title='failures'>&#10007;</span>" }
+        'norun'   { "<span class='st warn' title='no runs'>&#9888;</span>" }
+        'unknown' { "<span class='st warn' title='no telemetry'>&#9888;</span>" }
+        default   { "<span class='st warn'>&#9888;</span>" }
+    }
+}
+
 $autoRows = foreach ($a in $autoAll) {
     $sc = switch ($a.Verdict) { 'failed' { 'up' } 'norun' { 'up' } default { '' } }
     $badge = switch ($a.Verdict) {
@@ -402,9 +490,16 @@ $autoRows = foreach ($a in $autoAll) {
         'norun'  { "<span class='tag'>no runs</span>" }
         default  { '' }
     }
-    "<tr><td>$(Enc $a.Name) $badge</td><td>$(Enc $a.State)</td><td class='num'>$($a.Runs)</td><td class='num $sc'>$($a.Failed)</td><td>$(Enc $a.LastStatus)</td><td>$(Enc $a.LastRun)</td></tr>"
+    "<tr><td>$(StatusGlyph $a.Verdict)$(Enc $a.Name) $badge</td><td>$(Enc $a.State)</td><td class='num'>$($a.Runs)</td><td class='num $sc'>$($a.Failed)</td><td>$(Enc $a.LastStatus)</td><td>$(Enc $a.LastRun)</td></tr>"
 }
 if (-not $autoRows) { $autoRows = "<tr><td colspan='6' class='ok'>&#10003; No Logic App workflows found.</td></tr>" }
+
+$funcRows = foreach ($f in $funcAll) {
+    $sc = if ($f.Verdict -eq 'failed') { 'up' } else { '' }
+    $detail = if ($f.Verdict -eq 'failed') { "<span class='tag'>$(Enc $f.FailedOps)</span>" } elseif ($f.Note) { "<span class='tag'>$(Enc $f.Note)</span>" } else { '' }
+    "<tr><td>$(StatusGlyph $f.Verdict)$(Enc $f.Name) $detail</td><td>$(Enc $f.ResourceGroup)</td><td class='num'>$($f.Executions)</td><td class='num $sc'>$($f.Failed)</td><td>$(Enc $f.LastRun)</td></tr>"
+}
+if (-not $funcRows) { $funcRows = "<tr><td colspan='5' class='ok'>&#10003; No Function Apps found.</td></tr>" }
 
 $verdictClass = if ($issueCount -gt 0) { 'up' } else { 'down' }
 $verdictWord  = if ($issueCount -gt 0) { "$issueCount finding$(if($issueCount -ne 1){'s'})" } else { 'All clear' }
@@ -417,10 +512,10 @@ $html = @"
 <style>
   :root{ --bg:#f5f5fb; --card:#fff; --ink:#1a1a2e; --muted:#6b6b80; --line:#e3e3ee;
          --accent:#5b5bd6; --accent2:#8b5cf6;
-         --up:#c0362c; --upBg:#fdeceb; --down:#1f7a4d; --downBg:#e7f6ee; --ok:#1f7a4d; }
+         --up:#c0362c; --upBg:#fdeceb; --down:#1f7a4d; --downBg:#e7f6ee; --ok:#1f7a4d; --warn:#b7791f; }
   @media (prefers-color-scheme:dark){
     :root{ --bg:#14141c; --card:#1d1d28; --ink:#ececf5; --muted:#9a9ab0; --line:#2c2c3a;
-           --up:#ff8a80; --upBg:#3a1512; --down:#7fe0ab; --downBg:#10301f; --ok:#7fe0ab; } }
+           --up:#ff8a80; --upBg:#3a1512; --down:#7fe0ab; --downBg:#10301f; --ok:#7fe0ab; --warn:#e0b341; } }
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
     font:15px/1.55 'Segoe UI',system-ui,sans-serif;padding:28px 32px}
   h1{font-size:23px;margin:0 0 2px} .sub{color:var(--muted);margin:0 0 20px;font-size:13px}
@@ -440,6 +535,8 @@ $html = @"
   tbody tr:hover{background:rgba(127,127,150,.06)}
   .ok{color:var(--ok)} .big.up{color:var(--up)} .big.down{color:var(--down)}
   .tag{background:var(--upBg);color:var(--up);font-size:11px;padding:1px 6px;margin-left:6px;font-weight:600}
+  .st{font-weight:700;margin-right:7px;font-size:14px}
+  .st.ok{color:var(--down)} .st.bad{color:var(--up)} .st.warn{color:var(--warn)}
   .note{margin-top:20px;color:var(--muted);font-size:12.5px;max-width:960px}
   code{background:rgba(127,127,150,.14);padding:1px 6px;font-size:12.5px}
 </style></head><body>
@@ -452,6 +549,7 @@ $html = @"
     <div class='c'><div class='n'>$($failed.Count)</div><div class='l'>Failed ops</div></div>
     <div class='c'><div class='n'>$($scaleIssues.Count)</div><div class='l'>Scale regressions</div></div>
     <div class='c'><div class='n'>$($autoIssues.Count)</div><div class='l'>Automation issues</div></div>
+    <div class='c'><div class='n'>$($funcIssues.Count)</div><div class='l'>Function failures</div></div>
     <div class='c'><div class='n'>$($advisor.Count)</div><div class='l'>Advisor (high)</div></div>
   </div>
 
@@ -498,6 +596,13 @@ $html = @"
   </section>
 
   <section>
+    <h2>H7 &middot; Function Apps (execution health)</h2>
+    <p class='hint'>Function executions from Application Insights (timer &amp; HTTP). <span class='st bad'>&#10007;</span> = a function with failed executions in the window (the failing operation names are tagged). <span class='st warn'>&#9888;</span> = no App Insights telemetry. Function failures never appear in the Activity Log.</p>
+    <table><thead><tr><th>Function App</th><th>Resource group</th><th class='num'>Executions</th><th class='num'>Failed</th><th>Last run</th></tr></thead>
+    <tbody>$($funcRows -join "`n")</tbody></table>
+  </section>
+
+  <section>
     <h2>H5 &middot; Advisor (high-impact Cost &amp; HA)</h2>
     <p class='hint'>Azure Advisor recommendations filtered to high-impact Cost and HighAvailability.$(if($advIgnored.Count){" <em>$($advIgnored.Count) low-value HA upsell$(if($advIgnored.Count -ne 1){'s'}) suppressed &mdash; re-run with <code>-ShowIgnored</code> to see them.</em>"})</p>
     <table><thead><tr><th>Category</th><th>Recommendation</th><th>Resource</th></tr></thead>
@@ -523,12 +628,19 @@ Write-Host ("  Cost step-ups   : {0} service, {1} resource" -f $svcSteps.Count, 
 Write-Host ("  Failed ops      : {0}" -f $failed.Count)
 Write-Host ("  Scale regr.     : {0}" -f $scaleIssues.Count)
 Write-Host ("  Automation      : {0} issue(s) across {1} Logic App(s)" -f $autoIssues.Count, $autoAll.Count)
+Write-Host ("  Function apps   : {0} with failures across {1} app(s)" -f $funcIssues.Count, $funcAll.Count)
 Write-Host ("  Advisor (high)  : {0}{1}" -f $advisor.Count, $(if($advIgnored.Count){" ($($advIgnored.Count) HA upsells suppressed)"}))
 if ($autoIssues.Count) {
     Write-Host "  Automation problems:" -ForegroundColor Yellow
     foreach ($a in $autoIssues) {
         $msg = if ($a.Verdict -eq 'failed') { "$($a.Failed) failed run(s)" } else { "no runs in window (Enabled)" }
         Write-Host ("    ! {0,-30} {1}" -f $a.Name, $msg) -ForegroundColor Yellow
+    }
+}
+if ($funcIssues.Count) {
+    Write-Host "  Function failures:" -ForegroundColor Yellow
+    foreach ($f in $funcIssues) {
+        Write-Host ("    ! {0,-30} {1} failed: {2}" -f $f.Name, $f.Failed, $f.FailedOps) -ForegroundColor Yellow
     }
 }
 if ($resSteps.Count) {
