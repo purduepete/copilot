@@ -23,6 +23,10 @@
 param(
     [string]$SkillsRepo = $PSScriptRoot,
     [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills'),
+    # Personal global instructions folder in this repo, linked into
+    # %USERPROFILE%\.copilot\instructions so its *.instructions.md load in every repo.
+    [string]$GlobalInstructionsRepo = (Join-Path (Split-Path $PSScriptRoot -Parent) 'global-instructions'),
+    [string]$GlobalInstructionsTarget = (Join-Path $env:USERPROFILE '.copilot\instructions'),
     # Additional skill source folders from other repos. Each is linked only if the
     # local path exists (the repo may not be cloned on every machine).
     [string[]]$ExtraSkillRepos = @(
@@ -63,6 +67,38 @@ function Install-SkillJunctions {
     }
 }
 
+function Install-DirectoryJunction {
+    param([string]$Source, [string]$Link)
+
+    if (-not (Test-Path -LiteralPath $Source)) {
+        Write-Host "- Skipping global instructions (not present): $Source"
+        return
+    }
+
+    $parent = Split-Path -Parent $Link
+    New-Item -ItemType Directory -Path $parent -Force | Out-Null
+
+    if (Test-Path -LiteralPath $Link) {
+        $item = Get-Item -LiteralPath $Link -Force
+        if ($item.LinkType -eq 'Junction') {
+            $current = @($item.Target)[0]
+            if ($current -eq $Source) {
+                Write-Host "= global instructions already linked"
+                return
+            }
+            Remove-Item -LiteralPath $Link -Force -Recurse
+            New-Item -ItemType Junction -Path $Link -Target $Source | Out-Null
+            Write-Host "~ Re-linked global instructions -> $Source (was $current)"
+            return
+        }
+        Write-Warning "$Link exists and is not a junction - skipping. Remove it manually to link."
+        return
+    }
+
+    New-Item -ItemType Junction -Path $Link -Target $Source | Out-Null
+    Write-Host "+ Linked global instructions -> $Source"
+}
+
 Write-Host "--- Copilot CLI ($CopilotTarget) ---"
 Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $CopilotTarget
 
@@ -75,5 +111,8 @@ foreach ($extra in $ExtraSkillRepos) {
         Write-Host "`n- Skipping (not present): $extra"
     }
 }
+
+Write-Host "`n--- Global instructions ($GlobalInstructionsTarget) ---"
+Install-DirectoryJunction -Source $GlobalInstructionsRepo -Link $GlobalInstructionsTarget
 
 Write-Host "`nDone."
