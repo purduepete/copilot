@@ -374,6 +374,7 @@ $html = @"
          --info:#3457b8; --infoBg:#e9eefb; --ok:#1f7a4d; --okBg:#e7f6ee; }
   @media (prefers-color-scheme:dark){
     :root{ --bg:#14141c; --card:#1d1d28; --ink:#ececf5; --muted:#9a9ab0; --line:#2c2c3a;
+           --accent:#b3b8ff; --accent2:#c4b5fd;
            --high:#ff8a80; --highBg:#3a1512; --med:#ffb277; --medBg:#3a2410;
            --info:#9db4f5; --infoBg:#171f38; --ok:#7fe0ab; --okBg:#10301f; } }
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);
