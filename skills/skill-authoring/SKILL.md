@@ -43,6 +43,18 @@ argument-hint: <optional one-liner>
 
 - Put the trigger phrases after `WHEN:` in the `description` — that's what Copilot
   matches on. Be generous and specific with phrasings.
+- **The `description` (the whole block, including every WHEN: phrase) must be at most
+  1024 characters** or the skill fails to load with "Skill description must be at most
+  1024 characters". This bites especially when **merging** skills (trigger phrases
+  concatenate). Verify before moving on:
+
+  ```powershell
+  $raw = Get-Content C:\Files\Dev\main\copilot\skills\<name>\SKILL.md -Raw
+  if ($raw -match "(?ms)^description:\s*>-\s*\r?\n(.*?)\r?\n[a-z-]+:\s") {
+    $len = (($matches[1] -replace '\s+',' ').Trim()).Length
+    "desc length: $len  (must be <= 1024)"
+  }
+  ```
 - Keep skills small and judgment-focused; reference scripts by absolute path rather
   than duplicating long logic.
 
@@ -117,6 +129,7 @@ repo — to run `Install-Skills.ps1` once.
 ## Checklist
 
 - [ ] SKILL.md created with `name` + `WHEN:` triggers
+- [ ] **`description` <= 1024 characters** (verify — merges can push it over)
 - [ ] Junctioned via Install-Skills.ps1
 - [ ] Committed + pushed to the copilot repo
 - [ ] Memory stored
