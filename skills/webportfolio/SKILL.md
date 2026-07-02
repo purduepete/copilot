@@ -11,11 +11,12 @@ description: >-
   discrepancy report", "check strategy alignment", "are my strategies consistent",
   "compare strategies across transactions and snapshots", "strategy audit for the last
   3 months", "audit strategies over the last N months".
-  It can also RESOLVE lost strategy/asset-type assignments on current_positions from
-  prior-day daily_snapshot data (report by default, writes only with -Apply). WHEN:
-  "resolve lost strategies", "current positions lost their strategy", "backfill missing
-  strategies from prior day", "positions missing strategy/asset type", "fix current
-  positions strategy", "align asset types from the snapshot".
+  It can also RESOLVE lost strategy/asset-type assignments on current_positions
+  (including CASH) from prior-day daily_snapshot data (report by default, writes only
+  with -Apply). WHEN: "resolve lost strategies", "current positions lost their
+  strategy", "backfill missing strategies from prior day", "positions missing
+  strategy/asset type", "fix current positions strategy", "align asset types from the
+  snapshot", "cash lost its strategy", "cash dropped out of a strategy".
 argument-hint: optional timeframe, e.g. "-Months 3", "-Since 2026-01-01", "-AllTime"; or "-Apply" to write resolutions
 ---
 
@@ -130,13 +131,14 @@ a check is genuinely clean for that window — older issues can fall outside it.
 
 ## Resolve lost strategies & asset types
 
-`Resolve-LostStrategies.ps1` fixes `current_positions` rows that lost their
-`strategy_id` and/or `asset_type_id` (broker-CSV re-uploads land with these NULL, since
-the CSV carries neither). It reads the value each position held on the most recent
-**prior** `daily_snapshot` for the same `authenticated_user_id + account_id + symbol`
-and resolves from it. `daily_snapshot` is itself built FROM `current_positions` by
-`usp_create_daily_snapshot`, so yesterday's snapshot is the source of truth for the
-strategy/asset type a freshly-uploaded position lost.
+`Resolve-LostStrategies.ps1` fixes `current_positions` rows (stocks, options **and
+cash**) that lost their `strategy_id` and/or `asset_type_id` (broker-CSV re-uploads
+land with these NULL, since the CSV carries neither). It reads the value each position
+held on the most recent **prior** `daily_snapshot` for the same
+`authenticated_user_id + account_id + symbol` and resolves from it. `daily_snapshot` is
+itself built FROM `current_positions` by `usp_create_daily_snapshot`, so yesterday's
+snapshot is the source of truth for the strategy/asset type a freshly-uploaded position
+lost.
 
 Scope: current positions only (`is_current = 1`) on tracked accounts, **including
 cash** (cash carries a strategy in the snapshots / holdings-by-strategy view, so a
