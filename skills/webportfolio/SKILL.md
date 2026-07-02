@@ -11,7 +11,12 @@ description: >-
   discrepancy report", "check strategy alignment", "are my strategies consistent",
   "compare strategies across transactions and snapshots", "strategy audit for the last
   3 months", "audit strategies over the last N months".
-argument-hint: optional timeframe, e.g. "-Months 3", "-Since 2026-01-01", "-AllTime"
+  It can also RESOLVE lost strategy/asset-type assignments on current_positions from
+  prior-day daily_snapshot data (report by default, writes only with -Apply). WHEN:
+  "resolve lost strategies", "current positions lost their strategy", "backfill missing
+  strategies from prior day", "positions missing strategy/asset type", "fix current
+  positions strategy", "align asset types from the snapshot".
+argument-hint: optional timeframe, e.g. "-Months 3", "-Since 2026-01-01", "-AllTime"; or "-Apply" to write resolutions
 ---
 
 # WebPortfolio
@@ -26,14 +31,16 @@ scripts under this folder and add a row to the table below.
 
 > **Database note:** webportfolio has exactly **one** database (the Azure SQL prod
 > DB). Credentials are read from the repo's `.env.development.local`
-> (`DB_SERVER/DB_NAME/DB_USER/DB_PASSWORD`). All queries here are **read-only** — the
-> audit never writes to the database. Never surface the password in output.
+> (`DB_SERVER/DB_NAME/DB_USER/DB_PASSWORD`). Most capabilities here are **read-only**;
+> the only one that can write is `Resolve-LostStrategies.ps1`, and only when you pass
+> **`-Apply`** (it is a dry-run report otherwise). Never surface the password in output.
 
 ## Capabilities
 
 | Want to… | Run |
 |---|---|
 | Audit strategy alignment across the three tables (HTML report) | `Invoke-StrategyAudit.ps1` (below) |
+| Resolve lost strategy / asset-type on current_positions from prior-day snapshot | `Resolve-LostStrategies.ps1` (below) |
 | _Other webportfolio audits / maintenance_ | _planned — not yet implemented_ |
 
 ## Strategy-alignment audit
@@ -120,6 +127,63 @@ timeframe they mention into `-Months`/`-Since`/`-AllTime`, run the script (it op
 report for them). To *summarise* the findings in chat, run once more with `-Json
 -NoOpen` and read the per-check `findings`/`impact`. A timeframe with **0 findings** on
 a check is genuinely clean for that window — older issues can fall outside it.
+
+## Resolve lost strategies & asset types
+
+`Resolve-LostStrategies.ps1` fixes `current_positions` rows that lost their
+`strategy_id` and/or `asset_type_id` (broker-CSV re-uploads land with these NULL, since
+the CSV carries neither). It reads the value each position held on the most recent
+**prior** `daily_snapshot` for the same `authenticated_user_id + account_id + symbol`
+and resolves from it. `daily_snapshot` is itself built FROM `current_positions` by
+`usp_create_daily_snapshot`, so yesterday's snapshot is the source of truth for the
+strategy/asset type a freshly-uploaded position lost.
+
+Scope: current positions only (`is_current = 1`), non-cash, on tracked accounts.
+Matching **never crosses users** (it joins on `authenticated_user_id`). Strategy and
+asset type are resolved **independently** — each from the most recent prior snapshot
+with a non-null value for that field — so a position can be partly resolvable.
+
+| Field | Behaviour |
+|-------|-----------|
+| `strategy_id` | **Backfill only** — set only when currently NULL ("lost"). Never overwrites an existing strategy. |
+| `asset_type_id` | **Backfill NULLs AND overwrite disagreements** — set when NULL, and also when the current value differs from the prior snapshot, to keep asset type **aligned**. |
+
+Positions with no usable prior snapshot are reported as **unresolvable** (assign
+manually in the app).
+
+**Read-only by default.** It writes a self-contained HTML report (Actionable +
+Unresolvable, light/dark) and opens it. Pass **`-Apply`** to actually UPDATE
+`current_positions` (`strategy_id` / `asset_type_id` + `date_updated`) for the
+actionable rows inside a single transaction.
+
+### Run it
+
+```powershell
+# Dry-run: report proposed resolutions and open the HTML (nothing written)
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-LostStrategies.ps1
+
+# Read the summary yourself (no HTML, no browser) — good before answering / before -Apply
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-LostStrategies.ps1 -Json -NoOpen
+
+# Refuse to resolve from stale snapshots (only within N days)
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-LostStrategies.ps1 -MaxSnapshotAgeDays 14
+
+# Actually write the resolutions
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-LostStrategies.ps1 -Apply
+```
+
+**Parameters:** `-Apply` (write; otherwise dry-run), `-MaxSnapshotAgeDays <n>` (0 =
+no age limit), `-EnvFile`, `-OutDir` (default `%TEMP%\webportfolio-lost-strategies`),
+`-Json`, `-NoOpen`.
+
+**`-Json` summary:** `totalInScope`, `actionable`, `unresolvable`,
+`strategyBackfills`, `assetBackfills`, `assetOverwrites`, `rowsUpdated`, plus
+`actionableRows` / `unresolvableRows` (per-position proposed changes).
+
+**How to use in a conversation:** default to a **dry-run** first — run with `-Json
+-NoOpen`, read the counts, and summarise (especially the `assetOverwrites`, since those
+change an existing asset type). Because `-Apply` writes to the single production DB,
+**confirm with the user before running `-Apply`**.
 
 ## Extending this skill
 
