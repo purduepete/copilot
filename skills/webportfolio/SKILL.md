@@ -138,7 +138,9 @@ and resolves from it. `daily_snapshot` is itself built FROM `current_positions` 
 `usp_create_daily_snapshot`, so yesterday's snapshot is the source of truth for the
 strategy/asset type a freshly-uploaded position lost.
 
-Scope: current positions only (`is_current = 1`), non-cash, on tracked accounts.
+Scope: current positions only (`is_current = 1`) on tracked accounts, **including
+cash** (cash carries a strategy in the snapshots / holdings-by-strategy view, so a
+CSV re-upload that NULLs cash strategy would drop those dollars out of their strategy).
 Matching **never crosses users** (it joins on `authenticated_user_id`). Strategy and
 asset type are resolved **independently** — each from the most recent prior snapshot
 with a non-null value for that field — so a position can be partly resolvable.

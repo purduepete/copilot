@@ -12,7 +12,7 @@
   therefore still carries the correct strategy_id and asset_type_id for the same
   (user, account, symbol) on prior days.
 
-  For every current (is_current = 1, non-cash, tracked-account) position this helper
+  For every current (is_current = 1, tracked-account) position this helper
   resolves against the most recent PRIOR daily_snapshot for the same
   authenticated_user_id + account_id + symbol:
 
@@ -126,7 +126,6 @@ $detectSql = @"
     FROM current_positions cp
     INNER JOIN accounts a ON cp.account_id = a.id
     WHERE cp.is_current = 1
-      AND UPPER(cp.symbol) <> 'CASH'
       AND a.is_tracked = 1
 ), snap_strat AS (
     SELECT authenticated_user_id, account_id, symbol, strategy_id, snapshot_date,
