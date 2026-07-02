@@ -73,8 +73,17 @@ cd C:\Files\Dev\main\utility
 - Trigger phrase: **"update win utility"** ⇒ run `Update.ps1`.
 - Use this to pull down a release that was already cut (e.g. after a `ship it`), or
   to sync a machine to the newest published build. It does NOT build from source.
-- Needs a GitHub token (gh CLI or git credential); it relaunches WinUtility itself,
-  so no `Start-ScheduledTask` step is required.
+- Needs a GitHub token (gh CLI or git credential).
+- **Elevation caveat:** it is NOT inherently non-elevated. `Update.ps1` `Stop-Process`
+  can only kill processes at the SAME integrity level as the shell. If the live apps
+  are the NORMAL **elevated** copies (started by the `WinUtility` scheduled task at
+  logon), a non-elevated `Update.ps1` **silently fails** to kill them (`-EA
+  SilentlyContinue`), the single-instance mutex blocks the new copy, and nothing
+  changes. It only "works" non-elevated when the currently-running copies are ALSO
+  non-elevated (e.g. launched during a prior non-elevated test) — and it then
+  relaunches them **non-elevated** via `Start-Process`, so they can't manage
+  elevated foreground windows. To restore the proper elevated state, run from an
+  **elevated** shell (or `Start-ScheduledTask -TaskName WinUtility` elevated).
 
 ## Versioning
 
