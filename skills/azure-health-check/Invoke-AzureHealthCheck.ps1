@@ -17,7 +17,11 @@
     H3  Failed operations   - Activity Log entries with status = Failed.
     H4  Scale-to-zero regr. - Container Apps whose minReplicas > 0 (won't scale to
                               zero), cross-referenced with resumed cost.
-    H5  Advisor             - high-impact Cost + HighAvailability recommendations.
+    H5  Advisor             - high-impact Cost + HighAvailability recommendations
+                              (low-value HA upsells suppressed by default).
+    H6  Scheduled automation- Logic App run history: failed/cancelled runs, and
+                              Enabled workflows with zero runs (missed schedule).
+                              Catches data-plane failures the Activity Log misses.
 
   Auth: whatever `az account show` is signed into.
 
@@ -256,6 +260,67 @@ $advisor = @($advisor | Sort-Object Category, Resource)
 $advIgnored = @($advIgnored | Sort-Object Category, Resource)
 
 # ==============================================================================
+# H6 - Scheduled automation (Logic App runs: failures + missed schedules)
+# ==============================================================================
+# The Activity Log (H3) is control-plane only, so a Logic App whose *runs* fail -
+# or a scheduled workflow that silently stops firing - never shows up there. This
+# check reads each workflow's run history within the window and flags:
+#   * any Failed runs, and
+#   * an Enabled workflow with ZERO runs in the window (a missed-schedule signal;
+#     may be a false positive for genuinely infrequent workflows).
+Say "Checking Logic App run history..."
+$autoIssues = @(); $autoAll = @(); $autoErr = $null
+try {
+    $wfList = az resource list --resource-type Microsoft.Logic/workflows -o json 2>$null | ConvertFrom-Json
+    foreach ($wf in $wfList) {
+        # workflow state (Enabled/Disabled) - a disabled workflow legitimately won't run
+        $state = 'Unknown'
+        try {
+            $wfObj = az rest --method get --uri ("https://management.azure.com" + $wf.id + "?api-version=2016-06-01") 2>$null | ConvertFrom-Json
+            if ($wfObj.properties.state) { $state = $wfObj.properties.state }
+        } catch {}
+        # runs within the window (paged, capped)
+        $runsUri = "https://management.azure.com" + $wf.id + "/runs?api-version=2016-06-01&`$top=100&`$filter=startTime ge " + (Fmt-Iso $from)
+        $runs = New-Object System.Collections.Generic.List[object]
+        $pages = 0
+        do {
+            $rr = $null
+            for ($a=1; $a -le 4; $a++) {
+                $rr = az rest --method get --uri $runsUri 2>$null
+                if ($rr) { break }
+                Start-Sleep -Seconds ([Math]::Min(20, 3*$a))
+            }
+            if (-not $rr) { break }
+            $rp = $rr | ConvertFrom-Json
+            foreach ($run in $rp.value) { $runs.Add($run) }
+            $runsUri = $rp.nextLink
+            $pages++
+        } while ($runsUri -and $pages -lt 10)
+
+        $total = $runs.Count
+        $failed = @($runs | Where-Object { $_.properties.status -in @('Failed','Cancelled') })
+        $lastRun = @($runs | Sort-Object { $_.properties.startTime } -Descending | Select-Object -First 1)
+        $lastStatus = if ($lastRun) { $lastRun[0].properties.status } else { '(none)' }
+        $lastTime   = if ($lastRun) { ([datetime]$lastRun[0].properties.startTime).ToString('MMM d HH:mm') } else { '' }
+
+        $verdict = 'ok'
+        if ($failed.Count -gt 0)                  { $verdict = 'failed' }
+        elseif ($total -eq 0 -and $state -eq 'Enabled') { $verdict = 'norun' }
+
+        $row = [pscustomobject]@{
+            Name = $wf.name; ResourceGroup = $wf.resourceGroup; State = $state
+            Runs = $total; Failed = $failed.Count; LastStatus = $lastStatus; LastRun = $lastTime
+            Verdict = $verdict
+        }
+        $autoAll += $row
+        if ($verdict -ne 'ok') { $autoIssues += $row }
+    }
+} catch { $autoErr = $_.Exception.Message; Say "  logic app run check skipped: $autoErr" 'Yellow' }
+$autoAll    = @($autoAll    | Sort-Object @{e={$_.Verdict -eq 'ok'}}, Name)
+$autoIssues = @($autoIssues | Sort-Object Name)
+
+
+# ==============================================================================
 # Severity roll-up
 # ==============================================================================
 $issues = @()
@@ -263,7 +328,8 @@ if ($svcSteps.Count -or $resSteps.Count) { $issues += 'cost' }
 if ($failed.Count)      { $issues += 'failed' }
 if ($scaleIssues.Count) { $issues += 'scale' }
 if ($advisor.Count)     { $issues += 'advisor' }
-$issueCount = $svcSteps.Count + $resSteps.Count + $failed.Count + $scaleIssues.Count + $advisor.Count
+if ($autoIssues.Count)  { $issues += 'automation' }
+$issueCount = $svcSteps.Count + $resSteps.Count + $failed.Count + $scaleIssues.Count + $advisor.Count + $autoIssues.Count
 
 # ==============================================================================
 # JSON output
@@ -276,7 +342,7 @@ if ($Json) {
         windowDays   = $Days
         window       = @{ from = $from.ToString('yyyy-MM-dd'); to = $now.ToString('yyyy-MM-dd') }
         issueCount   = $issueCount
-        errors       = @{ cost = $costErr; activityLog = $alErr; containerApps = $caErr; advisor = $advErr }
+        errors       = @{ cost = $costErr; activityLog = $alErr; containerApps = $caErr; advisor = $advErr; automation = $autoErr }
         h1_costStepUps = @{
             byService  = @($svcSteps)
             byResource = @($resSteps | Select-Object Name,Key,EarlyAvgPerDay,LateAvgPerDay,DeltaPerDay,WindowExtra,Total)
@@ -287,6 +353,7 @@ if ($Json) {
         h4_scaleIssues   = @($scaleIssues)
         h5_advisor       = @($advisor)
         h5_advisorSuppressed = @($advIgnored)
+        h6_automation    = @($autoAll)
     } | ConvertTo-Json -Depth 8
     return
 }
@@ -327,6 +394,17 @@ $advRows = foreach ($a in $advisor) {
     "<tr><td>$(Enc $a.Category)</td><td>$(Enc $a.Problem)</td><td>$(Enc $a.Resource)</td></tr>"
 }
 if (-not $advRows) { $advRows = "<tr><td colspan='3' class='ok'>&#10003; No high-impact Cost/HA recommendations.</td></tr>" }
+
+$autoRows = foreach ($a in $autoAll) {
+    $sc = switch ($a.Verdict) { 'failed' { 'up' } 'norun' { 'up' } default { '' } }
+    $badge = switch ($a.Verdict) {
+        'failed' { "<span class='tag'>$($a.Failed) failed</span>" }
+        'norun'  { "<span class='tag'>no runs</span>" }
+        default  { '' }
+    }
+    "<tr><td>$(Enc $a.Name) $badge</td><td>$(Enc $a.State)</td><td class='num'>$($a.Runs)</td><td class='num $sc'>$($a.Failed)</td><td>$(Enc $a.LastStatus)</td><td>$(Enc $a.LastRun)</td></tr>"
+}
+if (-not $autoRows) { $autoRows = "<tr><td colspan='6' class='ok'>&#10003; No Logic App workflows found.</td></tr>" }
 
 $verdictClass = if ($issueCount -gt 0) { 'up' } else { 'down' }
 $verdictWord  = if ($issueCount -gt 0) { "$issueCount finding$(if($issueCount -ne 1){'s'})" } else { 'All clear' }
@@ -373,6 +451,7 @@ $html = @"
     <div class='c'><div class='n'>$($svcSteps.Count + $resSteps.Count)</div><div class='l'>Cost step-ups</div></div>
     <div class='c'><div class='n'>$($failed.Count)</div><div class='l'>Failed ops</div></div>
     <div class='c'><div class='n'>$($scaleIssues.Count)</div><div class='l'>Scale regressions</div></div>
+    <div class='c'><div class='n'>$($autoIssues.Count)</div><div class='l'>Automation issues</div></div>
     <div class='c'><div class='n'>$($advisor.Count)</div><div class='l'>Advisor (high)</div></div>
   </div>
 
@@ -412,6 +491,13 @@ $html = @"
   </section>
 
   <section>
+    <h2>H6 &middot; Scheduled automation (Logic Apps)</h2>
+    <p class='hint'>Each workflow's run history in the window. <span class='tag'>N failed</span> = failed/cancelled runs; <span class='tag'>no runs</span> = an <em>Enabled</em> workflow that didn't run at all (possible missed schedule &mdash; or simply infrequent). The control-plane Activity Log (H3) does <strong>not</strong> catch these.</p>
+    <table><thead><tr><th>Workflow</th><th>State</th><th class='num'>Runs</th><th class='num'>Failed</th><th>Last status</th><th>Last run</th></tr></thead>
+    <tbody>$($autoRows -join "`n")</tbody></table>
+  </section>
+
+  <section>
     <h2>H5 &middot; Advisor (high-impact Cost &amp; HA)</h2>
     <p class='hint'>Azure Advisor recommendations filtered to high-impact Cost and HighAvailability.$(if($advIgnored.Count){" <em>$($advIgnored.Count) low-value HA upsell$(if($advIgnored.Count -ne 1){'s'}) suppressed &mdash; re-run with <code>-ShowIgnored</code> to see them.</em>"})</p>
     <table><thead><tr><th>Category</th><th>Recommendation</th><th>Resource</th></tr></thead>
@@ -436,7 +522,15 @@ Write-Host "Azure health check - $subName (last $Days days)" -ForegroundColor Cy
 Write-Host ("  Cost step-ups   : {0} service, {1} resource" -f $svcSteps.Count, $resSteps.Count)
 Write-Host ("  Failed ops      : {0}" -f $failed.Count)
 Write-Host ("  Scale regr.     : {0}" -f $scaleIssues.Count)
+Write-Host ("  Automation      : {0} issue(s) across {1} Logic App(s)" -f $autoIssues.Count, $autoAll.Count)
 Write-Host ("  Advisor (high)  : {0}{1}" -f $advisor.Count, $(if($advIgnored.Count){" ($($advIgnored.Count) HA upsells suppressed)"}))
+if ($autoIssues.Count) {
+    Write-Host "  Automation problems:" -ForegroundColor Yellow
+    foreach ($a in $autoIssues) {
+        $msg = if ($a.Verdict -eq 'failed') { "$($a.Failed) failed run(s)" } else { "no runs in window (Enabled)" }
+        Write-Host ("    ! {0,-30} {1}" -f $a.Name, $msg) -ForegroundColor Yellow
+    }
+}
 if ($resSteps.Count) {
     Write-Host "  Top cost step-ups:" -ForegroundColor Yellow
     foreach ($s in ($resSteps | Select-Object -First 5)) {
