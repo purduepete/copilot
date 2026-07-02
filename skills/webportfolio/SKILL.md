@@ -2,21 +2,18 @@
 name: webportfolio
 description: >-
   Work with @jimb's webportfolio investment app (C:\Files\Dev\main\webportfolio,
-  Azure SQL + Express/React). Today it drives a STRATEGY-ALIGNMENT AUDIT: compare how
+  Azure SQL + Express/React). Drives a STRATEGY-ALIGNMENT AUDIT: compare how
   strategy_id is assigned across the transactions, option_transactions and
-  daily_snapshot tables, validated against the strategies type flags and asset types,
-  then render a self-contained HTML discrepancy report and open it in the browser. A
-  timeframe can be given (e.g. the last 3 months). Read-only. WHEN: "webportfolio
-  strategy audit", "run a strategy audit", "audit webportfolio strategies", "strategy
-  discrepancy report", "check strategy alignment", "are my strategies consistent",
-  "compare strategies across transactions and snapshots", "strategy audit for the last
-  3 months", "audit strategies over the last N months".
-  It can also RESOLVE lost strategy/asset-type assignments on current_positions
-  (including CASH) from prior-day daily_snapshot data (report by default, writes only
-  with -Apply). WHEN: "resolve lost strategies", "current positions lost their
-  strategy", "backfill missing strategies from prior day", "positions missing
-  strategy/asset type", "fix current positions strategy", "align asset types from the
-  snapshot", "cash lost its strategy", "cash dropped out of a strategy".
+  daily_snapshot tables, validated against strategy type flags and asset types,
+  then render a self-contained HTML discrepancy report (optional timeframe, read-only).
+  Also RESOLVEs lost strategy/asset-type assignments on current_positions (including CASH)
+  from prior-day daily_snapshot data (report by default, writes only with -Apply).
+  WHEN: "webportfolio strategy audit", "run a strategy audit", "audit webportfolio
+  strategies", "strategy discrepancy report", "check strategy alignment", "are my
+  strategies consistent", "strategy audit for the last N months", "resolve lost
+  strategies", "current positions lost their strategy", "backfill missing strategies from
+  prior day", "positions missing strategy/asset type", "align asset types from the
+  snapshot", "cash lost its strategy".
 argument-hint: optional timeframe, e.g. "-Months 3", "-Since 2026-01-01", "-AllTime"; or "-Apply" to write resolutions
 ---
 
