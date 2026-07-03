@@ -180,11 +180,16 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   Only diverge from this default if the user has already told you what a specific
   gap was (then use that title/category instead). Never invent billable work.
 
-- **No day summary** (`summarySet:false`): generate a crisp highlights line
-  (**Part 2** above) or ask the user, then:
+- **Day highlights (always refresh at end-of-day):** ending the day **always**
+  updates the day's highlights — regardless of whether a summary already exists.
+  Compose a fresh crisp recap from the day's completed work (**Part 2** above:
+  read the day's sessions, follow the Rules, skip lunch/travel/empty rows) and
+  save it, overwriting any earlier summary so it reflects the *full* day:
   ```powershell
   pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 summary "<one-to-two line recap>"
   ```
+  This resolves the `summarySet:false` blocker too, but do it even when
+  `summarySet` is already `true` so the highlights aren't stale.
 
 - **Normalize projects (always, before endday):** any of today's entries with **no
   project** gets **`project = n/a`** — no need to ask. List today via
