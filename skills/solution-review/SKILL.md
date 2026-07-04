@@ -80,9 +80,14 @@ For **quality** scope, have **both** models score the **same** dimensions 0–10
 dead code, convention adherence), each with a one-line justification and 1–3
 `topIssues`, plus an overall 0–100 and 3–6 improvement levers.
 
+  **Test coverage is INFORMATIONAL only** (@jimb's rule): score it and surface
+  weak/absent tests as a callout, but **exclude it from the overall score** —
+  mark that dimension `"excludeFromScore": true` so the renderer shows it without
+  a grade and it does not drag the number down.
+
   Quality JSON: `{ "overallScore":n, "dimensions":[{ "name","score","notes",
-  "topIssues":[...] }], "improvements":[{ "title","dimension","effort",
-  "impact","detail" }] }` (effort/impact = Low|Medium|High).
+  "topIssues":[...], "excludeFromScore":false }], "improvements":[{ "title",
+  "dimension","effort","impact","detail" }] }` (effort/impact = Low|Medium|High).
 
 For **both**, ask each agent to return an object `{ "audit":[...], "quality":{...} }`
 so one dispatch covers both lenses.
@@ -95,7 +100,8 @@ so one dispatch covers both lenses.
 - **Quality**: per dimension combine the two scores (**average**; on wide
   disagreement lean **lower** and note it — quality gaps are under-reported, rarely
   over-reported), merge `topIssues`/`improvements`, compute an `overallScore`
-  (weight Testing/Complexity/Architecture) and a `summary`.
+  from the **scored** dimensions only — **exclude Test coverage** (mark it
+  `excludeFromScore:true`; weight Complexity/Architecture) — and a `summary`.
 
 ### 4. Render (write payload to a temp JSON, then run the matching script)
 

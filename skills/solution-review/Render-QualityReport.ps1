@@ -23,7 +23,8 @@
         "name":     "Test coverage & quality",
         "score":    62,                            // 0-100
         "notes":    "what's good / what's weak",
-        "topIssues":["concrete issue 1","concrete issue 2"]
+        "topIssues":["concrete issue 1","concrete issue 2"],
+        "excludeFromScore": true                   // optional; show but don't count toward the grade
       }
     ],
     "improvements": [
@@ -92,11 +93,19 @@ foreach ($d in $dimensions) {
   $gc    = GradeClass $score
   $notes = HtmlEncode ([string]$d.notes)
   $issues = @($d.topIssues) | Where-Object { $_ } | ForEach-Object { "<li>$(HtmlEncode ([string]$_))</li>" }
+  # Informational dimensions (e.g. test coverage) are shown but NOT counted toward the grade.
+  $excluded = [bool]$d.excludeFromScore
 
-  [void]$sb.Append("<article class='dim'>")
-  [void]$sb.Append("<div class='dim-head'><h3>$name</h3><span class='grade $gc'>$g</span></div>")
-  [void]$sb.Append("<div class='bar-track'><div class='bar-fill $gc' style='width:$score%'></div></div>")
-  [void]$sb.Append("<div class='score-line'><span class='num'>$score</span><span class='den'>/100</span></div>")
+  [void]$sb.Append("<article class='dim$(if($excluded){' info'})'>")
+  if ($excluded) {
+    [void]$sb.Append("<div class='dim-head'><h3>$name</h3><span class='grade g-info'>i</span></div>")
+    [void]$sb.Append("<div class='bar-track'><div class='bar-fill g-info' style='width:$score%'></div></div>")
+    [void]$sb.Append("<div class='score-line'><span class='num'>$score</span><span class='den'>/100</span><span class='excl'>informational &mdash; not counted toward the grade</span></div>")
+  } else {
+    [void]$sb.Append("<div class='dim-head'><h3>$name</h3><span class='grade $gc'>$g</span></div>")
+    [void]$sb.Append("<div class='bar-track'><div class='bar-fill $gc' style='width:$score%'></div></div>")
+    [void]$sb.Append("<div class='score-line'><span class='num'>$score</span><span class='den'>/100</span></div>")
+  }
   if ($notes) { [void]$sb.Append("<p class='notes'>$notes</p>") }
   if ($issues.Count) { [void]$sb.Append("<ul class='issues'>" + ($issues -join '') + "</ul>") }
   [void]$sb.Append("</article>")
@@ -164,6 +173,9 @@ $style = @'
   .dim-head h3{margin:0;font-size:15px;font-weight:620}
   .grade{font-size:20px;font-weight:800;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#fff}
   .grade.g-good{background:var(--good)} .grade.g-ok{background:var(--ok)} .grade.g-bad{background:var(--bad)}
+  .grade.g-info{background:var(--muted);font-size:16px}
+  .dim.info{border-left:3px solid var(--muted)}
+  .excl{margin-left:8px;font-size:11px;font-style:italic;color:var(--muted)}
   .bar-track{height:8px;background:var(--panel-2);border:1px solid var(--border);margin:12px 0 6px}
   .bar-fill{height:100%;}
   .bar-fill.g-good{background:var(--good)} .bar-fill.g-ok{background:var(--ok)} .bar-fill.g-bad{background:var(--bad)}
