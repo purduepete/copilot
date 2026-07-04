@@ -73,7 +73,9 @@ meaningful):
 
   Finding JSON: `{ "category":"Reliability|Performance|Robustness|Duplication",
   "severity":"Critical|High|Medium|Low", "title","location","impact",
-  "recommendation" }`.
+  "recommendation", "plan":[{ "stage","step" }] }`. Ask each agent to include a
+  short **staged `plan`** per finding (the concrete steps to fix that item,
+  broken into `Stage 1`, `Stage 2`, … — smallest safe change first).
 
 For **quality** scope, have **both** models score the **same** dimensions 0–100
 (test coverage, type safety, complexity, readability, architecture, documentation,
@@ -96,7 +98,10 @@ so one dispatch covers both lenses.
 - **Audit**: combine the arrays, **de-duplicate** same-root-cause findings (keep
   clearer wording + higher severity), set **`foundBy`** to the model(s) that
   surfaced each (both = higher confidence), assign short `id`s (`R1`,`P2`,`D3`),
-  write a 1–2 sentence `summary`.
+  ensure every finding has a **staged `plan`** (Stage 1 → n), build an overall
+  **`roadmap`** that sequences the findings into phases (each stage = a `goal`
+  plus the finding `items` it covers — typically Stage 1 = quick wins / highest
+  risk, later stages = larger refactors), and write a 1–2 sentence `summary`.
 - **Quality**: per dimension combine the two scores (**average**; on wide
   disagreement lean **lower** and note it — quality gaps are under-reported, rarely
   over-reported), merge `topIssues`/`improvements`, compute an `overallScore`

@@ -26,8 +26,15 @@
         "location":       "backend/src/x.ts:74-95", // optional
         "impact":         "what breaks / why it matters",
         "recommendation": "concrete fix",
+        "plan": [                                   // optional staged remediation for THIS item
+          { "stage": "Stage 1", "step": "first thing to do" },
+          { "stage": "Stage 2", "step": "next thing" }
+        ],
         "foundBy":        ["Gemini 3.1 Pro"]        // optional; which model(s) surfaced it
       }
+    ],
+    "roadmap": [                                     // optional overall phased plan sequencing findings
+      { "stage": "Stage 1 — Quick wins", "goal": "why / what this stage achieves", "items": ["R2","D1"] }
     ]
   }
 
@@ -94,6 +101,7 @@ foreach ($f in $sorted) {
   $imp  = HtmlEncode ([string]$f.impact)
   $rec  = HtmlEncode ([string]$f.recommendation)
   $by   = @($f.foundBy) | Where-Object { $_ } | ForEach-Object { HtmlEncode ([string]$_) }
+  $plan = @($f.plan) | Where-Object { $_ }
 
   [void]$sb.Append("<article class='card' data-cat='$cat' data-sev='$sev'>")
   [void]$sb.Append("<div class='card-head'>")
@@ -105,6 +113,15 @@ foreach ($f in $sorted) {
   if ($loc) { [void]$sb.Append("<div class='loc'><code>$loc</code></div>") }
   if ($imp) { [void]$sb.Append("<p class='impact'><span class='lbl'>Impact</span>$imp</p>") }
   if ($rec) { [void]$sb.Append("<p class='rec'><span class='lbl'>Fix</span>$rec</p>") }
+  if ($plan.Count) {
+    [void]$sb.Append("<div class='plan'><span class='lbl'>Plan</span><ol class='stages'>")
+    foreach ($step in $plan) {
+      $stepTxt = HtmlEncode ([string]$step.step); if (-not $stepTxt) { $stepTxt = HtmlEncode ([string]$step) }
+      $stageLbl = HtmlEncode ([string]$step.stage)
+      [void]$sb.Append("<li>$(if($stageLbl){"<span class='stg'>$stageLbl</span>"})$stepTxt</li>")
+    }
+    [void]$sb.Append("</ol></div>")
+  }
   if ($by.Count) { [void]$sb.Append("<div class='by'>Surfaced by: " + ($by -join ', ') + "</div>") }
   [void]$sb.Append("</article>")
 }
@@ -112,6 +129,24 @@ if (-not $sorted.Count) {
   [void]$sb.Append("<div class='empty'>No findings were reported. The solution looks clean for the audited dimensions.</div>")
 }
 $cards = $sb.ToString()
+
+# ---- Build overall staged roadmap -----------------------------------------
+$roadmap = @($data.roadmap)
+$rmHtml = ''
+if ($roadmap.Count) {
+  $rb2 = [System.Text.StringBuilder]::new()
+  [void]$rb2.Append("<h2 class='sec'>Remediation roadmap</h2><div class='roadmap'>")
+  foreach ($stage in $roadmap) {
+    $sname = HtmlEncode ([string]$stage.stage)
+    $sgoal = HtmlEncode ([string]$stage.goal)
+    $items = @($stage.items) | Where-Object { $_ } | ForEach-Object { "<span class='ref'>$(HtmlEncode ([string]$_))</span>" }
+    [void]$rb2.Append("<div class='stage'><div class='stage-h'><h3>$sname</h3><div class='refs'>" + ($items -join '') + "</div></div>")
+    if ($sgoal) { [void]$rb2.Append("<p class='goal'>$sgoal</p>") }
+    [void]$rb2.Append("</div>")
+  }
+  [void]$rb2.Append("</div>")
+  $rmHtml = $rb2.ToString()
+}
 
 $modelsHtml = ($models | ForEach-Object { "<span class='chip'>$(HtmlEncode $_)</span>" }) -join ''
 
@@ -171,6 +206,19 @@ $style = @'
   .impact,.rec{margin:8px 0}
   .lbl{display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent-2);margin-right:8px}
   .by{margin-top:10px;font-size:12px;color:var(--muted)}
+  .plan{margin:10px 0 2px}
+  .plan .stages{margin:6px 0 0;padding-left:20px}
+  .plan .stages li{margin:5px 0;font-size:13.5px}
+  .plan .stg{display:inline-block;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+    background:var(--panel-2);border:1px solid var(--border);color:var(--accent-2);padding:1px 7px;margin-right:8px}
+  h2.sec{font-size:15px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:30px 0 14px;font-weight:700}
+  .roadmap{display:flex;flex-direction:column;gap:12px;margin-bottom:8px}
+  .stage{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 16px;box-shadow:var(--shadow)}
+  .stage-h{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .stage-h h3{margin:0;font-size:15px;font-weight:640}
+  .stage .refs{display:flex;gap:6px;flex-wrap:wrap}
+  .stage .ref{font-size:11px;font-family:ui-monospace,Consolas,monospace;background:var(--panel-2);border:1px solid var(--border);color:var(--accent);padding:1px 7px}
+  .stage .goal{margin:8px 0 0;font-size:13.5px;color:var(--muted)}
   .empty{background:var(--panel);border:1px solid var(--border);padding:28px;text-align:center;color:var(--muted)}
   footer{max-width:1080px;margin:10px auto 40px;padding:0 24px;color:var(--muted);font-size:12px}
 </style>
@@ -246,6 +294,7 @@ $style
     <button data-filter="Critical">Critical only</button>
   </div>
   $cards
+  $rmHtml
 </div>
 <footer>Read-only analysis. Findings synthesized from parallel model agents &mdash; verify each against the code before acting.</footer>
 $script
