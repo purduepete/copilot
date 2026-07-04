@@ -20,7 +20,7 @@
     "findings": [
       {
         "id":             "R1",
-        "category":       "Reliability",           // Reliability|Performance|Robustness|Duplication
+        "category":       "Reliability",           // Reliability|Performance|Robustness|Duplication|Prevention
         "severity":       "Critical",              // Critical|High|Medium|Low
         "title":          "short finding title",
         "location":       "backend/src/x.ts:74-95", // optional
@@ -46,6 +46,13 @@
 
 .PARAMETER NoOpen
   Do not open the report in the browser (still writes it, prints the path).
+
+.NOTES
+  Recurrence: each run writes a per-target snapshot to <OutDir>\history\<slug>.json
+  (keyed by normalized category|title). Findings that also appeared in a prior run
+  are badged "Recurring xN" with a Recurring KPI/filter. A "Prevention" category
+  finding renders with a distinct accent and a top meta-callout — reserved for the
+  meta-finding flagging a missing CI/test/lint safety net.
 #>
 [CmdletBinding()]
 param(
@@ -89,6 +96,28 @@ $sorted = $findings | Sort-Object `
 $counts = [ordered]@{ Critical = 0; High = 0; Medium = 0; Low = 0 }
 foreach ($f in $findings) { $sev = [string]$f.severity; if ($counts.Contains($sev)) { $counts[$sev]++ } }
 
+# ---- Recurrence detection (compare against this target's previous run) -----
+function FindingKey($f) {
+  $k = ((([string]$f.category) + '|' + ([string]$f.title)).ToLowerInvariant()) -replace '[^a-z0-9|]+',' '
+  ($k -replace '\s+',' ').Trim()
+}
+$slug = ((Split-Path $target -Leaf) -replace '[^A-Za-z0-9._-]','_'); if (-not $slug) { $slug = 'target' }
+$histDir  = Join-Path $OutDir 'history'
+$histFile = Join-Path $histDir "$slug.json"
+$prior = $null; $priorMap = @{}
+if (Test-Path -LiteralPath $histFile) {
+  try {
+    $prior = Get-Content -LiteralPath $histFile -Raw | ConvertFrom-Json
+    foreach ($e in @($prior.findings)) { if ($e.key) { $priorMap[[string]$e.key] = $e } }
+  } catch { $prior = $null; $priorMap = @{} }
+}
+$priorRuns = if ($prior -and $prior.runs) { [int]$prior.runs } else { 0 }
+$recurCount = 0
+foreach ($f in $findings) { if ($priorMap.ContainsKey((FindingKey $f))) { $recurCount++ } }
+
+# ---- Prevention-layer meta-findings (surfaced prominently) -----------------
+$prevFindings = @($findings | Where-Object { [string]$_.category -eq 'Prevention' })
+
 # ---- Build finding cards ---------------------------------------------------
 $sb = [System.Text.StringBuilder]::new()
 foreach ($f in $sorted) {
@@ -102,11 +131,15 @@ foreach ($f in $sorted) {
   $rec  = HtmlEncode ([string]$f.recommendation)
   $by   = @($f.foundBy) | Where-Object { $_ } | ForEach-Object { HtmlEncode ([string]$_) }
   $plan = @($f.plan) | Where-Object { $_ }
+  $key    = FindingKey $f
+  $isRecur = $priorMap.ContainsKey($key)
+  $seen    = if ($isRecur) { [int]$priorMap[$key].seenCount + 1 } else { 1 }
 
-  [void]$sb.Append("<article class='card' data-cat='$cat' data-sev='$sev'>")
+  [void]$sb.Append("<article class='card' data-cat='$cat' data-sev='$sev' data-recur='$(if($isRecur){'1'}else{'0'})'>")
   [void]$sb.Append("<div class='card-head'>")
   [void]$sb.Append("<span class='pill $cls'>$(HtmlEncode $sev)</span>")
   [void]$sb.Append("<span class='pill cat'>$cat</span>")
+  if ($isRecur) { [void]$sb.Append("<span class='pill recur' title='Reported in a previous audit of this target'>Recurring &times;$seen</span>") }
   if ($id) { [void]$sb.Append("<span class='fid'>$id</span>") }
   [void]$sb.Append("<h3>$ttl</h3>")
   [void]$sb.Append("</div>")
@@ -149,6 +182,23 @@ if ($roadmap.Count) {
 }
 
 $modelsHtml = ($models | ForEach-Object { "<span class='chip'>$(HtmlEncode $_)</span>" }) -join ''
+
+# ---- Prevention / recurrence meta-callout ----------------------------------
+$metaHtml = ''
+if ($prevFindings.Count -or $recurCount -gt 0) {
+  $mb = [System.Text.StringBuilder]::new()
+  [void]$mb.Append("<div class='meta-callout'><div class='mc-h'><span class='pill prev'>Prevention</span><strong>Safety net &amp; recurrence</strong></div>")
+  foreach ($pf in $prevFindings) {
+    $pt = HtmlEncode ([string]$pf.title); $pi = HtmlEncode ([string]$pf.impact)
+    [void]$mb.Append("<p><strong>$pt.</strong> $pi</p>")
+  }
+  if ($recurCount -gt 0) {
+    $plural = if ($recurCount -ne 1) { 's' } else { '' }
+    [void]$mb.Append("<p>$recurCount finding$plural also appeared in a previous audit of this target (this is run #$($priorRuns + 1)) &mdash; fixes are not being locked in. Prioritize a regression gate (CI + tests + lint) over one-off patches.</p>")
+  }
+  [void]$mb.Append("</div>")
+  $metaHtml = $mb.ToString()
+}
 
 # ---- Assemble HTML ---------------------------------------------------------
 $style = @'
@@ -200,6 +250,14 @@ $style = @'
   .pill.sev-crit{background:var(--crit)} .pill.sev-high{background:var(--high)}
   .pill.sev-med{background:var(--med)} .pill.sev-low{background:var(--low)}
   .pill.cat{background:var(--panel-2);color:var(--muted);border:1px solid var(--border)}
+  .pill.recur{background:var(--accent-2)}
+  .pill.prev{background:var(--accent)}
+  .card[data-cat="Prevention"]{border-left-color:var(--accent)}
+  .kpi.recur .n{color:var(--accent-2)}
+  .meta-callout{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent-2);
+    padding:14px 16px;margin:0 0 22px;box-shadow:var(--shadow)}
+  .meta-callout .mc-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .meta-callout p{margin:6px 0;font-size:13.5px;color:var(--muted)}
   .fid{font-size:12px;color:var(--muted);font-family:ui-monospace,Consolas,monospace}
   .loc{margin:8px 0 6px}
   .loc code{background:var(--panel-2);border:1px solid var(--border);padding:2px 8px;font-size:12.5px}
@@ -244,7 +302,7 @@ $script = @'
         b.classList.add('active');
         var f = b.getAttribute('data-filter');
         cards.forEach(function(c){
-          c.style.display = (f==='all' || c.getAttribute('data-cat')===f || c.getAttribute('data-sev')===f) ? '' : 'none';
+          c.style.display = (f==='all' || c.getAttribute('data-cat')===f || c.getAttribute('data-sev')===f || (f==='recurring' && c.getAttribute('data-recur')==='1')) ? '' : 'none';
         });
       });
     });
@@ -279,11 +337,13 @@ $style
     <span>Models:$modelsHtml</span>
   </div>
   $(if ($summary) { "<div class='summary'>$(HtmlEncode $summary)</div>" })
+  $metaHtml
   <div class="kpis">
     <div class="kpi crit"><div class="n">$($counts['Critical'])</div><div class="l">Critical</div></div>
     <div class="kpi high"><div class="n">$($counts['High'])</div><div class="l">High</div></div>
     <div class="kpi med"><div class="n">$($counts['Medium'])</div><div class="l">Medium</div></div>
     <div class="kpi low"><div class="n">$($counts['Low'])</div><div class="l">Low</div></div>
+    $(if ($recurCount -gt 0) { "<div class='kpi recur'><div class='n'>$recurCount</div><div class='l'>Recurring</div></div>" })
   </div>
   <div class="filters">
     <button class="active" data-filter="all">All</button>
@@ -291,6 +351,8 @@ $style
     <button data-filter="Performance">Performance</button>
     <button data-filter="Robustness">Robustness</button>
     <button data-filter="Duplication">Duplication</button>
+    $(if ($prevFindings.Count) { '<button data-filter="Prevention">Prevention</button>' })
+    $(if ($recurCount -gt 0) { '<button data-filter="recurring">Recurring</button>' })
     <button data-filter="Critical">Critical only</button>
   </div>
   $cards
@@ -312,3 +374,22 @@ Write-Host "Report written: $outFile"
 Write-Host ("Findings: {0} Critical, {1} High, {2} Medium, {3} Low" -f $counts['Critical'],$counts['High'],$counts['Medium'],$counts['Low'])
 
 if (-not $NoOpen) { Start-Process $outFile }
+
+# ---- Persist recurrence snapshot for the next run --------------------------
+try {
+  $now = (Get-Date).ToString('yyyy-MM-dd HH:mm')
+  $newMap = @{}
+  foreach ($k in $priorMap.Keys) { $newMap[$k] = $priorMap[$k] }
+  foreach ($f in $findings) {
+    $key = FindingKey $f
+    if ($newMap.ContainsKey($key)) {
+      $prev = $newMap[$key]
+      $newMap[$key] = [pscustomobject]@{ key=$key; title=[string]$f.title; category=[string]$f.category; firstSeen=$prev.firstSeen; lastSeen=$now; seenCount=([int]$prev.seenCount + 1) }
+    } else {
+      $newMap[$key] = [pscustomobject]@{ key=$key; title=[string]$f.title; category=[string]$f.category; firstSeen=$now; lastSeen=$now; seenCount=1 }
+    }
+  }
+  $snapshot = [pscustomobject]@{ target=$target; updatedAt=$now; runs=($priorRuns + 1); findings=@($newMap.Values) }
+  if (-not (Test-Path -LiteralPath $histDir)) { New-Item -ItemType Directory -Force -Path $histDir | Out-Null }
+  $snapshot | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $histFile -Encoding UTF8
+} catch { Write-Host "History snapshot skipped: $($_.Exception.Message)" }

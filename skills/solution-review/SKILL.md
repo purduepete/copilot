@@ -2,7 +2,7 @@
 name: solution-review
 description: >-
   Run a READ-ONLY, parallel-model review of any solution/codebase and open a
-  themed light/dark HTML report. TWO agents (Gemini 3.1 Pro + MAI-Code-1-Flash)
+  themed light/dark HTML report. TWO agents (Gemini 3.1 Pro + Claude Opus)
   analyze the target at once; I merge their results. Scope=audit finds
   robustness / performance / reliability / duplication issues (Critical→Low with
   file:line, impact, fix); scope=quality produces a graded maintainability
@@ -42,8 +42,9 @@ afterward, follow the target repo's own issue-first workflow (out of scope here)
 
 - **Target**: the path argument, defaulting to the current working directory.
   Resolve to an absolute Windows path before dispatching.
-- **Models**: `gemini-3.1-pro-preview` and `mai-code-1-flash-picker` (matches the
-  07/02 audit). If the user names different models, use those.
+- **Models**: `gemini-3.1-pro-preview` and an **Anthropic Claude** model
+  (e.g. `claude-opus-4.8` — @jimb prefers Claude over MAI for this review). If the
+  user names different models, use those.
 - **Scope**: `audit`, `quality`, or `both`. Infer from the request if not stated
   ("robustness / reliability / perf / duplication / production-ready" → audit;
   "quality / grade / maintainable / how good" → quality; generic "review" → both).
@@ -54,6 +55,13 @@ afterward, follow the target repo's own issue-first workflow (out of scope here)
 Resolve to an absolute path; get a quick shape (top-level folders, languages,
 scale, presence of tests / lint config / CI). Note obvious red flags (huge single
 files, near-duplicate file/route/service names) to seed the agent prompts.
+
+**Assess the prevention layer.** Check whether the target has a real regression
+gate: a CI workflow that runs on PRs (not just deploy), a lint/format config, a
+type-check step, and a non-trivial test suite. If any are **missing or toothless**
+(e.g. deploy-only CI, a single token test, no lint), that is the *root cause* of
+recurring findings — surface it as a **top-priority meta-finding** (see step 3),
+not just a note.
 
 ### 2. Dispatch TWO parallel agents (same turn = true parallelism)
 Use the **`task`** tool, `agent_type: general-purpose`, `mode: background`, each
@@ -67,15 +75,16 @@ meaningful):
 - **Gemini** → emphasis on **Reliability + Robustness** (error handling, retries,
   concurrency/race conditions, resource leaks, transactions, input validation,
   failure modes, edge cases).
-- **MAI** → emphasis on **Performance + Duplication** (N+1 / redundant work, hot
+- **Claude** → emphasis on **Performance + Duplication** (N+1 / redundant work, hot
   paths, oversized files/bundles, algorithmic cost; copy-paste, duplicated
   files/routes/services, dead code).
 
-  Finding JSON: `{ "category":"Reliability|Performance|Robustness|Duplication",
+  Finding JSON: `{ "category":"Reliability|Performance|Robustness|Duplication|Prevention",
   "severity":"Critical|High|Medium|Low", "title","location","impact",
   "recommendation", "plan":[{ "stage","step" }] }`. Ask each agent to include a
   short **staged `plan`** per finding (the concrete steps to fix that item,
   broken into `Stage 1`, `Stage 2`, … — smallest safe change first).
+  (`Prevention` is reserved for the meta-finding you add in step 3.)
 
 For **quality** scope, have **both** models score the **same** dimensions 0–100
 (test coverage, type safety, complexity, readability, architecture, documentation,
@@ -102,6 +111,19 @@ so one dispatch covers both lenses.
   **`roadmap`** that sequences the findings into phases (each stage = a `goal`
   plus the finding `items` it covers — typically Stage 1 = quick wins / highest
   risk, later stages = larger refactors), and write a 1–2 sentence `summary`.
+- **Prevention meta-finding (audit)**: if step 1 found the regression gate missing
+  or toothless, prepend a finding with `"category":"Prevention"`, `id` `PL1`, a
+  **High/Critical** severity, and a `plan` to stand up the missing gate (CI on PRs
+  → lint/format → type-check → seed tests). This is the highest-leverage item when
+  the same problems keep recurring — its whole job is to *stop findings from coming
+  back*. The renderer shows Prevention findings with a distinct accent, a top
+  **meta-callout**, and its own filter button.
+- **Recurrence is automatic** — the renderer keeps a per-target history snapshot
+  (`<OutDir>\history\<slug>.json`, keyed by normalized `category|title`) and flags
+  any finding that appeared in a previous run with a **"Recurring ×n"** badge, a
+  Recurring KPI/filter, and a callout. Keep finding **titles stable run-to-run** so
+  recurrence matches; a growing recurring count is the signal that fixes aren't
+  being locked in (i.e. the Prevention meta-finding is overdue).
 - **Quality**: per dimension combine the two scores (**average**; on wide
   disagreement lean **lower** and note it — quality gaps are under-reported, rarely
   over-reported), merge `topIssues`/`improvements`, compute an `overallScore`
@@ -140,3 +162,10 @@ Keep it short; the report has the detail.
   areas over walking every file.
 - Keep the quality dimension set stable run-to-run so a repo's grade is comparable
   over time.
+- **Recurrence tracking** (audit): the renderer persists a per-target history to
+  `%TEMP%\solution-audit\history\<slug>.json` and badges repeat findings. Don't
+  delete it between runs — it's what proves whether fixes are sticking. Keep
+  finding titles stable so matches hold.
+- **When problems keep recurring**, resist working the findings list again — lead
+  with the **Prevention** meta-finding (stand up a real CI/test/lint gate) so the
+  fixes get locked in instead of regressing.
