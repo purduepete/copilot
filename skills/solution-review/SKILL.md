@@ -2,7 +2,7 @@
 name: solution-review
 description: >-
   Run a READ-ONLY, parallel-model review of any solution/codebase and open a
-  themed light/dark HTML report. TWO agents (Gemini 3.1 Pro + Claude Opus)
+  themed light/dark HTML report. TWO agents (Gemini 3.1 Pro + GPT-5)
   analyze the target at once; I merge their results. Scope=audit finds
   robustness / performance / reliability / duplication issues (Critical→Low with
   file:line, impact, fix); scope=quality produces a graded maintainability
@@ -42,9 +42,10 @@ afterward, follow the target repo's own issue-first workflow (out of scope here)
 
 - **Target**: the path argument, defaulting to the current working directory.
   Resolve to an absolute Windows path before dispatching.
-- **Models**: `gemini-3.1-pro-preview` and an **Anthropic Claude** model
-  (e.g. `claude-opus-4.8` — @jimb prefers Claude over MAI for this review). If the
-  user names different models, use those.
+- **Models**: `gemini-3.1-pro-preview` and an **OpenAI GPT (ChatGPT)** model
+  (e.g. `gpt-5.5`). Rationale: @jimb writes most initial code with Claude/Opus, so
+  the review is run by **two independent models** (Gemini + ChatGPT) to avoid a
+  model grading its own work. If the user names different models, use those.
 - **Scope**: `audit`, `quality`, or `both`. Infer from the request if not stated
   ("robustness / reliability / perf / duplication / production-ready" → audit;
   "quality / grade / maintainable / how good" → quality; generic "review" → both).
@@ -75,7 +76,7 @@ meaningful):
 - **Gemini** → emphasis on **Reliability + Robustness** (error handling, retries,
   concurrency/race conditions, resource leaks, transactions, input validation,
   failure modes, edge cases).
-- **Claude** → emphasis on **Performance + Duplication** (N+1 / redundant work, hot
+- **ChatGPT (GPT)** → emphasis on **Performance + Duplication** (N+1 / redundant work, hot
   paths, oversized files/bundles, algorithmic cost; copy-paste, duplicated
   files/routes/services, dead code).
 

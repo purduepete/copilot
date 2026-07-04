@@ -15,7 +15,7 @@
   {
     "target":      "C:\\path\\to\\solution",
     "generatedAt": "2026-07-04T12:00:00-07:00",   // optional; defaults to now
-    "models":      ["Gemini 3.1 Pro", "MAI-Code-1-Flash"],
+    "models":      ["Gemini 3.1 Pro", "GPT-5"],
     "summary":     "one or two sentence executive summary",
     "findings": [
       {
