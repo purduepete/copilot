@@ -13,6 +13,9 @@ machines to sync. Repo-specific rules still belong in each repo's
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
 - Treat the WorkLog category alias `dev` as `development`.
+- **Anything that alters a database** (schema migrations, data-fix scripts, or any
+  write/DDL against a live DB) **requires a second opinion from Gemini** before it is
+  run — get Gemini to review the change first, then proceed.
 
 ## Communication style
 
