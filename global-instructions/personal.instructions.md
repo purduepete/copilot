@@ -13,6 +13,9 @@ machines to sync. Repo-specific rules still belong in each repo's
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
 - Treat the WorkLog category alias `dev` as `development`.
+- **Always display times in my local time zone**, never UTC. When a data source
+  stores timestamps in UTC (e.g. the Copilot session store's `created_at`), convert
+  to local time before showing them, and label them as local.
 - **Anything that alters a database** (schema migrations, data-fix scripts, or any
   write/DDL against a live DB) **requires a second opinion from Gemini** before it is
   run — get Gemini to review the change first, then proceed.

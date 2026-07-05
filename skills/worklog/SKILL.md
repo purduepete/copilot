@@ -195,6 +195,11 @@ Natural-language phrases that map to specific actions:
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
   It reads today's `~/.copilot/session-state/*/events.jsonl` (default = all of today's sessions; `-Current` = the live one), chunks `user.message`
   events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
+  - **Always show session times in local time, never UTC.** The Copilot session store's `created_at`/`updated_at` are UTC (ISO `...Z`); convert to
+    the machine's local time zone before presenting any session task/time to the user, and label it local. (Local ≈ UTC minus the current offset.)
+  - **Always present retrieved sessions as a Markdown table with exactly these columns, in this order: `ID | Start time | End time | Task`**
+    (Start = `created_at`, End = `updated_at`, both in local time; Task = the session summary). Group by local day when spanning multiple days. This
+    fixed table format is required for every "get session tasks" / "retrieve sessions" style response.
 - **Non-overlap boundary (both getters).** By default both `Get-VSCodeWork.ps1` and `Get-CopilotWork.ps1` **trim every block to untracked time** —
   the day's existing WorkLog entries are subtracted, so proposed/created blocks never overlap what's already logged (a block straddling a tracked
   span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
