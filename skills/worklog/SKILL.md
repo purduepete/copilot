@@ -197,9 +197,13 @@ Natural-language phrases that map to specific actions:
   events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
   - **Always show session times in local time, never UTC.** The Copilot session store's `created_at`/`updated_at` are UTC (ISO `...Z`); convert to
     the machine's local time zone before presenting any session task/time to the user, and label it local. (Local ≈ UTC minus the current offset.)
-  - **Always present retrieved sessions as a Markdown table with exactly these columns, in this order: `ID | Start time | End time | Task`**
-    (Start = `created_at`, End = `updated_at`, both in local time; Task = the session summary). Group by local day when spanning multiple days. This
-    fixed table format is required for every "get session tasks" / "retrieve sessions" style response.
+  - **ALWAYS present retrieved sessions as a Markdown table with exactly these columns, in this order: `ID | Start time | End time | Task`. This is
+    mandatory and non-negotiable for every "get session tasks" / "retrieve sessions" style response — never a bulleted list, never a different column
+    set, never HTML unless the user explicitly asks for it.**
+    - `ID` = a sequential row number that **starts at 1** (1, 2, 3, …), not the session GUID.
+    - `Start time` = `created_at`; `End time` = `updated_at` — **both converted to local time** and labeled local (never UTC).
+    - `Task` = the session summary.
+    - Group by local day when the results span multiple days (a separate numbered table per day, each restarting IDs at 1).
 - **Non-overlap boundary (both getters).** By default both `Get-VSCodeWork.ps1` and `Get-CopilotWork.ps1` **trim every block to untracked time** —
   the day's existing WorkLog entries are subtracted, so proposed/created blocks never overlap what's already logged (a block straddling a tracked
   span is split or dropped, marked `[trimmed]`). Pass `-AllowOverlap` only if the user explicitly wants the raw, untrimmed blocks. Blocks shorter than
