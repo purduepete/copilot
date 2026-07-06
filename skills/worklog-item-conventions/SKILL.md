@@ -78,7 +78,7 @@ How to word WorkLog entries so the dashboard stays scannable.
 | Field | Column | Holds | Style |
 |---|---|---|---|
 | **Title** | "Item" | The **what** — a short label for the task | A few words, scannable, no trailing detail |
-| **Accomplishment** | (note/expander) | The **what was done** — specifics, sub-items, fixes | Longer; semicolon- or Markdown-separated list |
+| **Accomplishment** | (note/expander) | The **what was done** — specifics, sub-items, fixes | **Concise**; the key things done, tersely worded |
 
 #### Title (the "Item" column) — keep it simple
 
@@ -90,14 +90,16 @@ How to word WorkLog entries so the dashboard stays scannable.
 ❌ `WorkLog dashboard UX: shift-click date range, modal dialogs (replace native prompt/confirm), themed goal stepper, detached serve`
 ✅ `WorkLog dashboard UX improvements`
 
-#### Accomplishment — carry the detail here
+#### Accomplishment — carry the detail here, but keep it tight
 
 - Move the specifics out of the title into the accomplishment.
+- **Be concise.** Aim for roughly a third of the length you'd naturally write —
+  name the key things done, drop the narration, restatement, and filler.
 - List the concrete things done, separated by `; ` (or Markdown bullets — the note
   modal renders basic Markdown).
 
-✅ `Shift-click date-range selection on the calendar; replaced native prompt/confirm
-with in-page themed modals; added a themed daily-goal stepper; serve now runs detached.`
+✅ `Shift-click date-range selection; in-page themed modals replace prompt/confirm;
+themed goal stepper; detached serve.`
 
 ### When the user gives a long title
 
@@ -146,7 +148,8 @@ wording the entry — don't trust the first/last snippet:
 Scan **all** the user messages, identify the recurring themes, and write:
 
 1. A short, scannable **title** covering the dominant theme (split if multi-theme).
-2. An **accomplishment** that lists the concrete things actually done across the block.
+2. An **accomplishment** that tersely names the concrete things actually done
+   across the block — concise, not a narrative.
 
 Then verify both persisted (read back via `search`/`log`), per the worklog skill's rule 4.
 
