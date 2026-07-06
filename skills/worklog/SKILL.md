@@ -195,6 +195,9 @@ Natural-language phrases that map to specific actions:
   run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
   It reads today's `~/.copilot/session-state/*/events.jsonl` (default = all of today's sessions; `-Current` = the live one), chunks `user.message`
   events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
+  - **Always add an accomplishment when logging session tasks.** Every entry created from a session (or via `add`/`stop` for one) must get a
+    concise accomplishment (**≤ 50 words**) summarizing what was done, derived from the session content. Set it on `add`/`stop` with
+    `-Accomplishment`, or back-fill via `edit -Id N -Accomplishment $acc` (pass the text through a variable per rule 4), then verify it persisted.
   - **Always show session times in local time, never UTC.** The Copilot session store's `created_at`/`updated_at` are UTC (ISO `...Z`); convert to
     the machine's local time zone before presenting any session task/time to the user, and label it local. (Local ≈ UTC minus the current offset.)
   - **ALWAYS present retrieved sessions as a Markdown table with exactly these columns, in this order: `ID | Start time | End time | Task`. This is
