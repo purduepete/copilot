@@ -18,7 +18,19 @@ machines to sync. Repo-specific rules still belong in each repo's
   to local time before showing them, and label them as local.
 - **Anything that alters a database** (schema migrations, data-fix scripts, or any
   write/DDL against a live DB) **requires a second opinion from Gemini** before it is
-  run — get Gemini to review the change first, then proceed.
+  run — get Gemini to review the change first, then proceed (see `## Models`).
+
+## Models
+
+When I want a **second opinion, accuracy review, or cross-check**, run it through a
+**Gemini** or **ChatGPT** model — invoked as a review sub-agent with a model override,
+not a separate external CLI. Use these model IDs:
+
+- **Gemini** — `gemini-3.1-pro-preview` (deep review) or `gemini-3.5-flash` (fast).
+- **ChatGPT** — `gpt-5.5` (default), `gpt-5.4`, or `gpt-5.3-codex` (code-focused).
+
+The `## Preferences` rule that DB-altering changes "require a second opinion from
+Gemini" is satisfied by invoking a Gemini model above.
 
 ## Communication style
 

@@ -37,7 +37,7 @@ $h  = @{ Authorization = "Bearer $tok" }
 $hp = @{ Authorization = "Bearer $tok"; 'Content-Type' = 'application/json' }
 
 # 1) WIQL: open items assigned to me
-$wiql = @{ query = "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = @Me AND [System.State] NOT IN ('Closed','Done','Removed','Resolved') ORDER BY [System.Id]" } | ConvertTo-Json
+$wiql = @{ query = "SELECT [System.Id] FROM WorkItems WHERE [System.AssignedTo] = @Me AND [System.State] NOT IN ('Closed','Done','Removed','Resolved') AND [System.Id] <> 435324 ORDER BY [System.Id]" } | ConvertTo-Json
 $res = Invoke-RestMethod -Headers $hp -Method Post -Uri "$org/_apis/wit/wiql?api-version=7.1" -Body $wiql
 $ids = @($res.workItems.id)
 
