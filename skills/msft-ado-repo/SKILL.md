@@ -53,10 +53,18 @@ if (-not $tok) { throw "No cached ADO credential. Run 'git fetch' against the re
 $env:AZURE_DEVOPS_EXT_PAT = $tok       # consumed by `az repos` / `az boards`
 az devops configure --defaults organization=$Org project=$Proj 2>$null
 ```
-If an `az` command still returns `TF400813 / unauthorized`, the OAuth token isn't
-accepted as a PAT on this machine — **fall back to the REST API** with
-`Authorization = "Bearer $tok"` (the proven path in `Rebuild-OpenWorkItems.ps1`
-and `git-ship`). Prefer `az`; use REST only where `az` can't auth.
+**Verified 2026-07-08:** the GCM OAuth JWT is accepted as `AZURE_DEVOPS_EXT_PAT`
+for `az repos`, `az boards`, and `az repos pr` against this org — no `az login` or
+separate PAT needed. If a machine ever returns `TF400813 / unauthorized`, **fall
+back to the REST API** with `Authorization = "Bearer $tok"` (the proven path in
+`Rebuild-OpenWorkItems.ps1` and `git-ship`). Prefer `az`; use REST only if `az`
+can't auth.
+
+> **JSON-parsing gotcha (bit me in testing):** `az` prints a cp1252 encoding
+> `WARNING:` to **stderr** on this machine. **Never** merge stderr into a JSON
+> pipeline — `az ... -o json 2>&1 | ConvertFrom-Json` fails with "Unexpected
+> character". Parse without `2>&1`:
+> `$x = az repos pr list ... -o json | ConvertFrom-Json`.
 
 ## 1. Clone / onboard (only if the repo isn't already local)
 
@@ -129,8 +137,10 @@ leave branch-policy default reviewers to apply.
 ## 5. Manage & check status / policies
 
 ```powershell
-# List my active PRs
-az repos pr list --org $Org --project $Proj --repository $Repo --creator @me --status active -o table
+# List active PRs, then filter to mine client-side (--creator wants a real
+# identity, NOT @me). @jimb's UPN is jibrown@microsoft.com.
+$prs = az repos pr list --org $Org --project $Proj --repository $Repo --status active -o json | ConvertFrom-Json
+$prs | Where-Object { $_.createdBy.uniqueName -eq 'jibrown@microsoft.com' } | Select-Object pullRequestId, title, status
 # Show one PR incl. status
 az repos pr show --id <prId> --org $Org -o json | ConvertFrom-Json | Select-Object status, mergeStatus, isDraft
 # Policy + build/branch-policy evaluations (the "will it merge" gate)
