@@ -11,7 +11,9 @@ description: >-
   git-ship. WHEN: "create an ADO branch", "start work on an ADO task", "new
   feature branch", "open an ADO PR", "create a pull request", "check PR status",
   "check PR policies", "create a work item", "link a work item", "clone the ADO
-  repo", "set up the bedrock repo", "manage the ADO repo", "ADO repo lifecycle".
+  repo", "set up the bedrock repo", "manage the ADO repo", "ADO repo lifecycle",
+  "the PR is approved", "PR approved", "complete the PR", "merge the PR", "close
+  the task".
 argument-hint: Optionally the task number, work-item title, and/or repo name
 ---
 
@@ -167,6 +169,41 @@ az repos pr policy list --id <prId> --org $Org -o table
 az repos pr update --id <prId> --org $Org --auto-complete true
 az repos pr set-vote --id <prId> --org $Org --vote approve
 ```
+Add reviewers to an **existing** PR (e.g. the default approvers) with
+`az repos pr reviewer add --id <prId> --org $Org --reviewers <a> <b> <c>` — they land
+as **optional** reviewers (`isRequired` is blank); required reviewers come from branch
+policy, not this flag.
+
+## 6. Complete (merge) & close out — once approved
+
+**When @jimb says the PR is approved** (e.g. "the PR's approved", "PR approved",
+"complete/merge the PR"), that is the go-signal to run this whole close-out
+**without re-asking**: merge the PR, delete the feature branch, and close the work
+item. Only precondition: the PR is approved and policies are green. DB/schema-
+affecting changes still need a Gemini second opinion first (@jimb's standing rule) —
+not relevant to doc/skill PRs.
+
+```powershell
+# Merge. Honour the PR's squash + delete-source-branch options explicitly.
+az repos pr update --id <prId> --org $Org --status completed --squash true --delete-source-branch true | Out-Null
+```
+- **Completion is ASYNC** — `az` returns immediately with `mergeStatus=queued`.
+  Re-query `az repos pr show --id <prId>` until `status=completed` /
+  `mergeStatus=succeeded` (a `Start-Sleep 5-6` then re-check works).
+- `--delete-source-branch true` removes the **remote** branch on merge; confirm with
+  `git ls-remote origin <branch>` (empty = gone).
+- **Close the work item** (state names vary by type; Task/Bug use `Closed`):
+  ```powershell
+  az boards work-item update --id $TaskNum --org $Org --state "Closed" | Out-Null
+  ```
+- **Local cleanup** — the remote branch is gone but the local copy and its tracking
+  ref remain:
+  ```powershell
+  git -C $Local switch main
+  git -C $Local pull --ff-only
+  git -C $Local branch -D <branch>
+  git -C $Local fetch --prune
+  ```
 
 ## Notes
 - `az repos` / `az boards` need the **azure-devops** extension: `az extension add
@@ -174,5 +211,10 @@ az repos pr set-vote --id <prId> --org $Org --vote approve
 - On @jimb's machine `az` streaming can crash client-side on a cp1252 char while the
   server op still succeeds — if a command "fails" mid-stream, re-query (`pr show` /
   `work-item show`) to confirm the real result before retrying.
-- Keep `git-ship` as the single place for commit/push/deploy; this skill stops at
-  "branch pushed" and "PR opened/managed".
+- **A PR can be abandoned out-of-band** (by a person or policy). It then drops off
+  `az repos pr list --status active` and `pr show` reports `status=abandoned`. The
+  branch/commits are untouched — either reactivate (`az repos pr update --id <id>
+  --status active`) or just open a fresh PR from the same branch (re-add reviewers +
+  `--work-items`). Check the current status before assuming a PR is still live.
+- Keep `git-ship` as the single place for commit/push/deploy; this skill owns the ADO
+  plumbing from "branch pushed" through "PR merged + work item closed".
