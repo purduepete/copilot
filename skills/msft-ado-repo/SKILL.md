@@ -87,7 +87,7 @@ it exists; otherwise create one.
 - Default the **Area Path** to `$Area` (and set Iteration to the team default unless
   told otherwise).
 - **Assign the work item to @jimb and set it Active** — new work items land as
-  `New` and unassigned; @jimb wants them **assigned to `jibrown@microsoft.com` and
+  `New` and unassigned; @jimb wants them **assigned to `jimb@microsoft.com` and
   moved to `Active`** so they show on his open-work list and reflect that work has
   started. Do this on create (or immediately after) unless told otherwise.
 
@@ -95,7 +95,7 @@ it exists; otherwise create one.
 # $Type from the user (e.g. 'Task'); returns the new id — assigned + Active
 $wi = az boards work-item create --title "<title>" --type "<Type>" `
         --org $Org --project $Proj `
-        --fields "System.AreaPath=$Area" "System.AssignedTo=jibrown@microsoft.com" `
+        --fields "System.AreaPath=$Area" "System.AssignedTo=jimb@microsoft.com" `
         --open false -o json | ConvertFrom-Json
 $TaskNum = $wi.id
 az boards work-item update --id $TaskNum --org $Org --state "Active" | Out-Null
@@ -148,9 +148,9 @@ leave branch-policy default reviewers to apply.
 
 ```powershell
 # List active PRs, then filter to mine client-side (--creator wants a real
-# identity, NOT @me). @jimb's UPN is jibrown@microsoft.com.
+# identity, NOT @me). @jimb's UPN is jimb@microsoft.com.
 $prs = az repos pr list --org $Org --project $Proj --repository $Repo --status active -o json | ConvertFrom-Json
-$prs | Where-Object { $_.createdBy.uniqueName -eq 'jibrown@microsoft.com' } | Select-Object pullRequestId, title, status
+$prs | Where-Object { $_.createdBy.uniqueName -eq 'jimb@microsoft.com' } | Select-Object pullRequestId, title, status
 # Show one PR incl. status
 az repos pr show --id <prId> --org $Org -o json | ConvertFrom-Json | Select-Object status, mergeStatus, isDraft
 # Policy + build/branch-policy evaluations (the "will it merge" gate)
