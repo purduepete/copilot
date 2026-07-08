@@ -86,13 +86,23 @@ it exists; otherwise create one.
   Item / …) — do not guess.
 - Default the **Area Path** to `$Area` (and set Iteration to the team default unless
   told otherwise).
+- **Assign the work item to @jimb and set it Active** — new work items land as
+  `New` and unassigned; @jimb wants them **assigned to `jibrown@microsoft.com` and
+  moved to `Active`** so they show on his open-work list and reflect that work has
+  started. Do this on create (or immediately after) unless told otherwise.
 
 ```powershell
-# $Type from the user (e.g. 'Task'); returns the new id
+# $Type from the user (e.g. 'Task'); returns the new id — assigned + Active
 $wi = az boards work-item create --title "<title>" --type "<Type>" `
-        --org $Org --project $Proj --fields "System.AreaPath=$Area" -o json | ConvertFrom-Json
+        --org $Org --project $Proj `
+        --fields "System.AreaPath=$Area" "System.AssignedTo=jibrown@microsoft.com" `
+        --open false -o json | ConvertFrom-Json
 $TaskNum = $wi.id
+az boards work-item update --id $TaskNum --org $Org --state "Active" | Out-Null
 ```
+> `az boards work-item create` can't set `System.State` directly (it starts at the
+> type's initial state, e.g. `New`), so **set `Active` in a follow-up
+> `az boards work-item update`**. `AssignedTo` can be set on create via `--fields`.
 Confirm an existing one instead:
 ```powershell
 az boards work-item show --id <n> --org $Org -o json | ConvertFrom-Json |
