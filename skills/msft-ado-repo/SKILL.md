@@ -139,10 +139,18 @@ az repos pr create --org $Org --project $Proj --repository $Repo `
   --work-items $TaskNum `                 # auto-links the work item
   --squash --delete-source-branch true `  # tidy merge + cleanup
   --auto-complete true `                  # completes once policies pass
+  --reviewers "janayavaldes@microsoft.com" "srvoru@microsoft.com" "shaneolson@microsoft.com" `
   -o json | ConvertFrom-Json | Select-Object pullRequestId, @{n='url';e={"$Org/$Proj/_git/$Repo/pullrequest/$($_.pullRequestId)"}}
 ```
-Add reviewers only if the user names them (`--reviewers <alias|email> …`); otherwise
-leave branch-policy default reviewers to apply.
+**Default approvers** for this repo (add unless @jimb says otherwise):
+`janayavaldes@microsoft.com`, `srvoru@microsoft.com`, `shaneolson@microsoft.com`.
+Add them on create via `--reviewers` (above), or to an existing PR:
+```powershell
+az repos pr reviewer add --id <prId> --org $Org `
+  --reviewers "janayavaldes@microsoft.com" "srvoru@microsoft.com" "shaneolson@microsoft.com"
+```
+Add any extra reviewers @jimb names; branch-policy default/required reviewers still
+apply on top.
 
 ## 5. Manage & check status / policies
 
