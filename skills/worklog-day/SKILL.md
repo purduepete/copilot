@@ -191,9 +191,12 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   This resolves the `summarySet:false` blocker too, but do it even when
   `summarySet` is already `true` so the highlights aren't stale.
 
-- **Normalize projects (always, before endday):** any of today's entries with **no
-  project** gets **`project = n/a`** — no need to ask. List today via
-  `wl.ps1 state` (filter `sessions` to today), then for each projectless id:
+- **Normalize projects (always, before endday):** any of today's **work** entries
+  with **no project** gets **`project = n/a`** — no need to ask. **Skip non-work /
+  divider rows** (categories `lunch`, `personal`, and the `Day` start/end markers) —
+  those legitimately have no project and should be left untouched. List today via
+  `wl.ps1 state` (filter `sessions` to today, excluding those categories), then for
+  each remaining projectless id:
   ```powershell
   pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Project "n/a"
   ```
