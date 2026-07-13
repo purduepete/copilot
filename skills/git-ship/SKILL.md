@@ -144,6 +144,24 @@ when @jimb explicitly says there's no work item.)
 `type(scope): description`, and link the work item in the body with **`AB#<id>`**.
 Still append the `Co-authored-by: Copilot <…>` trailer.
 
+### ⚠️ Pre-PR self-review gate (REQUIRED — do this BEFORE opening the PR)
+This repo runs a **"PR Assistant" (GitOps bot) AI Code Review** on **every push**.
+Each push = a new review iteration = new comment threads, and unresolved threads
+**re-block** the *Comment requirements* completion policy. The bot reviews the
+**diff**, so a clean diff earns zero comments. To avoid the comment-churn loop:
+
+1. **Run a `code-review` sub-agent over the staged/pushed diff before opening the PR**
+   (compare the branch against `origin/main`). Fix everything it rates **High/Medium**;
+   judgment-call **Low**s can be waived. This is exactly the class of issue the bot
+   flags (unhandled exceptions, fall-through/edge-case returns, leaked internal states).
+2. **Fold those fixes into the commits that will be in the *first* push.** Do **not**
+   ship first and then push "address review" follow-up commits — each extra push
+   spawns a fresh bot iteration (new threads → Comment-requirements re-blocks). One
+   clean push = one review pass.
+3. If the bot still comments and the code **already** addresses it, resolve the thread
+   by marking it `fixed` (reply + `PATCH .../threads/{id}` body `@{status="fixed"}`) —
+   **do not push new code** just to satisfy a redundant re-flag.
+
 ### Open the PR via REST (not gh — this is ADO, not GitHub)
 `az` tokens are usually a **different identity that 401s** on this org — use the
 **git credential token as a Bearer** instead:
