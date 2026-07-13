@@ -162,6 +162,17 @@ Each push = a new review iteration = new comment threads, and unresolved threads
    by marking it `fixed` (reply + `PATCH .../threads/{id}` body `@{status="fixed"}`) —
    **do not push new code** just to satisfy a redundant re-flag.
 
+> **Standing policy — gate-first, exclude-only-if-noisy.** The PR Assistant bot
+> (`GitOps.Apps.Server.pullrequestcopilot`, config level *ServiceTree*) has been
+> **accurate** — treat its findings as real. Do **not** reflexively suppress it. The
+> pre-PR gate above is the fix. Only if, after several PRs, it keeps flooding
+> low-value comments on **generated** content should you narrowly exclude
+> `docs/exploratory/**` (generated HTML/CSV artifacts — **never** `.github/skills/**`,
+> where the review catches real bugs) via a repo **Prompt-As-Config** file
+> ([aka.ms/prassistant](https://aka.ms/prassistant) → customization/opt-out docs;
+> corp-auth-gated). Path-exclusion overrides a ServiceTree default — a last resort,
+> not a default.
+
 ### Open the PR via REST (not gh — this is ADO, not GitHub)
 `az` tokens are usually a **different identity that 401s** on this org — use the
 **git credential token as a Bearer** instead:
