@@ -47,26 +47,53 @@ Target roles: **Senior Database Engineer / Analyst, outside Microsoft.**
 4. **No Microsoft-internal jargon** (CDS, TPID, Fusion, RPS, product codenames).
    Genericize to industry-standard terms.
 5. Keep it to **2 pages** and **never split a single job across a page break.**
-6. **Sound human, not AI-generated.** Recruiters and some ATS run AI-detectors, and a
-   flag can deprioritize an accurate resume. Avoid the LLM fingerprints Jim called
-   out: **no bolded category lead-ins** on bullets (e.g. `Platform architecture:`),
-   **vary bullet length and rhythm** (some terse, some fuller, not every line
-   verb→tech→metric), **plain first-person voice**, and **avoid em-dashes and
-   semicolon-chained clauses**. Ground the wording in how Jim actually writes in the
-   connects. Never change facts to achieve this.
+6. **Sound human and in Jim's voice, not AI-generated** — see the next section.
+   Never change facts to achieve this.
+
+## Write in Jim's voice (required)
+
+Recruiters and some ATS run AI-detectors, and a flag can deprioritize an accurate
+resume. The base resume was deliberately re-voiced to read human-authored (an
+independent LLM review dropped its "AI-generated" estimate from *moderate-to-high* to
+*low-to-moderate*, "safe to use as-is"). **Preserve that voice in every variant** —
+use the base as the tone exemplar and match how Jim actually writes in the connects.
+
+Concrete voice markers to keep (these are what made it read human):
+
+- **No bolded category lead-ins** on bullets (no `Platform architecture & migration:`
+  taxonomy). Fold the idea into the sentence.
+- **Bursty rhythm** — mix short single-clause bullets with longer ones that trail off
+  into an aside. Never make every bullet the same verb→tech→metric shape/length.
+- **Mixed voice is good, not a bug** — most bullets in resume-imperative
+  ("Migrated roughly 20 years..."), a few drifting into first person mid-bullet
+  ("I wrote the PySpark notebooks...", "Along the way I cut..."). That slightly
+  unpolished mixing is what a human editing their own draft does; models stay too
+  disciplined in one voice.
+- **Hedged, imprecise numbers** where he'd be recalling from memory ("roughly 20
+  years", "in some cases by around 85%", "50-plus joins") — not suspiciously clean.
+- **Colloquial phrasing** he'd actually use ("held up in production", "kick off when
+  data lands", "matching the original numbers exactly").
+- **Plain punctuation** — no em-dashes, no semicolon-chained compound clauses.
+
+Do **not** over-optimize: the content is dense and every bullet lands a real outcome,
+which is fine. Pushing further means weakening true content, and detectors penalize
+clean technical writing regardless of authorship. Match the base's register and stop.
 
 ## Workflow
 
 1. **Get the JD.** Accept pasted text, a file path, or a URL (fetch it). Extract the
    must-have skills, responsibilities, and the exact phrasing the posting uses.
-2. **Map JD → evidence.** For each key requirement, find the supporting achievement
+2. **Study Jim's voice first.** Re-read the current base resume (the tone exemplar)
+   and skim a few `connect_output\*.md` employee responses so the rewrite echoes his
+   own phrasing and rhythm rather than a generic model register.
+3. **Map JD → evidence.** For each key requirement, find the supporting achievement
    in the connects. Grep is fast:
    ```powershell
    Select-String -Path C:\Files\Dev\main\career\connect_output\*.md -Pattern "synapse|pipeline|optimiz|migrat" -SimpleMatch:$false | Select-Object Filename, LineNumber, Line
    ```
    Note any requirement with **no** supporting evidence — do not fabricate; tell Jim
    it's a gap.
-3. **Create the application copy** (base stays untouched). Use a slug like
+4. **Create the application copy** (base stays untouched). Use a slug like
    `<company>-<role>`:
    ```powershell
    $slug = "acme-senior-dba"
@@ -78,13 +105,19 @@ Target roles: **Senior Database Engineer / Analyst, outside Microsoft.**
    In `$dir\build.py`, retarget the output path (the `DOCX =` line and the
    `CAREER` base) so it writes `$dir\Jim_Brown_Resume_<slug>.docx`, and keep its
    inline content in sync with `$dir\resume.html`.
-4. **Tailor both files together** (HTML + build.py inline content must match):
+5. **Tailor both files together** (HTML + build.py inline content must match):
    reorder/emphasize bullets, tune the Professional Summary opening line and the
-   Technical Skills ordering to lead with what the JD asks for. Keep edits truthful
-   per the rules above.
-5. **Regenerate DOCX + PDF and verify** (see snippet). Confirm 2 pages and that no
+   Technical Skills ordering to lead with what the JD asks for. Keep edits truthful,
+   and **keep every new/edited line in Jim's voice** per the "Write in Jim's voice"
+   section — any bullet you touch must still pass those markers.
+6. **Regenerate DOCX + PDF and verify** (see snippet). Confirm 2 pages and that no
    job heading is separated from its bullets.
-6. **Report a match summary** to Jim: a short table of JD requirement → covered?
+7. **Voice check before reporting.** Re-read the tailored draft against the "Write in
+   Jim's voice" markers — no bolded lead-ins, bursty rhythm, mixed voice, hedged
+   numbers, plain punctuation. Fix any line that slid back into generic model
+   register. (Optional: ask a Gemini/ChatGPT reviewer to rate how AI-generated it
+   reads and confirm it still sounds like Jim.)
+8. **Report a match summary** to Jim: a short table of JD requirement → covered?
    (yes/partial/gap) → evidence (which Connect). Offer a **Gemini second opinion**
    (`gemini-3.1-pro-preview`) or ChatGPT (`gpt-5.5`) review of the fit before he
    sends it.
