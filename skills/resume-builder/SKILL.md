@@ -47,6 +47,13 @@ Target roles: **Senior Database Engineer / Analyst, outside Microsoft.**
 4. **No Microsoft-internal jargon** (CDS, TPID, Fusion, RPS, product codenames).
    Genericize to industry-standard terms.
 5. Keep it to **2 pages** and **never split a single job across a page break.**
+6. **Sound human, not AI-generated.** Recruiters and some ATS run AI-detectors, and a
+   flag can deprioritize an accurate resume. Avoid the LLM fingerprints Jim called
+   out: **no bolded category lead-ins** on bullets (e.g. `Platform architecture:`),
+   **vary bullet length and rhythm** (some terse, some fuller, not every line
+   verb→tech→metric), **plain first-person voice**, and **avoid em-dashes and
+   semicolon-chained clauses**. Ground the wording in how Jim actually writes in the
+   connects. Never change facts to achieve this.
 
 ## Workflow
 
