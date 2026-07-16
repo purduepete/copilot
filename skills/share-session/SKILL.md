@@ -11,7 +11,8 @@ description: >-
   other machine", "send today's work to my other computer", "export copilot sessions",
   "sync my sessions via OneDrive", "what did I do on my laptop/other machine", "pick
   up work from my laptop", "resume a session from another computer", "import a shared
-  session", "continue a session from my other machine".
+  session", "continue a session from my other machine", "show resumable sessions",
+  "what sessions can I resume", "which sessions can I continue".
 argument-hint: optionally "export", "list", or a session id to import
 ---
 
@@ -30,6 +31,7 @@ Two scripts (reference by absolute path):
 |---|---|
 | **Push** — copy local sessions to the share | `Export-CopilotSessions.ps1` |
 | **Pull** — list / import a shared session | `Import-CopilotSessions.ps1` |
+| **Show** — list what's resumable on THIS machine | `Show-ResumableSessions.ps1` |
 
 Default drop folder: **`<OneDrive - Microsoft>\copilot-session-share`**, laid out as
 `copilot-session-share\<yyyy-MM-dd>\<COMPUTERNAME>\<session-id>\` with a per-day
@@ -84,14 +86,44 @@ copilot --resume=<session-id>
 and `-Computer <name>` (disambiguate), `-All`, `-Force` (overwrite an existing local
 copy — default is skip), `-ShareRoot`, `-Json`.
 
+## Show resumable sessions (local)
+
+Lists the sessions on **this** machine that `copilot --resume=<id>` can actually
+resolve — read straight from the local session store
+(`%USERPROFILE%\.copilot\session-store.db`). Use it to answer "what can I resume?" and
+to spot empty shells (0 turns) that will *not* resume usefully. Requires `python` on
+PATH (used only to read the SQLite store).
+
+```powershell
+# Console table of locally resumable sessions (turns > 0), newest first
+pwsh -File C:\Files\Dev\main\copilot\skills\share-session\Show-ResumableSessions.ps1
+
+# Dark/light HTML report (search, sortable, per-row "copy resume command") — opens it
+pwsh -File C:\Files\Dev\main\copilot\skills\share-session\Show-ResumableSessions.ps1 -Html
+
+# Machine-readable, and include empty 0-turn shells / limit rows
+pwsh -File C:\Files\Dev\main\copilot\skills\share-session\Show-ResumableSessions.ps1 -Json -All -Top 20
+```
+
+**Parameters:** `-All` (include empty 0-turn sessions), `-Json`, `-Html` (write +
+open `%USERPROFILE%\.copilot\_resumable-sessions.html`), `-Top <n>`, `-DbPath <path>`
+(override the store). Turn count comes from the `turns` table; a session with **0
+turns is an empty shell** — nothing to restore.
+
 ## Read vs resume
 
 - **Read/summarize** (default, no import): point Copilot at a shared session's
   `checkpoints\*.md` (compact recap) or `events.jsonl` (full transcript) directly in
   the OneDrive folder — no import needed. Best for "what did I do on my other machine".
 - **Resume** (import): use when you want to *continue* that exact session on this
-  machine. A plain folder copy is sufficient — `copilot --resume=<id>` reads the
-  session-state folder; **no `session-store.db` row is required** (verified).
+  machine. **Caveat (current CLI builds):** `copilot --resume=<id>` resolves the id
+  (or name) against `session-store.db`, so a **folder-only import may fail with "No
+  session or name matched" until it has a DB row** / the CLI reindexes. Also, the
+  conversation **turns live in the origin machine's `session-store.db`, which is not
+  exported** — so an imported folder reliably carries only `checkpoints\*.md`, `files`,
+  `research`, and `workspace.yaml`, not the raw dialogue. Confirm a session is worth
+  resuming first with `Show-ResumableSessions.ps1` (a 0-turn shell has nothing to
+  restore).
 
 ## Caveats
 
@@ -99,8 +131,10 @@ copy — default is skip), `-ShareRoot`, `-Json`.
   FDE_Revenue_Bedrock). This stays inside @jimb's own **work OneDrive** (same identity)
   — acceptable. Never route session data anywhere else. Use `-TranscriptOnly` for a
   lighter, tool-output-free share.
-- **Picker vs id:** an imported session resumes by explicit id immediately; it may not
-  appear in the bare `copilot --resume` picker (DB-backed) until the CLI reindexes.
+- **Picker vs id:** `copilot --resume=<id>` resolves against `session-store.db`; a
+  folder-only import may not resolve (by id *or* in the bare picker) until the CLI has
+  a DB row for it / reindexes. Use `Show-ResumableSessions.ps1` to see what actually
+  resolves locally right now.
 - **cwd:** resume opens in the session's original `cwd`; import warns if that path
   doesn't exist on this machine. Both of @jimb's machines use `C:\Files\Dev`, so this
   is usually fine.
