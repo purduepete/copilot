@@ -30,8 +30,9 @@ scripts under this folder and add a row to the table below.
 > **Database note:** webportfolio has exactly **one** database (the Azure SQL prod
 > DB). Credentials are read from the repo's `.env.development.local`
 > (`DB_SERVER/DB_NAME/DB_USER/DB_PASSWORD`). Most capabilities here are **read-only**;
-> the only one that can write is `Resolve-LostStrategies.ps1`, and only when you pass
-> **`-Apply`** (it is a dry-run report otherwise). Never surface the password in output.
+> the only ones that can write are `Resolve-LostStrategies.ps1` and
+> `Resolve-TransactionStrategies.ps1`, and only when you pass **`-Apply`** (both are
+> dry-run reports otherwise). Never surface the password in output.
 
 ## Capabilities
 
@@ -39,6 +40,7 @@ scripts under this folder and add a row to the table below.
 |---|---|
 | Audit strategy alignment across the three tables (HTML report) | `Invoke-StrategyAudit.ps1` (below) |
 | Resolve lost strategy / asset-type on current_positions from prior-day snapshot | `Resolve-LostStrategies.ps1` (below) |
+| Backfill NULL `strategy_id` on **transactions** from the account's own snapshot/position (fixes the C8 leak) | `Resolve-TransactionStrategies.ps1` (below) |
 | _Other webportfolio audits / maintenance_ | _planned — not yet implemented_ |
 
 ## Strategy-alignment audit
@@ -66,6 +68,7 @@ Checks (each scoped to the chosen timeframe):
 | C3 | MED | Stock symbol whose latest **transaction** strategy ≠ latest **snapshot** strategy |
 | C5 | MED | Option whose `option_transactions` strategy ≠ its matched `daily_snapshot` strategy |
 | C4 | MED | Same (account, symbol) carrying **multiple** distinct strategies in transactions |
+| C8 | HIGH | **Transaction-performance account↔strategy leak** — a live txn with **NULL** stored `strategy_id` whose strategy is derived at query time (mirrors `performanceMetricsService`'s `COALESCE(t.strategy_id, cp.strategy_id, da.strategy_id)`) from the **account-agnostic** `desired_allocations` fallback, or from a fallback that **conflicts with the account's own snapshot** strategy. These are the tickers whose displayed strategy isn't grounded in their account. |
 | C7 | INFO | Transactions with **no** strategy assigned, by assignment method |
 
 Options are matched between `option_transactions` and `daily_snapshot` on
@@ -185,6 +188,55 @@ no age limit), `-EnvFile`, `-OutDir` (default `%TEMP%\webportfolio-lost-strategi
 -NoOpen`, read the counts, and summarise (especially the `assetOverwrites`, since those
 change an existing asset type). Because `-Apply` writes to the single production DB,
 **confirm with the user before running `-Apply`**.
+
+## Resolve transaction strategies
+
+`Resolve-TransactionStrategies.ps1` is the write-side companion to audit check **C8**.
+It stamps a correct `strategy_id` onto **transactions** whose stored `strategy_id` is
+NULL, using an **account-grounded** source — never the account-agnostic
+`desired_allocations` fallback that caused the leak (removed from the backend in issue
+#470). For each live (`accounts.is_paper = 0`) transaction in the window with a NULL
+`strategy_id`, it resolves from the **same account + symbol** in priority order:
+
+1. `daily_snapshot` strategy on-or-before the transaction date (most recent) → method `auto-audit-snapshot-prior`
+2. `daily_snapshot` strategy from any date (most recent) → method `auto-audit-snapshot-any`
+3. `current_positions` strategy (`is_current = 1`) → method `auto-audit-position`
+
+**Safety:** only rows whose `strategy_id IS NULL` **and** whose
+`strategy_assigned_method` is NULL or `auto-*` are ever written — a `manual` assignment
+is left untouched unless you pass **`-Force`**. The `-Apply` UPDATE re-checks
+`strategy_id IS NULL` at write time inside a single transaction. Transactions with a
+NULL `account_id`, or with no account-grounded strategy anywhere, are reported as
+**unresolvable**. Options are out of scope (they live in `option_transactions`).
+
+**Read-only by default** — writes/opens a self-contained HTML report (Resolvable +
+Unresolvable, light/dark). Pass **`-Apply`** to write.
+
+### Run it
+
+```powershell
+# Dry-run: report proposed stamps and open the HTML (nothing written) — last 3 months
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-TransactionStrategies.ps1
+
+# Read the summary yourself (no HTML) over a wider window — good before -Apply
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-TransactionStrategies.ps1 -Months 6 -Json -NoOpen
+
+# Actually write the resolutions
+pwsh -File C:\Files\Dev\main\copilot\skills\webportfolio\Resolve-TransactionStrategies.ps1 -Months 6 -Apply
+```
+
+**Parameters:** `-Apply` (write; otherwise dry-run), `-Force` (also overwrite `manual`),
+`-Months <n>` (default 3), `-Since <yyyy-MM-dd>`, `-AllTime`, `-EnvFile`, `-OutDir`
+(default `%TEMP%\webportfolio-transaction-strategies`), `-Json`, `-NoOpen`.
+
+**`-Json` summary:** `totalInScope`, `actionable`, `unresolvable`, `bySource`,
+`rowsUpdated`, plus `actionableRows` / `unresolvableRows` (per-transaction proposed
+stamp with `resolvedStrategy` / `resolveSource`).
+
+**How to use in a conversation:** run C8 in the audit first to see the leak, then
+**dry-run** this (`-Json -NoOpen`), read the counts / `bySource`, and summarise. Because
+`-Apply` writes to the single production DB, **confirm with the user before running
+`-Apply`**. Re-run `Invoke-StrategyAudit.ps1` afterward — C8 should drop to 0.
 
 ## Extending this skill
 

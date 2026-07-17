@@ -27,6 +27,13 @@
                underlying + expiration + strike).
     MEDIUM C4  transactions assigning MULTIPLE distinct strategies to the same
                (account, symbol).
+    HIGH   C8  Transaction-performance account<->strategy leak: a transaction whose
+               strategy shown on the Transaction Performance page is DERIVED at query
+               time (stored strategy_id is NULL) from the account-agnostic
+               desired_allocations fallback, or from a fallback that conflicts with the
+               same account's own snapshot - i.e. the displayed strategy is not grounded
+               in that account. Mirrors performanceMetricsService's
+               COALESCE(t.strategy_id, cp.strategy_id, da.strategy_id).
     INFO   C7  Transactions with NO strategy assigned (gap), by assignment method.
 
   Renders a self-contained HTML report (light/dark) and opens it by default.
@@ -307,6 +314,67 @@ FROM (
 GROUP BY account_id, symbol
 HAVING COUNT(DISTINCT strategy_id) > 1
 ORDER BY COUNT(DISTINCT strategy_id) DESC, symbol;
+'@ })
+
+$checks.Add([pscustomobject]@{ Id='C8'; Severity='HIGH'; Counts=$true
+  Title='Transaction-performance account/strategy leak (query-time derivation)'
+  Desc='Live transactions whose stored strategy_id is NULL, so the Transaction Performance page derives a strategy at query time via COALESCE(t.strategy_id, cp.strategy_id, da.strategy_id). Flags rows where that derived strategy comes from the ACCOUNT-AGNOSTIC desired_allocations fallback (symbol+user only, no account), or where the fallback strategy disagrees with the same account''s own most-recent snapshot. These are exactly the tickers whose displayed strategy is not grounded in their account.'
+  Sql=@'
+;WITH tx AS (
+  SELECT t.id, t.account_id, t.symbol, t.strategy_id AS stored_strategy_id,
+         t.authenticated_user_id
+  FROM transactions t
+  JOIN accounts a ON t.account_id = a.id
+  WHERE t.symbol IS NOT NULL AND t.quantity IS NOT NULL AND t.quantity <> 0
+    AND a.is_paper = 0
+    AND t.strategy_id IS NULL
+    AND t.transaction_date >= @since
+), cpm AS (
+  SELECT account_id, symbol, strategy_id FROM (
+    SELECT account_id, symbol, strategy_id,
+           ROW_NUMBER() OVER (PARTITION BY account_id, symbol ORDER BY id DESC) rn
+    FROM current_positions WHERE is_current = 1 AND strategy_id IS NOT NULL
+  ) z WHERE rn = 1
+), snm AS (
+  SELECT account_id, symbol, strategy_id FROM (
+    SELECT account_id, symbol, strategy_id,
+           ROW_NUMBER() OVER (PARTITION BY account_id, symbol ORDER BY snapshot_date DESC, id DESC) rn
+    FROM daily_snapshot WHERE strategy_id IS NOT NULL
+  ) z WHERE rn = 1
+), dam AS (
+  SELECT symbol, authenticated_user_id, strategy_id FROM (
+    SELECT symbol, authenticated_user_id, strategy_id,
+           ROW_NUMBER() OVER (PARTITION BY symbol, authenticated_user_id ORDER BY id) rn
+    FROM desired_allocations WHERE strategy_id IS NOT NULL
+  ) z WHERE rn = 1
+), eff AS (
+  SELECT tx.account_id, tx.symbol,
+         cpm.strategy_id AS cp_sid, snm.strategy_id AS snap_sid, dam.strategy_id AS da_sid,
+         COALESCE(cpm.strategy_id, dam.strategy_id) AS eff_sid,
+         CASE WHEN cpm.strategy_id IS NOT NULL THEN 'current_position'
+              WHEN dam.strategy_id IS NOT NULL THEN 'desired_allocation'
+              ELSE 'unresolved' END AS src
+  FROM tx
+  LEFT JOIN cpm ON cpm.account_id = tx.account_id AND cpm.symbol = tx.symbol
+  LEFT JOIN snm ON snm.account_id = tx.account_id AND snm.symbol = tx.symbol
+  LEFT JOIN dam ON dam.symbol = tx.symbol AND dam.authenticated_user_id = tx.authenticated_user_id
+)
+SELECT eff.account_id AS [Account], eff.symbol AS [Symbol],
+       COUNT(*) AS [Rows],
+       CASE WHEN eff.src = 'desired_allocation' THEN 'Account-agnostic leak (desired allocation)'
+            WHEN eff.snap_sid IS NOT NULL AND eff.eff_sid IS NOT NULL AND eff.eff_sid <> eff.snap_sid
+                 THEN 'Fallback strategy conflicts with account snapshot'
+            ELSE 'Other' END AS [Issue],
+       es.strategy_name AS [Displayed Strategy],
+       ss.strategy_name AS [Account Snapshot Strategy]
+FROM eff
+LEFT JOIN strategies es ON es.id = eff.eff_sid
+LEFT JOIN strategies ss ON ss.id = eff.snap_sid
+WHERE eff.src = 'desired_allocation'
+   OR (eff.snap_sid IS NOT NULL AND eff.eff_sid IS NOT NULL AND eff.eff_sid <> eff.snap_sid)
+GROUP BY eff.account_id, eff.symbol, eff.src, eff.snap_sid, eff.eff_sid,
+         es.strategy_name, ss.strategy_name
+ORDER BY eff.symbol, eff.account_id;
 '@ })
 
 $checks.Add([pscustomobject]@{ Id='C7'; Severity='INFO'; Counts=$false
