@@ -78,7 +78,7 @@ Start-ScheduledTask -TaskName WinUtility  # OR: Start-Process exe\WinUtility.exe
 
 `Scripts\Update.ps1` is the INSTALL-from-release path (distinct from Publish, which
 builds locally). It stops the 4 procs, downloads the latest `gh` release's `.exe`
-assets from `jimlertech/utility` into `exe\`, then relaunches `WinUtility.exe`
+assets from `purduepete/utility` into `exe\`, then relaunches `WinUtility.exe`
 directly (via `Start-Process`, NOT the scheduled task).
 
 ```powershell
