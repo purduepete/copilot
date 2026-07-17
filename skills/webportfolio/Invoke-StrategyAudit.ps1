@@ -26,7 +26,9 @@
                matching daily_snapshot option row's strategy (matched on
                underlying + expiration + strike).
     MEDIUM C4  transactions assigning MULTIPLE distinct strategies to the same
-               (account, symbol).
+               (account, symbol). Cash-sweep money-market funds and OCC-style
+               option contracts are excluded (reported as accepted) unless
+               -IncludeAccepted.
     HIGH   C8  Transaction-performance account<->strategy leak: a transaction whose
                strategy shown on the Transaction Performance page is DERIVED at query
                time (stored strategy_id is NULL) from the account-agnostic
@@ -48,7 +50,14 @@
   Explicit window start (any datetime string, e.g. '2026-01-01'). Overrides -Months.
 
 .PARAMETER AllTime
-  Audit the full history (no lower date bound).
+  Audit the full history (no lower date bound). Still subject to -FloorDate.
+
+.PARAMETER FloorDate
+  Hard lower bound applied to EVERY window (including -AllTime): transactions
+  before this date are never audited, because history before mid-2025 predates the
+  current strategy-tagging discipline. Default '2025-07-01'. Pass an earlier
+  -Since to deliberately look further back, or set -FloorDate to an early date
+  (e.g. '1900-01-01') to disable the floor entirely.
 
 .PARAMETER EnvFile
   Path to the .env file with DB_SERVER/DB_NAME/DB_USER/DB_PASSWORD. Default is the
@@ -74,6 +83,7 @@ param(
     [int]$Months = 3,
     [string]$Since,
     [switch]$AllTime,
+    [string]$FloorDate = '2025-07-01',
     [string]$EnvFile = 'C:\Files\Dev\main\webportfolio\.env.development.local',
     [string]$OutDir  = (Join-Path $env:TEMP 'webportfolio-strategy-audit'),
     [switch]$Json,
@@ -116,6 +126,27 @@ if (-not $IncludeAccepted -and $AcceptedUnassigned.Count -gt 0) {
     }) -join "`n"
 }
 
+# --- C4 exclusions ------------------------------------------------------------
+# Two classes of (account, symbol) legitimately carry more than one strategy and
+# are NOT ambiguity errors, so they are excluded from the C4 "multiple strategies
+# per symbol" check to cut false positives:
+#   1. Money-market / cash-sweep funds (SPAXX, FDRXX, ...) - cash positions with
+#      no real investment strategy, so a Personal / N-A placeholder co-existing
+#      with anything else is expected.
+#   2. OCC-style option contracts (e.g. DIS260116C120) - option performance is
+#      derived from option_transactions and covered by the option checks (C1/C5),
+#      not the transactions table.
+# Both are suppressed unless -IncludeAccepted; the count of suppressed (account,
+# symbol) pairs is reported as C4's `accepted`. The option pattern matches a
+# 6-digit expiry followed by C or P and a strike digit.
+$CashSweepSymbols = @('SPAXX','FDRXX','FZFXX','FCASH','SPRXX','FGXX','FSIXX')
+$c4OptionLike     = "symbol LIKE '%[0-9][0-9][0-9][0-9][0-9][0-9][CP][0-9]%'"
+$c4CashInList     = ($CashSweepSymbols | ForEach-Object { "'$_'" }) -join ', '
+$c4ExcludeSql = ''
+if (-not $IncludeAccepted) {
+    $c4ExcludeSql = "    AND symbol NOT IN ($c4CashInList)`n    AND NOT ($c4OptionLike)"
+}
+
 # --- resolve the timeframe ----------------------------------------------------
 if ($AllTime) {
     $sinceDate  = [datetime]'1900-01-01'
@@ -126,6 +157,18 @@ if ($AllTime) {
 } else {
     $sinceDate  = (Get-Date).Date.AddMonths(-$Months)
     $windowLabel = "Last $Months month$(if($Months -ne 1){'s'}) (since $($sinceDate.ToString('yyyy-MM-dd')))"
+}
+
+# --- apply the hard floor (data before this date is never audited) ------------
+# The transactions history before mid-2025 predates the current strategy-tagging
+# discipline, so it is intentionally out of scope. The floor clamps EVERY window
+# (including -AllTime) unless the caller explicitly requests an earlier -Since.
+if ($FloorDate) {
+    $floor = [datetime]::Parse($FloorDate)
+    if ($sinceDate -lt $floor) {
+        $sinceDate = $floor
+        $windowLabel += " (floored at $($floor.ToString('yyyy-MM-dd')))"
+    }
 }
 
 # --- load DB credentials from the .env ---------------------------------------
@@ -300,8 +343,8 @@ ORDER BY otk.underlying;
 
 $checks.Add([pscustomobject]@{ Id='C4'; Severity='MEDIUM'; Counts=$true
   Title='Multiple strategies assigned to the same symbol'
-  Desc='A single (account, symbol) carries more than one distinct strategy across its transactions - a source of downstream ambiguity (often a real strategy co-existing with Personal / N/A).'
-  Sql=@'
+  Desc='A single (account, symbol) carries more than one distinct strategy across its transactions - a source of downstream ambiguity (often a real strategy co-existing with Personal / N/A). Cash-sweep money-market funds and OCC-style option contracts are excluded (see accepted) unless -IncludeAccepted.'
+  Sql=@"
 SELECT account_id AS [Account], symbol AS [Symbol],
        COUNT(DISTINCT strategy_id) AS [Distinct Strategies],
        STRING_AGG(CONVERT(varchar, strategy_id), ', ') WITHIN GROUP (ORDER BY strategy_id) AS [Strategy IDs]
@@ -310,11 +353,12 @@ FROM (
   FROM transactions
   WHERE symbol IS NOT NULL AND account_id IS NOT NULL AND strategy_id IS NOT NULL
     AND transaction_date >= @since
+$c4ExcludeSql
 ) d
 GROUP BY account_id, symbol
 HAVING COUNT(DISTINCT strategy_id) > 1
 ORDER BY COUNT(DISTINCT strategy_id) DESC, symbol;
-'@ })
+"@ })
 
 $checks.Add([pscustomobject]@{ Id='C8'; Severity='HIGH'; Counts=$true
   Title='Transaction-performance account/strategy leak (query-time derivation)'
@@ -416,6 +460,22 @@ foreach ($c in $checks) {
         $pred = ($AcceptedUnassigned | ForEach-Object {
             "(account_id = '$($_.Account)' AND symbol = '$($_.Symbol)')" }) -join ' OR '
         $cntDt = Invoke-Q "SELECT COUNT(*) AS n FROM transactions WHERE strategy_id IS NULL AND symbol IS NOT NULL AND transaction_date >= @since AND ($pred)"
+        $acceptedCount = [int]$cntDt.Rows[0]['n']
+    }
+    # C4 excludes cash-sweep funds and option contracts in-SQL; count the excluded
+    # (account, symbol) pairs that WOULD have flagged as multiple-strategy.
+    if ($c.Id -eq 'C4' -and -not $IncludeAccepted) {
+        $cntDt = Invoke-Q @"
+SELECT COUNT(*) AS n FROM (
+  SELECT account_id, symbol
+  FROM (SELECT DISTINCT account_id, symbol, strategy_id FROM transactions
+        WHERE symbol IS NOT NULL AND account_id IS NOT NULL AND strategy_id IS NOT NULL
+          AND transaction_date >= @since
+          AND (symbol IN ($c4CashInList) OR $c4OptionLike)) d
+  GROUP BY account_id, symbol
+  HAVING COUNT(DISTINCT strategy_id) > 1
+) x
+"@
         $acceptedCount = [int]$cntDt.Rows[0]['n']
     }
     Add-Member -InputObject $c -NotePropertyName Data -NotePropertyValue $dt -Force
