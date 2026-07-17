@@ -81,6 +81,12 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
      missing field(s). Never silently guess without either history or the user.
    - **item (title)** must always come from the user — never invent it.
    (Time can still be inferred per rule 2.)
+   - **A project is MANDATORY on every real task — never leave it blank.** This
+     applies to every entry path (`start`, `add`, calendar/session miners, `edit`).
+     After any write, verify the project persisted (`search`/`log`) and back-fill it if
+     missing. **Exemptions:** the 0-minute day-markers (`startday`/`endday`) need no
+     project. **Lunch/breaks** take project **`n/a`**. **Any commute** takes category
+     **`travel`** (and project `work` unless the user says otherwise).
 4. **Verify before/after — confirm the data actually persisted.** Run `status` first when
    context is unclear; after a write, the command echoes the entry id (e.g. `+ Added #37`).
    Use that id for follow-up edits. **The echo is not proof the field was stored** — `edit`
@@ -236,8 +242,8 @@ Natural-language phrases that map to specific actions:
 
 | Item | Category | Project | Typical time |
 |---|---|---|---|
-| `Commute to campus` | travel | work | 07:00–09:30 |
-| `Lunch` | lunch | — | user supplies the range |
+| `Commute to campus` / `Commute home` | travel | work | user supplies the range |
+| `Lunch` | lunch | `n/a` | user supplies the range |
 | WorkLog / dashboard side-project work | development | `worklog` | logged under the `home` profile |
 
 Add these with `add "<Item>" -Start <s> -End <e> -Category <cat> [-Project <proj>]`.
