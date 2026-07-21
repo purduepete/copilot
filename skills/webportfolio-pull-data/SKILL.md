@@ -49,7 +49,7 @@ Multiplier*).
 **Aliases the user might say:** "VADER", "the multiplier", "telegram data",
 "options watchlist data", "the substack data".
 
-**Two steps — ingest, then parse:**
+**Three steps — ingest, parse, then refresh tracked contracts:**
 
 ```powershell
 cd C:\Files\Dev\main\webportfolio
@@ -59,7 +59,19 @@ cd C:\Files\Dev\main\webportfolio
 
 # 2. Parse newly-ingested messages into telegram_signal
 .\telegram_ingest\.venv\Scripts\python.exe .\telegram_ingest\parse_signals.py
+
+# 3. Register any NEW active CSP contracts for forward-price tracking
+.\telegram_ingest\.venv\Scripts\python.exe .\telegram_ingest\refresh_tracked_contracts.py
 ```
+
+**Step 3 is not optional.** `refresh_tracked_contracts.py` MERGEs the distinct
+active CSP contracts from `telegram_signal` into `telegram_tracked_contract`
+(idempotent upsert, no DDL). If you skip it, the day's new contracts never get
+tracked, so:
+- the 1:15pm forward-price capture won't price them, and
+- the 1:25pm **signal-outcomes rollup FK-fails** (`FK_telegram_signal_outcome_contract`)
+  and the **whole batch rolls back** — the Signal Outcomes page silently stops
+  updating. (This exact miss broke the rollup on 2026-07-20.)
 
 Then the user clicks **Load from The Multiplier** on the Options Watchlist page
 (the endpoint `GET /api/telegram-signals/latest-csp` returns the single most
@@ -81,6 +93,7 @@ recent `report_date`).
 | Parse only, write nothing | `parse_signals.py --dry-run` |
 | Re-parse EVERY message (after a parser change) | `parse_signals.py --all` |
 | Parse a single message | `parse_signals.py --message-id <id>` |
+| Preview tracked-contract refresh, write nothing | `refresh_tracked_contracts.py --dry-run` |
 
 **Reporting after a pull** — surface: messages fetched/inserted/updated, signals
 parsed, and the **latest `report_date` before vs after** so the user can see
