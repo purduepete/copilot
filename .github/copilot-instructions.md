@@ -21,7 +21,7 @@ none exists by design.
   pwsh -File C:\Files\Dev\main\copilot\skills\Install-Skills.ps1
   ```
 - `Install-Skills.ps1` also links skills from `$ExtraSkillRepos` (e.g. the confidential
-  `FDE_Revenue_Bedrock\.github\skills`) **only if that path exists** locally — so a
+  `bedrock_analysis\skills`) **only if that path exists** locally — so a
   machine without that repo simply skips it.
 - The CLI reads skills at startup, so tell the user to run `/restart` after any skill
   change for it to take effect.

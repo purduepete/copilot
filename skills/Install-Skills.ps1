@@ -30,7 +30,7 @@ param(
     # Additional skill source folders from other repos. Each is linked only if the
     # local path exists (the repo may not be cloned on every machine).
     [string[]]$ExtraSkillRepos = @(
-        'C:\Files\Dev\msft\FDE_Revenue_Bedrock\.github\skills'
+        'C:\Files\Dev\msft\bedrock_analysis\skills'
     )
 )
 
