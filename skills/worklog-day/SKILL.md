@@ -5,8 +5,9 @@ description: >-
   whether today's start-of-day marker already exists (idempotent — never double-mark), run
   startday. HIGHLIGHTS: generate a concise (<=2 line) specific day recap from the day's
   sessions and save it as the day's commentary. END: use Get-DayClose to find blockers,
-  resolve each with confirmation (stop running task, fill untracked gaps, normalize
-  projects, set the day summary), then run endday once ready.
+  resolve each with confirmation (stop running task, fill untracked gaps, record a
+  per-task accomplishment on each work/meeting entry, normalize projects, set summary),
+  then endday once ready.
   WHEN: "start of day", "start of work day", "start my work day", "begin my work day",
   "startday", "open my work day", "clock in", "I'm starting work", "mark start of day",
   "generate today's highlights", "write my highlights", "summarize my day", "day
@@ -191,6 +192,25 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   This resolves the `summarySet:false` blocker too, but do it even when
   `summarySet` is already `true` so the highlights aren't stale.
 
+- **Per-task accomplishments (MANDATORY — before endday):** every **work** entry
+  (categories other than `lunch`/`personal`/the `Day` markers — e.g. `development`,
+  `meeting`, `review`, `admin`) **must** carry a non-empty `accomplishment`. This is
+  required, not optional: a work/meeting entry with an empty accomplishment is a
+  blocker. List today's entries and inspect each `accomplishment` field:
+  ```powershell
+  $d = pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 state -Profile work | ConvertFrom-Json
+  $d.sessions | Where-Object { $_.start -like "$day*" -and $_.category -notin @('lunch','personal','Day') } |
+    Sort-Object start | ForEach-Object { "id=$($_.id) [$($_.category)] acc='$($_.accomplishment)'" }
+  ```
+  For each work/meeting entry with an empty `accomplishment`, write a concrete
+  one-line outcome (what shipped/decided/was explored — not a restatement of the
+  title) and set it:
+  ```powershell
+  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Accomplishment "<concrete outcome>"
+  ```
+  Confirm the wording with the user when you can't infer a specific outcome. Never
+  leave a work/meeting entry with a blank accomplishment.
+
 - **Normalize projects (always, before endday):** any of today's **work** entries
   with **no project** gets **`project = n/a`** — no need to ask. **Skip non-work /
   divider rows** (categories `lunch`, `personal`, and the `Day` start/end markers) —
@@ -213,6 +233,10 @@ Then give a one-line confirmation (day closed, total tracked, summary).
 **End notes**
 - `Get-DayClose.ps1` thresholds: gaps count at **>= 10 min**; a **day summary is
   required** for readiness (by design).
+- **Accomplishments are skill-enforced, not tool-enforced:** `Get-DayClose.ps1` does
+  **not** currently flag empty accomplishments, so `ready:true` alone is not
+  sufficient — you must manually verify every work/meeting entry has a non-empty
+  accomplishment (step 2) before running `endday`.
 - Tasks must fall within the start..end day boundary — don't add entries outside it.
 - This is the same routine the 6 PM scheduled check (#1) offers; running it
   on-demand is identical.
