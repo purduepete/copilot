@@ -89,8 +89,9 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
      only then run the command. If you ever create an entry without one, treat it as an
      error and back-fill immediately. After any write, verify the project persisted
      (`search`/`log`) and back-fill it if missing. **Exemptions:** the 0-minute
-     day-markers (`startday`/`endday`) need no project. **Lunch/breaks** take project
-     **`n/a`**. **Any commute** takes category **`travel`** (and project `work` unless
+     day-markers (`startday`/`endday`) need no project. **Lunch/breaks and `personal`
+     entries** (e.g. "Away from work") take project **`n/a`** — never blank. **Any
+     commute** takes category **`travel`** (and project `work` unless
      the user says otherwise).
 4. **Verify before/after — confirm the data actually persisted.** Run `status` first when
    context is unclear; after a write, the command echoes the entry id (e.g. `+ Added #37`).

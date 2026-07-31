@@ -173,10 +173,10 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   (Add `-At "<yyyy-MM-dd HH:mm>"` to back-date the stop.)
 
 - **Untracked gaps** (`gaps[]`): by default, fill **every** untracked gap as a
-  single non-work entry titled **"Away from work"** with **category `personal`**
-  — no need to ask per gap:
+  single non-work entry titled **"Away from work"** with **category `personal`** and
+  **project `n/a`** — no need to ask per gap:
   ```powershell
-  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add -Text "Away from work" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category personal
+  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add -Text "Away from work" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category personal -Project "n/a"
   ```
   Only diverge from this default if the user has already told you what a specific
   gap was (then use that title/category instead). Never invent billable work.
@@ -211,12 +211,12 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   Confirm the wording with the user when you can't infer a specific outcome. Never
   leave a work/meeting entry with a blank accomplishment.
 
-- **Normalize projects (always, before endday):** any of today's **work** entries
-  with **no project** gets **`project = n/a`** — no need to ask. **Skip non-work /
-  divider rows** (categories `lunch`, `personal`, and the `Day` start/end markers) —
-  those legitimately have no project and should be left untouched. List today via
-  `wl.ps1 state` (filter `sessions` to today, excluding those categories), then for
-  each remaining projectless id:
+- **Normalize projects (always, before endday):** any of today's entries with **no
+  project** gets **`project = n/a`** — no need to ask. This includes **`lunch` and
+  `personal`** rows: they must carry `n/a` rather than a blank project. **Only the
+  `Day` start/end markers are exempt** — those legitimately stay blank. List today via
+  `wl.ps1 state` (filter `sessions` to today, excluding only the `Day` category), then
+  for each remaining projectless id:
   ```powershell
   pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Project "n/a"
   ```
