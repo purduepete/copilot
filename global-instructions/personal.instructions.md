@@ -47,6 +47,19 @@ Gemini" is satisfied by invoking a Gemini model above.
 - **Before creating a PR, show an HTML of all changed files** (dark/light themed, per
   the communication-style rules above). Present it and let @jimb review the change set
   *before* the PR is opened — not after.
+- **Reviewers: Jesus Anaya Valdes and Rodrigo Cadena only, and both REQUIRED.** Do not add
+  anyone else as an approver, and never leave a reviewer optional. `az repos pr reviewer add`
+  creates *optional* reviewers, so set `isRequired` afterwards via the REST API:
+  `PUT .../pullRequests/<id>/reviewers/<reviewerId>?api-version=7.1` with
+  `{"isRequired": true, "id": "<reviewerId>"}`. Verify with
+  `az repos pr show --query "reviewers[].{name:displayName, required:isRequired}"`.
+- **After creating a PR, always check its comment threads** — don't assume a fresh PR has
+  none. The `GitOps` **PR Assistant** posts an automated AI code review within a minute or
+  two, and it **also rewrites the PR description** with its own generated summary, silently
+  discarding whatever description was set at creation. So: re-read the description after it
+  runs and restore it if it was clobbered, and triage its review threads (they carry a
+  severity, and the high-severity ones are often legitimate). Fetch threads via
+  `GET .../pullRequests/<id>/threads?api-version=7.1` and filter out `commentType == "system"`.
 
 ## Commits
 
