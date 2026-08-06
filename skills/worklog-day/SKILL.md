@@ -208,6 +208,15 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   ```powershell
   pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Accomplishment "<concrete outcome>"
   ```
+  **Hard cap: 50 words.** This mirrors the `worklog` skill's session-logging rule and
+  applies to *every* accomplishment, however it was created. Lead with the outcome
+  (what shipped / what was decided / what was proven), name the artifact or commit,
+  and stop — cut the narrative of how you got there.
+
+  > **Do not infer the length from the entries already in the log.** Existing
+  > accomplishments frequently run 60–130 words; matching that house style is the
+  > single most common way this cap gets broken. The rule wins over the precedent.
+
   Confirm the wording with the user when you can't infer a specific outcome. Never
   leave a work/meeting entry with a blank accomplishment.
 
