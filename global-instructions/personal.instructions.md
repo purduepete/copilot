@@ -42,6 +42,12 @@ Gemini" is satisfied by invoking a Gemini model above.
 - **For any HTML you produce, include both a dark and a light theme** (with a way to
   toggle / respect the system preference).
 
+## Pull requests
+
+- **Before creating a PR, show an HTML of all changed files** (dark/light themed, per
+  the communication-style rules above). Present it and let @jimb review the change set
+  *before* the PR is opened — not after.
+
 ## Commits
 
 Include the trailer on commits:
