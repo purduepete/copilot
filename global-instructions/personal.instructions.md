@@ -61,6 +61,42 @@ Gemini" is satisfied by invoking a Gemini model above.
   severity, and the high-severity ones are often legitimate). Fetch threads via
   `GET .../pullRequests/<id>/threads?api-version=7.1` and filter out `commentType == "system"`.
 
+## Naming conventions
+
+**Fabric notebooks** (the `FDE_Revenue_Bedrock` data platform) are named:
+
+```
+nb_<layer>_<solution>_<schema>_<entity>
+```
+
+e.g. `nb_silver_arr_revenue_nuancearr`, `nb_silver_arr_bridge_nonearemaining`,
+`nb_silver_arr_dim_tenant`. Rules:
+
+- **Solution comes before schema.** `arr` leads, so every notebook belonging to a
+  solution sorts together in the folder listing regardless of which schema it writes
+  to. It is `nb_silver_arr_revenue_…`, never `nb_silver_revenue_…_arr`.
+- **Never repeat a token.** If the solution is `arr`, the entity does not carry `arr`
+  again — `nb_silver_arr_bridge_nonearemaining`, not
+  `nb_silver_arr_bridge_arr_nonearemaining`, even when the legacy p32 source object
+  is named `ARR_BRIDGE_ARR_NonEARemaining`. Don't inherit redundancy from the source.
+- **Drop the `fact` token.** It adds nothing the schema and entity don't already say.
+  `nb_silver_arr_revenue_wwicquotatarget`, not `nb_silver_revenue_fact_arr_wwicquotatarget`.
+- The **folder** (`<name>.Notebook`), the **`displayName`** in its `.platform`, and any
+  self-reference in the notebook body must all agree. A rename that updates only the
+  folder leaves Fabric showing the old name.
+
+**Renaming a notebook** — always `git mv` the `.Notebook` folder (so git records a
+rename `R` rather than a delete + add), update `displayName`, and **keep `logicalId`
+unchanged**. The `logicalId` is what makes Fabric treat it as a rename instead of a
+delete-and-recreate, which preserves the item's run history. Then grep the whole repo
+for the old name — pipelines and `%run` references won't follow a folder rename.
+
+**`.platform` manifests are LF**, like everything else in the tree. Watch for a CRLF
+manifest sneaking in: it shows up as a whole-file rewrite in `git diff --numstat`
+(e.g. `12  12` for a 12-line file) instead of the one or two lines actually changed.
+Normalize with `[IO.File]::WriteAllText($p, $t -replace "\r\n","\n")` and re-check the
+numstat before committing.
+
 ## Commits
 
 Include the trailer on commits:
