@@ -32,6 +32,24 @@ not a separate external CLI. Use these model IDs:
 The `## Preferences` rule that DB-altering changes "require a second opinion from
 Gemini" is satisfied by invoking a Gemini model above.
 
+### Route cheap work to a cheap model
+
+Don't burn a premium model on a task that doesn't need one. You **cannot** change your
+own model mid-session — only I can, via `/model` — but you *can* delegate the expensive
+part: hand the bulk reading to a sub-agent with a `model` override and spend premium
+tokens only on the final synthesis.
+
+| Kind of work | Model |
+|---|---|
+| Read-only Q&A, doc/repo lookups, summarizing existing files, "what does X say / where does Y live" | Delegate to `explore`, or a `task` sub-agent overridden to `gemini-3.5-flash` / `gpt-5.4-mini` / `claude-haiku-4.5` |
+| Code changes, debugging, architecture & design judgment, PR review, anything touching a live DB | Keep the premium model |
+
+Rule of thumb — if the task is read-only, the answer already exists in docs or config,
+and no cross-file reasoning about *behavior* is required, delegate it. Producing a
+substantial artifact from what was read (e.g. a themed HTML report) still justifies the
+premium model for that step. When it's genuinely borderline, delegate and check the
+result rather than defaulting to expensive.
+
 ## Communication style
 
 - **Be concise; lead with the answer, minimal preamble.**
