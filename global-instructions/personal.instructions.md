@@ -3,7 +3,7 @@
 Shared across **all** repositories and machines. The canonical copy lives in the
 `copilot` repo at `global-instructions\personal.instructions.md` and is linked into
 `%USERPROFILE%\.copilot\instructions\` by `skills\Install-Skills.ps1` (directory
-junction — no admin required). Edit here, commit/push, then `git pull` on other
+junction, no admin required). Edit here, commit/push, then `git pull` on other
 machines to sync. Repo-specific rules still belong in each repo's
 `.github/copilot-instructions.md`, which take precedence for that repo.
 
@@ -18,17 +18,17 @@ machines to sync. Repo-specific rules still belong in each repo's
   to local time before showing them, and label them as local.
 - **Anything that alters a database** (schema migrations, data-fix scripts, or any
   write/DDL against a live DB) **requires a second opinion from ChatGPT** before it is
-  run — get ChatGPT to review the change first, then proceed (see `## Models`).
+  run. Get ChatGPT to review the change first, then proceed (see `## Models`).
 
 ## Models
 
 When I want a **second opinion, accuracy review, or cross-check**, run it through a
-**ChatGPT** model — invoked as a review sub-agent with a model override,
+**ChatGPT** model, invoked as a review sub-agent with a model override,
 not a separate external CLI. Use these model IDs:
 
-- **ChatGPT (default for all reviews)** — `gpt-5.5` (default), `gpt-5.4`, or
+- **ChatGPT (default for all reviews)**: `gpt-5.5` (default), `gpt-5.4`, or
   `gpt-5.3-codex` (code-focused).
-- **Gemini** — `gemini-3.1-pro-preview` (deep review) or `gemini-3.5-flash` (fast).
+- **Gemini**: `gemini-3.1-pro-preview` (deep review) or `gemini-3.5-flash` (fast).
   Use only if I explicitly ask for Gemini.
 
 The `## Preferences` rule that DB-altering changes "require a second opinion from
@@ -37,7 +37,7 @@ ChatGPT" is satisfied by invoking a ChatGPT model above.
 ### Route cheap work to a cheap model
 
 Don't burn a premium model on a task that doesn't need one. You **cannot** change your
-own model mid-session — only I can, via `/model` — but you *can* delegate the expensive
+own model mid-session (only I can, via `/model`), but you *can* delegate the expensive
 part: hand the bulk reading to a sub-agent with a `model` override and spend premium
 tokens only on the final synthesis.
 
@@ -46,18 +46,18 @@ tokens only on the final synthesis.
 | Read-only Q&A, doc/repo lookups, summarizing existing files, "what does X say / where does Y live" | Delegate to `explore`, or a `task` sub-agent overridden to `gemini-3.5-flash` / `gpt-5.4-mini` / `claude-haiku-4.5` |
 | Code changes, debugging, architecture & design judgment, PR review, anything touching a live DB | Keep the premium model |
 
-Rule of thumb — if the task is read-only, the answer already exists in docs or config,
+Rule of thumb: if the task is read-only, the answer already exists in docs or config,
 and no cross-file reasoning about *behavior* is required, delegate it. Producing a
 substantial artifact from what was read (e.g. a themed HTML report) still justifies the
 premium model for that step. When it's genuinely borderline, delegate and check the
 result rather than defaulting to expensive.
 
-## Long-running jobs — the 5-minute rule
+## Long-running jobs: the 5-minute rule
 
 Written after a **2.5-hour stall** (2026-08-09): a Spark diff was launched through a
 runner that printed nothing until completion, on a session Fabric had silently sized at
 **1 executor / 8 cores** while the job it validated ran on **384 cores**. It was only
-caught because I asked. Wasted time is unaffordable — these are hard rules, not
+caught because I asked. Wasted time is unaffordable. These are hard rules, not
 suggestions.
 
 **Before launching anything expected to take >5 minutes:**
@@ -77,14 +77,14 @@ suggestions.
 
 **While it runs:**
 
-5. **No black boxes. A long job must emit a heartbeat** with elapsed time — if the
+5. **No black boxes. A long job must emit a heartbeat** with elapsed time. If the
    runner can't stream progress, add that first. Remote APIs that only return output at
    completion (e.g. Livy statements) need an explicit poll-and-print loop.
 6. **Polling is not progress.** Repeatedly waiting on a silent job is not work. If two
    consecutive checks show no new information, **stop waiting and start diagnosing.**
 7. **Breach the threshold → abort and investigate.** Do not extend the wait. Kill it,
    find out why, fix it, relaunch. "It's probably almost done" is not evidence.
-8. **Tell @jimb as soon as something exceeds its estimate** — don't absorb the delay
+8. **Tell @jimb as soon as something exceeds its estimate**, and don't absorb the delay
    silently. A 10-minute heads-up is worth hours.
 
 **Efficiency, before hitting run:**
@@ -92,15 +92,22 @@ suggestions.
 9. **Minimise full passes over large data.** Fuse aggregations into a single scan rather
    than one scan per check; prune to the columns actually needed.
 10. **Don't `cache()` anything that won't comfortably fit in memory.** On wide,
-    hundred-million-row frames it forces spill *and* defeats columnar pruning — reading
+    hundred-million-row frames it forces spill *and* defeats columnar pruning. Reading
     the source twice is usually faster.
 
 ## Communication style
 
+- **Writing rules live in `writing-style.instructions.md`** (same folder, loaded every
+  session). It covers voice, banned vocabulary and phrase shapes, the negative-parallelism
+  ban, and analogy limits. It applies to everything: chat, commits, PR text, work items,
+  reports, and code comments. The source of truth is
+  `G:\My Drive\ai\anti-ai-writing-style.md`; re-run `copilot\tools\Sync-WritingStyle.ps1`
+  after editing it. Two rules I get wrong most often: **no em dashes**, and **bold at most
+  1 or 2 moments per section**.
 - **Be concise; lead with the answer, minimal preamble.**
 - **Plan first, then implement.** I don't do well when work jumps straight to
-  implementation — lay out a short plan and let me confirm before you build.
-- **I'm a visual person — dense text is not great.** HTML is by far the best way to
+  implementation. Lay out a short plan and let me confirm before you build.
+- **I'm a visual person, and dense text is not great.** HTML is by far the best way to
   share information; prefer it for anything substantial.
 - **For any HTML you produce, include both a dark and a light theme** (with a way to
   toggle / respect the system preference).
@@ -109,14 +116,14 @@ suggestions.
 
 - **Before creating a PR, show an HTML of all changed files** (dark/light themed, per
   the communication-style rules above). Present it and let @jimb review the change set
-  *before* the PR is opened — not after.
+  *before* the PR is opened, not after.
 - **Reviewers: Jesus Anaya Valdes and Rodrigo Cadena only, and both REQUIRED.** Do not add
   anyone else as an approver, and never leave a reviewer optional. `az repos pr reviewer add`
   creates *optional* reviewers, so set `isRequired` afterwards via the REST API:
   `PUT .../pullRequests/<id>/reviewers/<reviewerId>?api-version=7.1` with
   `{"isRequired": true, "id": "<reviewerId>"}`. Verify with
   `az repos pr show --query "reviewers[].{name:displayName, required:isRequired}"`.
-- **After creating a PR, always check its comment threads** — don't assume a fresh PR has
+- **After creating a PR, always check its comment threads**. Don't assume a fresh PR has
   none. The `GitOps` **PR Assistant** posts an automated AI code review within a minute or
   two, and it **also rewrites the PR description** with its own generated summary, silently
   discarding whatever description was set at creation. So: re-read the description after it
@@ -139,7 +146,7 @@ e.g. `nb_silver_arr_revenue_nuancearr`, `nb_silver_arr_bridge_nonearemaining`,
   solution sorts together in the folder listing regardless of which schema it writes
   to. It is `nb_silver_arr_revenue_…`, never `nb_silver_revenue_…_arr`.
 - **Never repeat a token.** If the solution is `arr`, the entity does not carry `arr`
-  again — `nb_silver_arr_bridge_nonearemaining`, not
+  again. Write `nb_silver_arr_bridge_nonearemaining`, not
   `nb_silver_arr_bridge_arr_nonearemaining`, even when the legacy p32 source object
   is named `ARR_BRIDGE_ARR_NonEARemaining`. Don't inherit redundancy from the source.
 - **Drop the `fact` token.** It adds nothing the schema and entity don't already say.
@@ -148,11 +155,11 @@ e.g. `nb_silver_arr_revenue_nuancearr`, `nb_silver_arr_bridge_nonearemaining`,
   self-reference in the notebook body must all agree. A rename that updates only the
   folder leaves Fabric showing the old name.
 
-**Renaming a notebook** — always `git mv` the `.Notebook` folder (so git records a
+**Renaming a notebook**: always `git mv` the `.Notebook` folder (so git records a
 rename `R` rather than a delete + add), update `displayName`, and **keep `logicalId`
 unchanged**. The `logicalId` is what makes Fabric treat it as a rename instead of a
 delete-and-recreate, which preserves the item's run history. Then grep the whole repo
-for the old name — pipelines and `%run` references won't follow a folder rename.
+for the old name, because pipelines and `%run` references won't follow a folder rename.
 
 **`.platform` manifests are LF**, like everything else in the tree. Watch for a CRLF
 manifest sneaking in: it shows up as a whole-file rewrite in `git diff --numstat`
