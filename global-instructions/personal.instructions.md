@@ -17,20 +17,22 @@ machines to sync. Repo-specific rules still belong in each repo's
   stores timestamps in UTC (e.g. the Copilot session store's `created_at`), convert
   to local time before showing them, and label them as local.
 - **Anything that alters a database** (schema migrations, data-fix scripts, or any
-  write/DDL against a live DB) **requires a second opinion from Gemini** before it is
-  run — get Gemini to review the change first, then proceed (see `## Models`).
+  write/DDL against a live DB) **requires a second opinion from ChatGPT** before it is
+  run — get ChatGPT to review the change first, then proceed (see `## Models`).
 
 ## Models
 
 When I want a **second opinion, accuracy review, or cross-check**, run it through a
-**Gemini** or **ChatGPT** model — invoked as a review sub-agent with a model override,
+**ChatGPT** model — invoked as a review sub-agent with a model override,
 not a separate external CLI. Use these model IDs:
 
+- **ChatGPT (default for all reviews)** — `gpt-5.5` (default), `gpt-5.4`, or
+  `gpt-5.3-codex` (code-focused).
 - **Gemini** — `gemini-3.1-pro-preview` (deep review) or `gemini-3.5-flash` (fast).
-- **ChatGPT** — `gpt-5.5` (default), `gpt-5.4`, or `gpt-5.3-codex` (code-focused).
+  Use only if I explicitly ask for Gemini.
 
 The `## Preferences` rule that DB-altering changes "require a second opinion from
-Gemini" is satisfied by invoking a Gemini model above.
+ChatGPT" is satisfied by invoking a ChatGPT model above.
 
 ### Route cheap work to a cheap model
 
@@ -49,6 +51,49 @@ and no cross-file reasoning about *behavior* is required, delegate it. Producing
 substantial artifact from what was read (e.g. a themed HTML report) still justifies the
 premium model for that step. When it's genuinely borderline, delegate and check the
 result rather than defaulting to expensive.
+
+## Long-running jobs — the 5-minute rule
+
+Written after a **2.5-hour stall** (2026-08-09): a Spark diff was launched through a
+runner that printed nothing until completion, on a session Fabric had silently sized at
+**1 executor / 8 cores** while the job it validated ran on **384 cores**. It was only
+caught because I asked. Wasted time is unaffordable — these are hard rules, not
+suggestions.
+
+**Before launching anything expected to take >5 minutes:**
+
+1. **State an estimate and an abort threshold, out loud, before starting.**
+   "I expect this to take ~4 min; if it passes 12 min (3×) I will stop and diagnose."
+   Without a pre-declared number there is nothing to notice a breach against.
+2. **Verify the resources actually granted match what was requested.** Cloud schedulers
+   silently downsize. Read the allocation back and **fail closed** if it's short. Never
+   assume a session/pool/cluster gave you what you asked for.
+3. **Sanity-check the work against the compute.** Roughly: how much data, how many
+   passes, on how many cores? If the arithmetic doesn't support the estimate, fix the
+   job before launching, not after.
+4. **Right-size the tool for the job.** A helper written for a metadata operation
+   (dropping a table) is not automatically fit for a billion-row scan. Re-check its
+   sizing assumptions whenever it's reused at a different scale.
+
+**While it runs:**
+
+5. **No black boxes. A long job must emit a heartbeat** with elapsed time — if the
+   runner can't stream progress, add that first. Remote APIs that only return output at
+   completion (e.g. Livy statements) need an explicit poll-and-print loop.
+6. **Polling is not progress.** Repeatedly waiting on a silent job is not work. If two
+   consecutive checks show no new information, **stop waiting and start diagnosing.**
+7. **Breach the threshold → abort and investigate.** Do not extend the wait. Kill it,
+   find out why, fix it, relaunch. "It's probably almost done" is not evidence.
+8. **Tell @jimb as soon as something exceeds its estimate** — don't absorb the delay
+   silently. A 10-minute heads-up is worth hours.
+
+**Efficiency, before hitting run:**
+
+9. **Minimise full passes over large data.** Fuse aggregations into a single scan rather
+   than one scan per check; prune to the columns actually needed.
+10. **Don't `cache()` anything that won't comfortably fit in memory.** On wide,
+    hundred-million-row frames it forces spill *and* defeats columnar pruning — reading
+    the source twice is usually faster.
 
 ## Communication style
 
