@@ -25,18 +25,18 @@ machines to sync. Repo-specific rules still belong in each repo's
 ## Models
 
 When I want a **second opinion, accuracy review, or cross-check**, invoke a review
-sub-agent with a model override, not a separate external CLI. Prefer a model from a
-different provider than the primary model so the review is less likely to repeat the
-same assumptions.
+sub-agent with a model override, not a separate external CLI. **The reviewer must
+come from a different model family/provider than the primary model** so it is less
+likely to repeat the same assumptions: GPT/ChatGPT primary → Claude or Gemini;
+Claude primary → GPT/ChatGPT or Gemini; Gemini primary → GPT/ChatGPT or Claude.
 
 - **Claude Sonnet 4.6** (`claude-sonnet-4.6`): default for strong reasoning, code
   review, architecture, and higher-stakes validation.
 - **Gemini 3.5 Flash** (`gemini-3.5-flash`): default for fast, cost-effective checks,
   large-context reading, and routine validation.
 
-When the primary model is ChatGPT, use Claude or Gemini for validation. Same-family
-ChatGPT review is acceptable only for routine checks where provider diversity does not
-matter.
+Never use the same model family as the primary for an independent review, including
+routine checks.
 
 The `## Preferences` rule for DB-altering changes is satisfied by an independent
 review from Claude Sonnet 4.6 or Gemini 3.5 Flash.

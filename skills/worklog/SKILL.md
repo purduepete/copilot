@@ -157,9 +157,9 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
 11. **Routine WorkLog writes do not require independent model review.** Run `start`,
     `stop`, `add`, `edit`, `switch`, `startday`, `endday`, `summary`, `tasknote`, `note`,
     and miner `-Create` operations directly after the normal overlap, bounds, project, and
-    persistence checks above. **Explicit deletion/removal still requires review before the
-    write:** `delete -Id`, `note -Remove`, or another command whose requested effect is to
-    remove stored WorkLog data.
+    persistence checks above. **Explicit deletion/removal still requires a different-family
+    independent review before the write:** `delete -Id`, `note -Remove`, or another command
+    whose requested effect is to remove stored WorkLog data.
 
 ## Phrase triggers
 
