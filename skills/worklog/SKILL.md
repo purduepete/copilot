@@ -241,8 +241,9 @@ Natural-language phrases that map to specific actions:
   any write is visible on refresh — there is no HTML file to regenerate.
 - **Data caveat.** In the stored state, `current` must be a **scalar session id or `null`**,
   never `[]` — an empty array breaks `Stop-Work`.
-- **Calendar (work machine only).** Only read the Outlook calendar when `$env:COMPUTERNAME`
-  starts with `xfinjimb` (the work computer); otherwise skip it. See the `calendar` skill.
+- **Calendar (approved machines only).** Only read the Outlook calendar when
+  `$env:COMPUTERNAME` starts with `xfinjimb` or `CPC-jimb-M4XXG`; otherwise skip it.
+  See the `calendar` skill.
 
 ## Common recurring tasks
 
