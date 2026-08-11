@@ -38,6 +38,13 @@ Claude primary → GPT/ChatGPT or Gemini; Gemini primary → GPT/ChatGPT or Clau
 Never use the same model family as the primary for an independent review, including
 routine checks.
 
+When 2 or more independent reviews are requested, every reviewer must also come from
+a different model family/provider than every other reviewer. Different variants from
+one family do not count as independent families: Sonnet plus Opus counts as Claude,
+and two GPT versions count as GPT. For two reviews, route GPT primary to Claude plus
+Gemini, Claude primary to GPT plus Gemini, and Gemini primary to GPT plus Claude.
+Record the exact model and verdict for every validation.
+
 The `## Preferences` rule for DB-altering changes is satisfied by an independent
 review from Claude Sonnet 4.6 or Gemini 3.5 Flash.
 
