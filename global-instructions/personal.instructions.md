@@ -17,22 +17,27 @@ machines to sync. Repo-specific rules still belong in each repo's
   stores timestamps in UTC (e.g. the Copilot session store's `created_at`), convert
   to local time before showing them, and label them as local.
 - **Anything that alters a database** (schema migrations, data-fix scripts, or any
-  write/DDL against a live DB) **requires a second opinion from ChatGPT** before it is
-  run. Get ChatGPT to review the change first, then proceed (see `## Models`).
+  write/DDL against a live DB) **requires an independent model review** before it is
+  run. Use the validation models below, then proceed (see `## Models`).
 
 ## Models
 
-When I want a **second opinion, accuracy review, or cross-check**, run it through a
-**ChatGPT** model, invoked as a review sub-agent with a model override,
-not a separate external CLI. Use these model IDs:
+When I want a **second opinion, accuracy review, or cross-check**, invoke a review
+sub-agent with a model override, not a separate external CLI. Prefer a model from a
+different provider than the primary model so the review is less likely to repeat the
+same assumptions.
 
-- **ChatGPT (default for all reviews)**: `gpt-5.5` (default), `gpt-5.4`, or
-  `gpt-5.3-codex` (code-focused).
-- **Gemini**: `gemini-3.1-pro-preview` (deep review) or `gemini-3.5-flash` (fast).
-  Use only if I explicitly ask for Gemini.
+- **Claude Sonnet 4.6** (`claude-sonnet-4.6`): default for strong reasoning, code
+  review, architecture, and higher-stakes validation.
+- **Gemini 3.5 Flash** (`gemini-3.5-flash`): default for fast, cost-effective checks,
+  large-context reading, and routine validation.
 
-The `## Preferences` rule that DB-altering changes "require a second opinion from
-ChatGPT" is satisfied by invoking a ChatGPT model above.
+When the primary model is ChatGPT, use Claude or Gemini for validation. Same-family
+ChatGPT review is acceptable only for routine checks where provider diversity does not
+matter.
+
+The `## Preferences` rule for DB-altering changes is satisfied by an independent
+review from Claude Sonnet 4.6 or Gemini 3.5 Flash.
 
 ### Route cheap work to a cheap model
 
