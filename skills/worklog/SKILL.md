@@ -154,6 +154,12 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
     same new id**, e.g. both `Added #82`). Always **await each write and verify it persisted
     (`log -Days 1`) before issuing the next.** Reads (`log`, `status`, `search`, the miners
     without `-Create`, `Suggest-*`) are safe to parallelize.
+11. **Routine WorkLog writes do not require independent model review.** Run `start`,
+    `stop`, `add`, `edit`, `switch`, `startday`, `endday`, `summary`, `tasknote`, `note`,
+    and miner `-Create` operations directly after the normal overlap, bounds, project, and
+    persistence checks above. **Explicit deletion/removal still requires review before the
+    write:** `delete -Id`, `note -Remove`, or another command whose requested effect is to
+    remove stored WorkLog data.
 
 ## Phrase triggers
 

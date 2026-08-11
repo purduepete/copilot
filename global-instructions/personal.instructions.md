@@ -18,7 +18,9 @@ machines to sync. Repo-specific rules still belong in each repo's
   to local time before showing them, and label them as local.
 - **Anything that alters a database** (schema migrations, data-fix scripts, or any
   write/DDL against a live DB) **requires an independent model review** before it is
-  run. Use the validation models below, then proceed (see `## Models`).
+  run. Use the validation models below, then proceed (see `## Models`). **WorkLog is
+  exempt for routine writes** (`start`, `stop`, `add`, `edit`, day markers, summaries,
+  and notes); only an explicit WorkLog deletion/removal requires review.
 
 ## Models
 
