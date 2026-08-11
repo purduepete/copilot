@@ -124,6 +124,15 @@ suggestions.
 - **Before creating a PR, show an HTML of all changed files** (dark/light themed, per
   the communication-style rules above). Present it and let @jimb review the change set
   *before* the PR is opened, not after.
+- **Keep changed-files review HTML consistent with the `webapp-style` skill and recent
+  ARR status reports.** Use the squared, dark-first visual system with a light theme,
+  system preference support, persisted theme toggle, and Lucide-style stroke icons.
+  Generate it from the exact reviewed `origin/main...HEAD`, then show the branch, HEAD,
+  local generation time, commit and file counts, review decision, validation evidence,
+  change intent, and work still pending. Group files by purpose and list every changed
+  file with a plain-language summary plus its full searchable, expandable patch. Include
+  expand-all and collapse-all controls. Regenerate and reopen the report whenever HEAD
+  changes. Do not fall back to the rounded, light-first raw-diff template.
 - **Reviewers: Jesus Anaya Valdes and Rodrigo Cadena only, and both REQUIRED.** Do not add
   anyone else as an approver, and never leave a reviewer optional. `az repos pr reviewer add`
   creates *optional* reviewers, so set `isRequired` afterwards via the REST API:
