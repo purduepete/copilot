@@ -32,8 +32,14 @@ Claude primary → GPT/ChatGPT or Gemini; Gemini primary → GPT/ChatGPT or Clau
 
 - **Claude Sonnet 4.6** (`claude-sonnet-4.6`): default for strong reasoning, code
   review, architecture, and higher-stakes validation.
-- **Gemini 3.5 Flash** (`gemini-3.5-flash`): default for fast, cost-effective checks,
-  large-context reading, and routine validation.
+- **Claude Haiku 4.5** (`claude-haiku-4.5`): default for fast, narrow independent
+  checks and routine validation when the primary model is not Claude.
+- **Gemini 3.5 Flash** (`gemini-3.5-flash`): fast validation when the primary model
+  is Claude, and large-context reading.
+
+A narrow validation gets 60 seconds. Ask for a verdict from the supplied evidence
+without extra investigation or tool calls. If it has not returned after 60 seconds,
+request an immediate verdict and stop waiting.
 
 Never use the same model family as the primary for an independent review, including
 routine checks.
@@ -46,7 +52,8 @@ Gemini, Claude primary to GPT plus Gemini, and Gemini primary to GPT plus Claude
 Record the exact model and verdict for every validation.
 
 The `## Preferences` rule for DB-altering changes is satisfied by an independent
-review from Claude Sonnet 4.6 or Gemini 3.5 Flash.
+review from Claude Sonnet 4.6, Claude Haiku 4.5, or Gemini 3.5 Flash, subject to the
+model-family rule above.
 
 ### Route cheap work to a cheap model
 
