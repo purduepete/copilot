@@ -183,15 +183,47 @@ item. Only precondition: the PR is approved and policies are green. DB/schema-
 affecting changes still need a Gemini second opinion first (@jimb's standing rule) —
 not relevant to doc/skill PRs.
 
+### Fabric branch deletion gate
+
+Before deleting any remote Bedrock branch, check whether a Fabric developer
+workspace is connected to it. For @jimb, resolve the exact workspace display name
+`FDE_Bedrock_Engine_jimb`, then read:
+
+```text
+GET /v1/workspaces/{workspaceId}/git/connection
+GET /v1/workspaces/{workspaceId}/git/status
+```
+
+If the connection names the branch being deleted:
+
+1. Refuse deletion when either Fabric read returns any non-200 response (including
+   `GitProviderResourceNotFound`, timeout, 404, or 5xx) or any workspace-side change exists.
+2. Switch the existing connection to `main` without disconnecting the workspace. There is
+   no verified REST endpoint for this operation in the current tooling: ask the user to switch
+   it in **Fabric → Workspace settings → Git integration**, then stop until they confirm.
+   Never improvise with `PATCH /git/connection`, and never disconnect/reconnect a branched
+   workspace.
+3. Run `updateFromGit` for the current remote `main` commit.
+4. Verify the connection names `main`, workspace and remote heads match, and workspace-side
+   changes are empty.
+5. Only then delete the remote branch.
+
+This gate also applies to manual cleanup requests outside PR completion. Never delete a
+branch first and assume Fabric will recover. A deleted connected branch leaves the
+workspace metadata on a missing ref and makes `git/status` return
+`GitProviderResourceNotFound`.
+
 ```powershell
-# Merge. Honour the PR's squash + delete-source-branch options explicitly.
-az repos pr update --id <prId> --org $Org --status completed --squash true --delete-source-branch true | Out-Null
+# Merge without automatic branch deletion.
+az repos pr update --id <prId> --org $Org --status completed --squash true --delete-source-branch false | Out-Null
 ```
 - **Completion is ASYNC** — `az` returns immediately with `mergeStatus=queued`.
   Re-query `az repos pr show --id <prId>` until `status=completed` /
   `mergeStatus=succeeded` (a `Start-Sleep 5-6` then re-check works).
-- `--delete-source-branch true` removes the **remote** branch on merge; confirm with
-  `git ls-remote origin <branch>` (empty = gone).
+- Run the Fabric branch deletion gate only after `mergeStatus=succeeded` is confirmed.
+- After the Fabric gate passes, delete the remote branch explicitly with
+  `git push origin --delete <branch>`, then confirm with `git ls-remote origin <branch>`
+  (empty = gone).
 - **Close the work item** (state names vary by type; Task/Bug use `Closed`):
   ```powershell
   az boards work-item update --id $TaskNum --org $Org --state "Closed" | Out-Null
