@@ -2,7 +2,6 @@
   "ide": {
     "autoConnect": true
   },
-  "model": "gpt-5.6-sol",
   "footer": {
     "showQuota": false
   },
