@@ -171,3 +171,29 @@ Plex API docs (Plexopedia):
   ```
   Always tell the user this recreates the playlist (new `ratingKey`) rather
   than editing it in place, and confirm before doing it.
+
+### Advanced filters (nested OR groups, `artist.id`/`album.id` exceptions)
+
+Plex's classic filter DSL supports boolean grouping via a stack-based
+`push=1`/`pop=1`/`and=1`/`or=1` syntax, e.g.:
+
+```
+...baseConditions...&and=1&push=1&push=1&condA&and=1&condB&pop=1&or=1&exceptionCond&pop=1
+```
+
+This is genuinely useful (e.g. "exclude genre X, except always include
+artist Y") and works correctly at the API/playback level. **But once a
+smart playlist's filter uses this push/pop grouping, or a field the visual
+rule builder doesn't know (e.g. `artist.id=<ratingKey>`), Plex's own
+"Edit Filters" UI can throw "Something went wrong / An unexpected error
+occurred"** instead of opening — it can't parse the filter back into its
+simple AND-only rule builder. This does not affect the playlist's
+playback, shuffle, or leafCount; it only blocks editing via Plex's UI.
+
+If asked to debug that error on a playlist that plays fine, check the
+saved filter for push/pop groups or non-standard fields before assuming
+corruption — this is expected behavior, not a bug. Ask the user whether to
+(a) keep the advanced filter and make future rule changes only via this
+skill/API, or (b) simplify it (drop the nested OR / non-standard field) to
+restore Plex-UI editability, accepting the loss of whatever exception it
+provided.
