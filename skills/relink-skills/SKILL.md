@@ -4,7 +4,7 @@ description: >-
   Re-link (junction) all of @jimb's personal skills into the Copilot CLI skills
   folder (~/.copilot/skills) by running Install-Skills.ps1, and sync the CLI's own
   settings.json / permissions-config.json across his computers via
-  Sync-CopilotSettings.ps1 (Status/Pull/Push). Self-healing: creates missing
+  Sync-CopilotSettings.ps1 (Status/Save/Apply). Self-healing: creates missing
   junctions, re-points stale ones, leaves real folders alone. Run after a git pull,
   on a new machine, or when a skill isn't loading. WHEN: "relink my skills",
   "re-link skills", "junction my skills", "reinstall my skills", "fix skill links",
@@ -76,15 +76,20 @@ machine-local (`firstLaunchAt`, `recentModelIds`, `askedSetupTerminals`).
 
 After changing settings on one computer (`/settings` or hand-editing):
 ```powershell
-pwsh -NoProfile -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull
+pwsh -NoProfile -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save
 ```
 Then commit and push. On another computer, `git pull` and:
 ```powershell
-pwsh -NoProfile -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Push
+pwsh -NoProfile -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Apply
 ```
 Then `/restart` to load them. With no `-Mode`, the script only reports drift and
 changes nothing. Every overwrite writes a timestamped `.bak-` backup first, and the
 script refuses to copy a file that isn't valid JSON.
 
-Inside `Install-Skills.ps1` the push runs with `-IfMissing`, so onboarding a machine
+The modes are **Save** (this computer is right) and **Apply** (this computer is
+behind), never Pull/Push. "Push my config" reads as machine → repo to a human but
+repo → machine by git analogy, and guessing wrong overwrites good settings with
+stale ones. `Pull` and `Push` are rejected with an error listing the valid modes.
+
+Inside `Install-Skills.ps1` the apply runs with `-IfMissing`, so onboarding a machine
 seeds settings only when absent and never clobbers local preferences.

@@ -1366,11 +1366,14 @@
                                 <strong>CLI settings (model, theme, auto-approvals):</strong> these are files, not
                                 folders, so they are copied rather than junctioned (a file symlink on Windows needs
                                 admin). Canonical copies live in
-                                <code>copilot\settings\</code>. After changing settings on one computer:
-                                <code>pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull</code>,
-                                commit, push. On the other computers: <code>git pull</code> then the same script with
-                                <code>-Mode Push</code>, then <code>/restart</code>. Bare
-                                <code>-Mode Status</code> just reports drift.
+                                <code>copilot\settings\</code>. After changing settings on the computer that is
+                                right:
+                                <code>pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save</code>,
+                                commit, push. On a computer that is behind: <code>git pull</code> then the same script
+                                with <code>-Mode Apply</code>, then <code>/restart</code>. Bare
+                                <code>-Mode Status</code> just reports drift. The modes are
+                                <strong>Save</strong> and <strong>Apply</strong>, not Pull/Push, because those read
+                                backwards here and guessing wrong overwrites good settings.
                                 <code>config.json</code> is deliberately not synced; the CLI manages it and it is
                                 machine-local.
                             </li>

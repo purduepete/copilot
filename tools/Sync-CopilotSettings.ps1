@@ -22,21 +22,26 @@
 
 .PARAMETER Mode
   Status  compare repo vs machine and report drift (default, changes nothing)
-  Pull    machine -> repo. Run after changing settings via /settings, then commit.
-  Push    repo -> machine. Run on another computer after git pull.
+  Save    machine -> repo. This computer is right. Run after changing settings, then commit.
+  Apply   repo -> machine. This computer is behind. Run after a git pull.
+
+  The modes are deliberately NOT called Pull/Push. Those read backwards here: "push my
+  config" means machine -> repo to a human, but repo -> machine by git analogy, and
+  guessing wrong overwrites a good config with a stale one. Passing Pull or Push is
+  rejected with an error rather than interpreted.
 
 .PARAMETER IfMissing
-  With -Mode Push, only write files that don't exist on this machine. Used by
+  With -Mode Apply, only write files that don't exist on this machine. Used by
   Install-Skills.ps1 so onboarding a new machine never clobbers local preferences.
 
 .EXAMPLE
   pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1
-  pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull
-  pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Push
+  pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save
+  pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Apply
 #>
 [CmdletBinding()]
 param(
-    [ValidateSet('Status', 'Pull', 'Push')]
+    [ValidateSet('Status', 'Save', 'Apply')]
     [string]$Mode = 'Status',
 
     [switch]$IfMissing,
@@ -105,13 +110,13 @@ foreach ($name in $Files) {
     switch ($Mode) {
         'Status' {
             if     (-not $repoHash -and -not $liveHash) { Write-Host "? $name missing on both sides" }
-            elseif (-not $repoHash)                     { Write-Host "+ $name exists only on this machine - run -Mode Pull" }
-            elseif (-not $liveHash)                     { Write-Host "+ $name exists only in the repo - run -Mode Push" }
+            elseif (-not $repoHash)                     { Write-Host "+ $name exists only on this machine - run -Mode Save" }
+            elseif (-not $liveHash)                     { Write-Host "+ $name exists only in the repo - run -Mode Apply" }
             elseif ($repoHash -eq $liveHash)            { Write-Host "= $name in sync" }
             else                                        { Write-Host "~ $name DIFFERS (repo vs machine)" }
         }
 
-        'Pull' {
+        'Save' {
             if (-not $liveHash) { Write-Host "- $name not present on this machine - skipped"; break }
             if ($repoHash -eq $liveHash) { Write-Host "= $name already in sync"; break }
             Copy-Setting -Source $liveFile -Dest $repoFile -Name $name
@@ -119,7 +124,7 @@ foreach ($name in $Files) {
             $changed++
         }
 
-        'Push' {
+        'Apply' {
             if (-not $repoHash) { Write-Host "- $name not in the repo - skipped"; break }
             if ($IfMissing -and $liveHash) { Write-Host "= $name already present - left alone (-IfMissing)"; break }
             if ($repoHash -eq $liveHash) { Write-Host "= $name already in sync"; break }
@@ -130,10 +135,10 @@ foreach ($name in $Files) {
     }
 }
 
-if ($Mode -eq 'Pull' -and $changed -gt 0) {
-    Write-Host "`nNext: commit and push the repo, then run -Mode Push on your other computers."
+if ($Mode -eq 'Save' -and $changed -gt 0) {
+    Write-Host "`nNext: commit and push the repo, then run -Mode Apply on your other computers."
 }
-elseif ($Mode -eq 'Push' -and $changed -gt 0) {
+elseif ($Mode -eq 'Apply' -and $changed -gt 0) {
     Write-Host "`nNext: run /restart in the Copilot CLI to load the new settings."
 }
 else {

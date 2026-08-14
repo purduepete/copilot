@@ -122,7 +122,7 @@ Install-DirectoryJunction -Source $GlobalInstructionsRepo -Link $GlobalInstructi
 # this non-destructive: existing local preferences are never overwritten here.
 if (Test-Path -LiteralPath $SettingsSync) {
     Write-Host "`n--- Copilot settings ---"
-    & $SettingsSync -Mode Push -IfMissing
+    & $SettingsSync -Mode Apply -IfMissing
     & $SettingsSync -Mode Status
 }
 

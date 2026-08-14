@@ -16,7 +16,7 @@ live here have **moved** to the cloud-hosted **`worklog_web`** project:
   every repo.
 - **`settings/`** — canonical `settings.json` and `permissions-config.json` for the
   Copilot CLI, kept in step across machines by
-  `tools/Sync-CopilotSettings.ps1` (`-Mode Status|Pull|Push`).
+  `tools/Sync-CopilotSettings.ps1` (`-Mode Status|Save|Apply`).
 
 ## New machine
 
@@ -30,8 +30,14 @@ That creates every junction and seeds the CLI settings. Then `/restart` the CLI.
 ## After changing CLI settings
 
 ```powershell
-pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull   # machine -> repo, then commit
-pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Push   # repo -> machine, on the others
+# this computer is right -> record it, then commit and push
+pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save
+
+# this computer is behind -> git pull first, then take the repo's copy
+pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Apply
 ```
+
+`Save` and `Apply` are used instead of Pull/Push because those read backwards here.
+Passing `-Mode Pull` or `-Mode Push` errors out rather than guessing.
 
 `config.json` is not synced. The CLI manages it and it is machine-local.
