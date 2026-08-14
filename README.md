@@ -29,15 +29,34 @@ That creates every junction and seeds the CLI settings. Then `/restart` the CLI.
 
 ## After changing CLI settings
 
+`settings.json` and `permissions-config.json` move between machines with the
+**`copilot-settings`** skill. Three equivalent ways in:
+
+| | Save (this computer is right) | Apply (this computer is behind) | Status |
+|---|---|---|---|
+| Plain English | "save my config" | "update my config" | "is my config in sync?" |
+| Slash command | `/copilot-settings save` | `/copilot-settings apply` | `/copilot-settings status` |
+| PowerShell | `-Mode Save` | `-Mode Apply` | no `-Mode` |
+
 ```powershell
-# this computer is right -> record it, then commit and push
+# this computer is right -> record it, commit and push
 pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save
 
-# this computer is behind -> git pull first, then take the repo's copy
+# this computer is behind -> git pull, then take the repo's copy
 pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Apply
+
+# just report drift, change nothing, run no git
+pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1
 ```
+
+The git steps are built in: `Save` commits and pushes, `Apply` pulls first. Run
+`/restart` after an Apply to load the new settings.
 
 `Save` and `Apply` are used instead of Pull/Push because those read backwards here.
 Passing `-Mode Pull` or `-Mode Push` errors out rather than guessing.
+
+`Save` fetches and compares to upstream before writing anything, so a stale machine
+can't publish over a newer copy. `Apply` writes nothing if the pull fails. The commit
+is scoped to the 2 settings files by path, so unrelated staged work can't ride along.
 
 `config.json` is not synced. The CLI manages it and it is machine-local.

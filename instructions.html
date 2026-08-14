@@ -475,6 +475,7 @@
                                 <a href="#sk-what">1. What skills are</a>
                                 <a href="#sk-catalog">2. My skills</a>
                                 <a href="#sk-manage">3. Manage &amp; locations</a>
+                                <a href="#sk-settings">4. CLI settings sync</a>
                             </div>
                         </details>
                     </details>
@@ -817,6 +818,31 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td><code>copilot-settings</code></td>
+                                    <td>
+                                        <details class="triggers">
+                                            <summary><em>"save my config"</em>, <em>"update my config"</em>, <em>"is my config in sync?"</em></summary>
+                                            <div class="triggers-all">
+                                                <span class="tlabel">All triggers</span>
+                                                <span class="tphrase"><em>"save my config"</em></span>
+                                                <span class="tphrase"><em>"save my copilot settings"</em></span>
+                                                <span class="tphrase"><em>"save my config to the repo"</em></span>
+                                                <span class="tphrase"><em>"push my copilot settings"</em></span>
+                                                <span class="tphrase"><em>"update my config"</em></span>
+                                                <span class="tphrase"><em>"update my copilot settings"</em></span>
+                                                <span class="tphrase"><em>"pull my config from the repo"</em></span>
+                                                <span class="tphrase"><em>"get the latest copilot settings"</em></span>
+                                                <span class="tphrase"><em>"is my config in sync"</em></span>
+                                                <span class="tphrase"><em>"are my copilot settings in sync"</em></span>
+                                                <span class="tphrase"><em>"my settings are different on my other computer"</em></span>
+                                                <span class="tphrase"><em>"persist my copilot config across computers"</em></span>
+                                                <span class="tphrase"><em>"share copilot settings between my machines"</em></span>
+                                                <span class="tphrase"><em>"/copilot-settings"</em></span>
+                                            </div>
+                                        </details>
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td><code>git-ship</code></td>
                                     <td>
                                         <details class="triggers">
@@ -895,7 +921,7 @@
                                     <td><code>relink-skills</code></td>
                                     <td>
                                         <details class="triggers">
-                                            <summary><em>"relink my skills"</em>, <em>"fix skill links"</em>, <em>"sync my copilot settings"</em></summary>
+                                            <summary><em>"relink my skills"</em>, <em>"fix skill links"</em>, <em>"my skills aren't loading"</em></summary>
                                             <div class="triggers-all">
                                                 <span class="tlabel">All triggers</span>
                                                 <span class="tphrase"><em>"relink my skills"</em></span>
@@ -906,12 +932,6 @@
                                                 <span class="tphrase"><em>"my skills aren't loading"</em></span>
                                                 <span class="tphrase"><em>"link skills after pull"</em></span>
                                                 <span class="tphrase"><em>"install my skills on this machine"</em></span>
-                                                <span class="tphrase"><em>"sync my copilot settings"</em></span>
-                                                <span class="tphrase"><em>"persist my config across computers"</em></span>
-                                                <span class="tphrase"><em>"share settings between my machines"</em></span>
-                                                <span class="tphrase"><em>"my settings are different on my other computer"</em></span>
-                                                <span class="tphrase"><em>"save my config changes"</em></span>
-                                                <span class="tphrase"><em>"set up copilot on a new machine"</em></span>
                                             </div>
                                         </details>
                                     </td>
@@ -1378,20 +1398,88 @@
                                 <code>settings.json</code> and <code>permissions-config.json</code> if this machine
                                 has none, then reports drift.
                             </li>
+                        </ul>
+
+                        <h4 id="sk-settings">4. CLI settings sync</h4>
+                        <p>
+                            The CLI's own preference files (<code>settings.json</code> for model, theme and beeps;
+                            <code>permissions-config.json</code> for per-location auto-approvals) are machine-local, so
+                            a change on the laptop never reaches the Cloud PC. Canonical copies live in
+                            <code>copilot\settings\</code>. They are files, not folders, so they are copied rather than
+                            junctioned — a single-file symlink on Windows needs admin or Developer Mode. Handled by the
+                            <strong>copilot-settings</strong> skill. Three equivalent ways in:
+                        </p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>How</th>
+                                    <th>Save (this computer is right)</th>
+                                    <th>Apply (this computer is behind)</th>
+                                    <th>Status (just tell me)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Plain English</td>
+                                    <td>“save my config”</td>
+                                    <td>“update my config”</td>
+                                    <td>“is my config in sync?”</td>
+                                </tr>
+                                <tr>
+                                    <td>Slash command</td>
+                                    <td><code>/copilot-settings save</code></td>
+                                    <td><code>/copilot-settings apply</code></td>
+                                    <td><code>/copilot-settings status</code></td>
+                                </tr>
+                                <tr>
+                                    <td>PowerShell</td>
+                                    <td>
+                                        <code
+                                            >pwsh -File
+                                            C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save</code
+                                        >
+                                    </td>
+                                    <td>
+                                        <code
+                                            >pwsh -File
+                                            C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Apply</code
+                                        >
+                                    </td>
+                                    <td>
+                                        <code
+                                            >pwsh -File
+                                            C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1</code
+                                        >
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <ul>
                             <li>
-                                <strong>CLI settings (model, theme, auto-approvals):</strong> these are files, not
-                                folders, so they are copied rather than junctioned (a file symlink on Windows needs
-                                admin). Canonical copies live in
-                                <code>copilot\settings\</code>. After changing settings on the computer that is
-                                right:
-                                <code>pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Save</code>,
-                                commit, push. On a computer that is behind: <code>git pull</code> then the same script
-                                with <code>-Mode Apply</code>, then <code>/restart</code>. Bare
-                                <code>-Mode Status</code> just reports drift. The modes are
-                                <strong>Save</strong> and <strong>Apply</strong>, not Pull/Push, because those read
-                                backwards here and guessing wrong overwrites good settings.
-                                <code>config.json</code> is deliberately not synced; the CLI manages it and it is
-                                machine-local.
+                                <strong>The git steps are built in.</strong> <em>Save</em> copies to the repo then
+                                commits and pushes. <em>Apply</em> runs <code>git pull</code> first, then copies onto
+                                this machine. Run <code>/restart</code> after an Apply to load the new settings.
+                            </li>
+                            <li>
+                                <strong>Save and Apply, never Pull and Push.</strong> “Push my config” reads as
+                                machine → repo to a human but repo → machine by git analogy, and guessing wrong
+                                overwrites good settings with stale ones. <code>Pull</code> and <code>Push</code> are
+                                rejected by the <code>ValidateSet</code>.
+                            </li>
+                            <li>
+                                <strong>A stale machine cannot publish over a newer copy.</strong> Save fetches and
+                                compares to upstream before writing anything, and aborts if the branch is behind or
+                                diverged. Apply aborts before any file write if the pull fails. The commit is scoped to
+                                the 2 settings files by path, so anything already staged cannot ride along.
+                            </li>
+                            <li>
+                                <code>config.json</code> is deliberately not synced; the CLI manages it and its contents
+                                are machine-local (<code>recentModelIds</code>, <code>trustedFolders</code>, …).
+                            </li>
+                            <li>
+                                <code>-NoGit</code> means “run no git commands”, not “read-only”. Apply with
+                                <code>-NoGit</code> still overwrites local files. Just looking is
+                                <code>Status</code>.
                             </li>
                         </ul>
 
