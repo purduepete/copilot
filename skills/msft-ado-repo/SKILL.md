@@ -185,6 +185,10 @@ not relevant to doc/skill PRs.
 
 ### Fabric branch deletion gate
 
+**Hard deletion rule:** never delete a feature branch while Fabric is connected to it.
+Fabric must be connected to `main`, synchronized with matching heads, and clean before the
+feature branch is deleted.
+
 Before deleting any remote Bedrock branch, check whether a Fabric developer
 workspace is connected to it. For @jimb, resolve the exact workspace display name
 `FDE_Bedrock_Engine_jimb`, then read:
@@ -198,15 +202,23 @@ If the connection names the branch being deleted:
 
 1. Refuse deletion when either Fabric read returns any non-200 response (including
    `GitProviderResourceNotFound`, timeout, 404, or 5xx) or any workspace-side change exists.
-2. Switch the existing connection to `main` without disconnecting the workspace. There is
-   no verified REST endpoint for this operation in the current tooling: ask the user to switch
-   it in **Fabric → Workspace settings → Git integration**, then stop until they confirm.
-   Never improvise with `PATCH /git/connection`, and never disconnect/reconnect a branched
-   workspace.
-3. Run `updateFromGit` for the current remote `main` commit.
-4. Verify the connection names `main`, workspace and remote heads match, and workspace-side
+2. Switch the existing connection to `main`. Use the Fabric portal's in-place branch switch
+   when available; never improvise with `PATCH /git/connection`.
+3. When no supported in-place switch is available, a guarded disconnect/reconnect is allowed
+   for a developer workspace:
+   - require successful connection and status reads, matching workspace/remote heads, and
+     zero workspace-side changes;
+   - verify the target remote branch exists and capture the full current provider details,
+     branch, directory, and head for recovery;
+   - disconnect, connect to the same organization/project/repository/directory on the target
+     branch, then initialize with `PreferRemote`;
+   - if connect or initialize fails, reconnect the captured original branch and stop;
+   - do not delete the original remote branch until the target connection is initialized,
+     synchronized, and clean.
+4. Run `updateFromGit` for the current remote `main` commit.
+5. Verify the connection names `main`, workspace and remote heads match, and workspace-side
    changes are empty.
-5. Only then delete the remote branch.
+6. Only then delete the remote branch.
 
 This gate also applies to manual cleanup requests outside PR completion. Never delete a
 branch first and assume Fabric will recover. A deleted connected branch leaves the
