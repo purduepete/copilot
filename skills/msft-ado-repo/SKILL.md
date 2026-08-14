@@ -212,7 +212,8 @@ If the connection names the branch being deleted:
      branch, directory, and head for recovery;
    - disconnect, connect to the same organization/project/repository/directory on the target
      branch, then initialize with `PreferRemote`;
-   - if connect or initialize fails, reconnect the captured original branch and stop;
+   - if connect or initialize fails, disconnect any partial target connection first, then
+     reconnect and initialize the captured original branch and stop;
    - do not delete the original remote branch until the target connection is initialized,
      synchronized, and clean.
 4. Run `updateFromGit` for the current remote `main` commit.
