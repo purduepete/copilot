@@ -2,12 +2,16 @@
 name: relink-skills
 description: >-
   Re-link (junction) all of @jimb's personal skills into the Copilot CLI skills
-  folder (~/.copilot/skills) by running Install-Skills.ps1. Self-healing: creates
-  missing junctions, re-points stale ones, leaves real folders alone. Run after a
-  git pull, on a new machine, or when a skill isn't loading. WHEN: "relink my
-  skills", "re-link skills", "junction my skills", "reinstall my skills", "fix skill
-  links", "my skills aren't loading", "link skills after pull", "install my skills
-  on this machine".
+  folder (~/.copilot/skills) by running Install-Skills.ps1, and sync the CLI's own
+  settings.json / permissions-config.json across his computers via
+  Sync-CopilotSettings.ps1 (Status/Pull/Push). Self-healing: creates missing
+  junctions, re-points stale ones, leaves real folders alone. Run after a git pull,
+  on a new machine, or when a skill isn't loading. WHEN: "relink my skills",
+  "re-link skills", "junction my skills", "reinstall my skills", "fix skill links",
+  "my skills aren't loading", "link skills after pull", "install my skills on this
+  machine", "sync my copilot settings", "persist my config across computers",
+  "share settings between my machines", "my settings are different on my other
+  computer", "save my config changes", "set up copilot on a new machine".
 argument-hint: (none)
 ---
 
@@ -56,3 +60,31 @@ Report any `MISSING` or any `not a junction` warning so @jimb can resolve it.
   want the latest skill content.
 - If a target shows "exists and is not a junction", a real folder is shadowing the
   skill — inspect it, and only remove it if it holds no needed data.
+
+## CLI settings (settings.json, permissions-config.json)
+
+`Install-Skills.ps1` also syncs the CLI's own preference files by calling
+`tools\Sync-CopilotSettings.ps1`. These are **files**, so they are copied, not
+junctioned (a single-file symlink on Windows needs admin or Developer Mode).
+Canonical copies live in `C:\Files\Dev\main\copilot\settings\`:
+
+- `settings.json` — model, theme, colorMode, showReasoning, beeps, timestamps
+- `permissions-config.json` — per-location tool auto-approvals (`az`, `pwsh`, …)
+
+`config.json` is **not** synced. The CLI manages it and its contents are
+machine-local (`firstLaunchAt`, `recentModelIds`, `askedSetupTerminals`).
+
+After changing settings on one computer (`/settings` or hand-editing):
+```powershell
+pwsh -NoProfile -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull
+```
+Then commit and push. On another computer, `git pull` and:
+```powershell
+pwsh -NoProfile -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Push
+```
+Then `/restart` to load them. With no `-Mode`, the script only reports drift and
+changes nothing. Every overwrite writes a timestamped `.bak-` backup first, and the
+script refuses to copy a file that isn't valid JSON.
+
+Inside `Install-Skills.ps1` the push runs with `-IfMissing`, so onboarding a machine
+seeds settings only when absent and never clobbers local preferences.

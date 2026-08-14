@@ -1,0 +1,22 @@
+{
+  "ide": {
+    "autoConnect": true
+  },
+  "model": "claude-sonnet-5",
+  "footer": {
+    "showQuota": false
+  },
+  "colorMode": "github",
+  "enabledPlugins": {},
+  "disabledSkills": [],
+  "showReasoning": true,
+  "theme": "github",
+  "notifications": true,
+  "pinnedPrompts": true,
+  "autoUpdate": true,
+  "beepOnSchedule": true,
+  "beep": true,
+  "showTimestamps": true,
+  "showTipsOnStartup": true,
+  "showToolDurations": true
+}

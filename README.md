@@ -10,3 +10,28 @@ live here have **moved** to the cloud-hosted **`worklog_web`** project:
 
 - **`instructions.html`** — the **Copilot Reference Hub** (general reference, not
   superseded by worklog_web). Open it in a browser.
+- **`skills/`** — personal Copilot CLI skills, junctioned into `~/.copilot/skills`
+  by `skills/Install-Skills.ps1`.
+- **`global-instructions/`** — junctioned into `~/.copilot/instructions`, loaded in
+  every repo.
+- **`settings/`** — canonical `settings.json` and `permissions-config.json` for the
+  Copilot CLI, kept in step across machines by
+  `tools/Sync-CopilotSettings.ps1` (`-Mode Status|Pull|Push`).
+
+## New machine
+
+```powershell
+git clone <this repo> C:\Files\Dev\main\copilot
+pwsh -File C:\Files\Dev\main\copilot\skills\Install-Skills.ps1
+```
+
+That creates every junction and seeds the CLI settings. Then `/restart` the CLI.
+
+## After changing CLI settings
+
+```powershell
+pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull   # machine -> repo, then commit
+pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Push   # repo -> machine, on the others
+```
+
+`config.json` is not synced. The CLI manages it and it is machine-local.

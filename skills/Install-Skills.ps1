@@ -27,6 +27,9 @@ param(
     # %USERPROFILE%\.copilot\instructions so its *.instructions.md load in every repo.
     [string]$GlobalInstructionsRepo = (Join-Path (Split-Path $PSScriptRoot -Parent) 'global-instructions'),
     [string]$GlobalInstructionsTarget = (Join-Path $env:USERPROFILE '.copilot\instructions'),
+    # Canonical copy of the CLI's own preference files (settings.json,
+    # permissions-config.json). Copied in, not linked - see Sync-CopilotSettings.ps1.
+    [string]$SettingsSync = (Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\Sync-CopilotSettings.ps1'),
     # Additional skill source folders from other repos. Each is linked only if the
     # local path exists (the repo may not be cloned on every machine).
     [string[]]$ExtraSkillRepos = @(
@@ -114,5 +117,13 @@ foreach ($extra in $ExtraSkillRepos) {
 
 Write-Host "`n--- Global instructions ($GlobalInstructionsTarget) ---"
 Install-DirectoryJunction -Source $GlobalInstructionsRepo -Link $GlobalInstructionsTarget
+
+# Seed CLI settings on a machine that has none, then report any drift. -IfMissing keeps
+# this non-destructive: existing local preferences are never overwritten here.
+if (Test-Path -LiteralPath $SettingsSync) {
+    Write-Host "`n--- Copilot settings ---"
+    & $SettingsSync -Mode Push -IfMissing
+    & $SettingsSync -Mode Status
+}
 
 Write-Host "`nDone."

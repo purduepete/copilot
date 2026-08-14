@@ -1,3 +1,6 @@
 # Generated dashboard outputs (rebuilt on demand by the worklist skills)
 open-work-items.html
 open-github-items.html
+
+# Timestamped backups written by tools/Sync-CopilotSettings.ps1
+*.bak-*

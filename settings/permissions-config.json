@@ -1,0 +1,26 @@
+{
+  "locations": {
+    "C:\\Files\\Dev": {
+      "tool_approvals": [
+        {
+          "kind": "commands",
+          "commandIdentifiers": [
+            "az"
+          ]
+        },
+        {
+          "kind": "commands",
+          "commandIdentifiers": [
+            "pwsh"
+          ]
+        },
+        {
+          "kind": "commands",
+          "commandIdentifiers": [
+            "Write-Output"
+          ]
+        }
+      ]
+    }
+  }
+}

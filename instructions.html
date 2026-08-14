@@ -1358,7 +1358,21 @@
                             <li>
                                 <strong>New machine:</strong> after cloning, run
                                 <code>pwsh -File C:\Files\Dev\main\copilot\skills\Install-Skills.ps1</code> once to
-                                (re)create the junctions.
+                                (re)create the junctions. It also seeds
+                                <code>settings.json</code> and <code>permissions-config.json</code> if this machine
+                                has none, then reports drift.
+                            </li>
+                            <li>
+                                <strong>CLI settings (model, theme, auto-approvals):</strong> these are files, not
+                                folders, so they are copied rather than junctioned (a file symlink on Windows needs
+                                admin). Canonical copies live in
+                                <code>copilot\settings\</code>. After changing settings on one computer:
+                                <code>pwsh -File C:\Files\Dev\main\copilot\tools\Sync-CopilotSettings.ps1 -Mode Pull</code>,
+                                commit, push. On the other computers: <code>git pull</code> then the same script with
+                                <code>-Mode Push</code>, then <code>/restart</code>. Bare
+                                <code>-Mode Status</code> just reports drift.
+                                <code>config.json</code> is deliberately not synced; the CLI manages it and it is
+                                machine-local.
                             </li>
                         </ul>
 
