@@ -2,7 +2,7 @@
   "ide": {
     "autoConnect": true
   },
-  "model": "claude-sonnet-5",
+  "model": "gpt-5.6-sol",
   "footer": {
     "showQuota": false
   },
