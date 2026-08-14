@@ -80,7 +80,11 @@ when a search returns more than one plausible match.
 
 ```powershell
 $playlists = Invoke-RestMethod -Uri "$baseUrl/playlists" -Headers $headers
-$playlists.MediaContainer.Metadata | Select-Object ratingKey, title, smart, playlistType
+# Default to music (audio) playlists only, matching the Plex UI's "Music" tab.
+# Include video/photo playlists only if the user explicitly asks for "all"
+# playlists or for video playlists specifically.
+$music = $playlists.MediaContainer.Metadata | Where-Object { $_.playlistType -eq 'audio' }
+$music | Select-Object ratingKey, title, smart, playlistType
 ```
 
 `smart` is `1` for rules-based playlists — check it before attempting item
