@@ -1,6 +1,7 @@
 <#
 .SYNOPSIS
-  Keep the Copilot CLI's user settings version-controlled and identical on every machine.
+  Keep the Copilot CLI's user settings version-controlled and identical on every machine,
+  except for specific keys that legitimately differ by machine class (work vs home).
 
 .DESCRIPTION
   Skills and global-instructions reach the CLI as directory junctions (Install-Skills.ps1),
@@ -19,6 +20,27 @@
 
   config.json is intentionally excluded. The CLI manages it and its contents are
   machine-local (firstLaunchAt, recentModelIds, askedSetupTerminals, trustedFolders).
+
+  PER-MACHINE-CLASS KEYS (e.g. "model")
+  --------------------------------------
+  A small set of settings.json keys, listed in $PerMachineKeys, are allowed to differ
+  by machine class ("work" or "home", classified by $env:COMPUTERNAME - see
+  Get-MachineClass). The mapping of class -> key -> value lives in
+  copilot\settings\machine-overrides.json, a repo-only file with no machine-local
+  counterpart (it is read/written directly in the repo, then committed/pushed like the
+  other files - there's nothing to copy onto %USERPROFILE%\.copilot for it).
+
+  Invariant: the repo's settings.json NEVER contains a $PerMachineKeys key. Drift
+  comparison for settings.json is structural (parsed JSON with those keys removed from
+  the machine side before comparing), not a raw file hash, so a legitimately different
+  "model" is never reported as drift and never blocks Save/Apply.
+
+  Save seeds a class's override the first time that class/key is seen (from the live
+  machine value) rather than overwriting an existing value, and updates it when the
+  live value has changed. Apply overlays the current class's override onto the merged
+  settings.json; if the machine's class is unrecognized, or that class has no entry for
+  a key, the existing local value for that key is preserved untouched (fail-safe - it
+  is never silently replaced by a repo default or another class's value).
 
 .PARAMETER Mode
   Status  compare repo vs machine and report drift (default, changes nothing, no git)
@@ -57,12 +79,32 @@ param(
 
     [string]$RepoSettings   = (Join-Path (Split-Path $PSScriptRoot -Parent) 'settings'),
     [string]$CopilotHome    = (Join-Path $env:USERPROFILE '.copilot'),
-    [string[]]$Files        = @('settings.json', 'permissions-config.json')
+    # Files with a machine-local counterpart, synced machine <-> repo as whole files
+    # (settings.json is handled separately below because of its per-machine keys;
+    # it stays in this list only so Publish-Settings knows to stage/commit it).
+    [string[]]$Files        = @('settings.json', 'permissions-config.json'),
+    # settings.json keys allowed to differ by machine class. Extend this array (and
+    # seed machine-overrides.json) to add another overridable key.
+    [string[]]$PerMachineKeys = @('model'),
+    [string]$MachineOverridesFile = (Join-Path $RepoSettings 'machine-overrides.json')
 )
 
 $ErrorActionPreference = 'Stop'
 
 $script:RepoRoot = Split-Path -Parent $RepoSettings
+
+function Get-MachineClass {
+    <#
+      Classifies $env:COMPUTERNAME into "work" or "home". Returns $null for an
+      unrecognized machine - every caller must treat $null as "leave per-machine keys
+      alone", never as "fall back to some default".
+    #>
+    param([string]$ComputerName = $env:COMPUTERNAME)
+
+    if ($ComputerName -like 'XFINJIMB*' -or $ComputerName -like 'CPC-jimb-*') { return 'work' }
+    if ($ComputerName -like 'JIMBROWN*') { return 'home' }
+    return $null
+}
 
 function Invoke-Git {
     <#
@@ -173,8 +215,10 @@ function Publish-Settings {
       scoped to that exact list, so anything the user already staged elsewhere cannot
       ride along, and no stray file dropped into settings\ is ever published.
     #>
+    param([string[]]$PublishFiles)
+
     $spec = @()
-    foreach ($n in $Files) {
+    foreach ($n in $PublishFiles) {
         if (Test-Path -LiteralPath (Join-Path $RepoSettings $n)) { $spec += "settings/$n" }
     }
     if (-not $spec) { Write-Warning "No settings files to commit."; return }
@@ -258,6 +302,87 @@ function Assert-ValidJson {
     }
 }
 
+function Read-JsonObject {
+    <#
+      Parses a JSON file into an ordered hashtable (so keys can be added/removed/
+      compared structurally) or $null if the file doesn't exist. Strips // line
+      comments first, same tolerance the CLI itself has.
+    #>
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    $raw = [IO.File]::ReadAllText($Path)
+    $stripped = $raw -replace '(?m)^\s*//.*$', ''
+    if (-not $stripped.Trim()) { return [ordered]@{} }
+    return $stripped | ConvertFrom-Json -AsHashtable
+}
+
+function Copy-WithoutKeys {
+    <#
+      Returns a new ordered hashtable with the given keys removed. Never mutates the
+      input - callers rely on being able to still read the original afterward.
+    #>
+    param([hashtable]$Object, [string[]]$Keys)
+    $result = [ordered]@{}
+    if (-not $Object) { return $result }
+    foreach ($k in $Object.Keys) {
+        if ($Keys -notcontains $k) { $result[$k] = $Object[$k] }
+    }
+    return $result
+}
+
+function ConvertTo-CanonicalJsonText {
+    <#
+      Serializes a value with object keys sorted, so 2 objects that differ only in key
+      order/whitespace/formatting compare as equal. This backs the structural drift
+      check for settings.json instead of a raw-text hash.
+    #>
+    param($Value)
+
+    if ($null -eq $Value) { return 'null' }
+
+    if ($Value -is [System.Collections.IDictionary]) {
+        $parts = foreach ($k in ($Value.Keys | Sort-Object)) {
+            '{0}:{1}' -f (ConvertTo-Json ([string]$k) -Compress), (ConvertTo-CanonicalJsonText $Value[$k])
+        }
+        return '{' + ($parts -join ',') + '}'
+    }
+
+    if ($Value -is [System.Collections.IEnumerable] -and $Value -isnot [string]) {
+        $parts = foreach ($item in $Value) { ConvertTo-CanonicalJsonText $item }
+        return '[' + ($parts -join ',') + ']'
+    }
+
+    return (ConvertTo-Json $Value -Compress)
+}
+
+function Get-CanonicalHash {
+    param($Object)
+    $text = ConvertTo-CanonicalJsonText $Object
+    $bytes = [Text.Encoding]::UTF8.GetBytes($text)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return [BitConverter]::ToString($sha.ComputeHash($bytes)).Replace('-', '') }
+    finally { $sha.Dispose() }
+}
+
+function Write-JsonObject {
+    <#
+      Serializes and writes a hashtable/object as the new content of Path in a single
+      write call - callers build the final object in memory first (never write partial
+      or pre-strip content), which is how the per-machine-key leak the reviewers
+      flagged is avoided.
+    #>
+    param([string]$Path, $Object, [bool]$MakeBackup = $true)
+
+    if ($MakeBackup -and (Test-Path -LiteralPath $Path)) {
+        $backupPath = "$Path.bak-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+        Copy-Item -LiteralPath $Path -Destination $backupPath -Force
+        Write-Host "  backup -> $(Split-Path -Leaf $backupPath)"
+    }
+
+    New-Item -ItemType Directory -Path (Split-Path -Parent $Path) -Force | Out-Null
+    ($Object | ConvertTo-Json -Depth 20) | Set-Content -LiteralPath $Path -Encoding utf8NoBOM
+}
+
 function Copy-Setting {
     param([string]$Source, [string]$Dest, [string]$Name, [bool]$MakeBackup = $true)
 
@@ -273,6 +398,190 @@ function Copy-Setting {
 
     New-Item -ItemType Directory -Path (Split-Path -Parent $Dest) -Force | Out-Null
     Copy-Item -LiteralPath $Source -Destination $Dest -Force
+}
+
+function Invoke-SettingsJsonSync {
+    <#
+      Handles settings.json specially because of its per-machine-class keys
+      ($PerMachineKeys). Everything else (permissions-config.json) still goes through
+      the generic whole-file loop in the main script body below.
+
+      Returns the number of files changed (0 or 1) so the caller's overall $changed
+      counter stays accurate for the "anything to commit / run Apply" messaging.
+    #>
+    param(
+        [string]$RepoFile,
+        [string]$LiveFile,
+        [string]$MachineOverridesFile,
+        [string[]]$PerMachineKeys,
+        [string]$Mode,
+        [bool]$IfMissing
+    )
+
+    $class = Get-MachineClass
+    $changed = 0
+
+    switch ($Mode) {
+        'Status' {
+            $repoObj = Read-JsonObject $RepoFile
+            $liveObj = Read-JsonObject $LiveFile
+
+            if (-not $repoObj -and -not $liveObj) { Write-Host "? settings.json missing on both sides"; return 0 }
+            if (-not $repoObj) { Write-Host "+ settings.json exists only on this machine - run -Mode Save"; return 0 }
+            if (-not $liveObj) { Write-Host "+ settings.json exists only in the repo - run -Mode Apply"; return 0 }
+
+            # Repo copy must never carry per-machine keys (defensive strip even though
+            # Save/Apply already enforce this), so drift compare is always apples-to-apples.
+            $repoCanon = Copy-WithoutKeys $repoObj $PerMachineKeys
+            $liveCanon = Copy-WithoutKeys $liveObj $PerMachineKeys
+
+            if ((Get-CanonicalHash $repoCanon) -eq (Get-CanonicalHash $liveCanon)) {
+                Write-Host "= settings.json in sync (ignoring per-machine keys: $($PerMachineKeys -join ', '))"
+            }
+            else {
+                Write-Host "~ settings.json DIFFERS (repo vs machine) [ignoring per-machine keys: $($PerMachineKeys -join ', ')]"
+            }
+
+            $repoHasPerMachineKey = $PerMachineKeys | Where-Object { $repoObj.Contains($_) }
+            if ($repoHasPerMachineKey) {
+                Write-Warning "repo settings.json still contains machine-specific key(s) ($($repoHasPerMachineKey -join ', ')) - will be stripped on next Save"
+            }
+
+            $overrides = Read-JsonObject $MachineOverridesFile
+            if (-not $class) {
+                foreach ($key in $PerMachineKeys) {
+                    Write-Host "? $key : machine class not recognized for $env:COMPUTERNAME - per-machine overrides not managed here (add this COMPUTERNAME to Get-MachineClass)"
+                }
+                return 0
+            }
+
+            foreach ($key in $PerMachineKeys) {
+                $liveVal = if ($liveObj -and $liveObj.Contains($key)) { $liveObj[$key] } else { $null }
+                $hasOverride = $overrides -and $overrides.Contains($class) -and $overrides[$class].Contains($key)
+                $overrideVal = if ($hasOverride) { $overrides[$class][$key] } else { $null }
+
+                if (-not $hasOverride) {
+                    Write-Host "? $key ($class): no stored override yet - live value '$liveVal' will be adopted on next Save"
+                }
+                elseif ($liveVal -eq $overrideVal) {
+                    Write-Host "= $key ($class): $overrideVal (matches override)"
+                }
+                else {
+                    Write-Host "~ $key ($class): local=$liveVal, override=$overrideVal - run Apply or Save"
+                }
+            }
+            return 0
+        }
+
+        'Save' {
+            $liveObj = Read-JsonObject $LiveFile
+            if (-not $liveObj) { Write-Host "- settings.json not present on this machine - skipped"; return 0 }
+
+            # Build the repo-bound object atomically in memory BEFORE any file write -
+            # there is never an intermediate state where the full local object (including
+            # per-machine keys) is written to or staged in the repo.
+            $repoBoundObj = Copy-WithoutKeys $liveObj $PerMachineKeys
+            $repoObj = Read-JsonObject $RepoFile
+            $repoObjCanon = if ($repoObj) { Copy-WithoutKeys $repoObj $PerMachineKeys } else { $null }
+
+            # A stale/leftover per-machine key sitting in the repo copy (e.g. from
+            # before this mechanism existed) must be stripped even when everything
+            # else already matches - the "already in sync" short-circuit cannot be
+            # based on the stripped comparison alone, or the invariant silently rots.
+            $repoHasPerMachineKey = $repoObj -and ($PerMachineKeys | Where-Object { $repoObj.Contains($_) })
+
+            if (-not $repoHasPerMachineKey -and $repoObjCanon -and (Get-CanonicalHash $repoObjCanon) -eq (Get-CanonicalHash $repoBoundObj)) {
+                Write-Host "= settings.json already in sync (ignoring per-machine keys)"
+            }
+            else {
+                Write-JsonObject -Path $RepoFile -Object $repoBoundObj -MakeBackup $false
+                Write-Host "^ settings.json machine -> repo (per-machine keys excluded: $($PerMachineKeys -join ', '))"
+                $changed++
+            }
+
+            # Seed/update this machine class's override from the live (pre-strip) values.
+            if (-not $class) {
+                Write-Warning "Machine class not recognized for $env:COMPUTERNAME - machine-overrides.json left untouched."
+                return $changed
+            }
+
+            $overrides = Read-JsonObject $MachineOverridesFile
+            if (-not $overrides) { $overrides = [ordered]@{} }
+            if (-not $overrides.Contains($class)) { $overrides[$class] = [ordered]@{} }
+
+            $overridesChanged = $false
+            foreach ($key in $PerMachineKeys) {
+                if (-not $liveObj.Contains($key)) { continue }
+                $liveVal = $liveObj[$key]
+
+                if (-not $overrides[$class].Contains($key)) {
+                    # First time this class/key combination is seen: seed from the live
+                    # machine value instead of silently adopting whatever else might be
+                    # around. This is the safe migration path for an existing machine.
+                    $overrides[$class][$key] = $liveVal
+                    Write-Host "+ machine-overrides.json: seeded $class.$key = $liveVal"
+                    $overridesChanged = $true
+                }
+                elseif ($overrides[$class][$key] -ne $liveVal) {
+                    Write-Host "^ machine-overrides.json: updated $class.$key = $liveVal (was $($overrides[$class][$key]))"
+                    $overrides[$class][$key] = $liveVal
+                    $overridesChanged = $true
+                }
+            }
+
+            if ($overridesChanged) {
+                Write-JsonObject -Path $MachineOverridesFile -Object $overrides -MakeBackup $false
+                $changed++
+            }
+
+            return $changed
+        }
+
+        'Apply' {
+            $repoObj = Read-JsonObject $RepoFile
+            if (-not $repoObj) { Write-Host "- settings.json not in the repo - skipped"; return 0 }
+
+            if ($IfMissing -and (Test-Path -LiteralPath $LiveFile)) {
+                Write-Host "= settings.json already present - left alone (-IfMissing)"
+                return 0
+            }
+
+            $liveObj = Read-JsonObject $LiveFile
+            $overrides = Read-JsonObject $MachineOverridesFile
+
+            # Merge = repo's shared keys (defensively stripped of any per-machine key),
+            # plus each per-machine key resolved as: class override if known and
+            # present, else the EXISTING local value if any (fail-safe - never silently
+            # replaced by a repo default or another class's value), else left absent.
+            $merged = Copy-WithoutKeys $repoObj $PerMachineKeys
+            foreach ($key in $PerMachineKeys) {
+                $hasOverride = $class -and $overrides -and $overrides.Contains($class) -and $overrides[$class].Contains($key)
+                if ($hasOverride) {
+                    $merged[$key] = $overrides[$class][$key]
+                }
+                elseif ($liveObj -and $liveObj.Contains($key)) {
+                    $merged[$key] = $liveObj[$key]
+                }
+                # else: no override and no existing local value - nothing safe to
+                # default to, key is left absent.
+            }
+
+            $liveHash = if ($liveObj) { Get-CanonicalHash $liveObj } else { $null }
+            $mergedHash = Get-CanonicalHash $merged
+
+            if ($liveHash -eq $mergedHash) {
+                Write-Host "= settings.json already in sync"
+                return 0
+            }
+
+            Write-JsonObject -Path $LiveFile -Object $merged
+            if (-not $class) {
+                Write-Warning "Machine class not recognized for $env:COMPUTERNAME - existing local values for $($PerMachineKeys -join ', ') were preserved as-is."
+            }
+            Write-Host "v settings.json repo -> machine (class override applied: $($PerMachineKeys -join ', '))"
+            return 1
+        }
+    }
 }
 
 New-Item -ItemType Directory -Path $RepoSettings -Force | Out-Null
@@ -295,7 +604,18 @@ if ($Mode -ne 'Status' -and -not $NoGit) {
 
 $changed = 0
 
-foreach ($name in $Files) {
+# settings.json gets its own structural, per-machine-key-aware handling.
+$changed += Invoke-SettingsJsonSync `
+    -RepoFile $(Join-Path $RepoSettings 'settings.json') `
+    -LiveFile $(Join-Path $CopilotHome  'settings.json') `
+    -MachineOverridesFile $MachineOverridesFile `
+    -PerMachineKeys $PerMachineKeys `
+    -Mode $Mode `
+    -IfMissing $IfMissing.IsPresent
+
+# Every other file (currently just permissions-config.json) keeps the original
+# generic whole-file compare/copy behavior - no per-machine-key concept applies.
+foreach ($name in ($Files | Where-Object { $_ -ne 'settings.json' })) {
     $repoFile = Join-Path $RepoSettings $name
     $liveFile = Join-Path $CopilotHome  $name
 
@@ -336,7 +656,7 @@ if ($Mode -eq 'Save' -and $changed -gt 0) {
     }
     else {
         Push-Location $script:RepoRoot
-        try { Publish-Settings }
+        try { Publish-Settings -PublishFiles ($Files + @('machine-overrides.json')) }
         finally { Pop-Location }
     }
 }
