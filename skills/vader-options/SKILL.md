@@ -26,16 +26,16 @@ repeat weekly whenever @jimb pastes a new article URL.
   `web_fetch` alone only returns the free preview — the paywalled body isn't
   in the anonymous HTML at all.
 - The Substack session cookie value is stored at
-  `C:\Files\Dev\main\config\vader\substack_config.json` (key `"vader"`). Read
+  `C:\Files\Dev\main\config\substack\substack_config.json` (key `"vader"`). Read
   it from there first — do NOT ask @jimb to paste the cookie again unless
   that file is missing or the stored value stops working (401/redirect to
   login), in which case ask him to re-export a fresh one from browser
   DevTools → Application → Cookies and update that file.
 - **That config file must never be committed.** It lives in its own git repo
   (`C:\Files\Dev\main\config`, remote `github.com/purduepete/config`) and is
-  covered by a `.gitignore` entry (`vader/substack_config.json`) — verify
+  covered by a   `.gitignore` entry (`substack/substack_config.json`) — verify
   that entry is still present (`git check-ignore -v
-  vader\substack_config.json` from that repo root) before ever running `git
+  substack\substack_config.json` from that repo root) before ever running `git
   add`/`git commit` there. If the `.gitignore` entry is ever missing, add it
   before touching git, and never `git add -A`/`git add .` in that repo
   without checking `git status` first for the `vader/` folder.
