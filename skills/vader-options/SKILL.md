@@ -109,8 +109,8 @@ repeat weekly whenever @jimb pastes a new article URL.
    Balanced / Aggressive** headings (in that order), and within each group,
    **puts before calls**, sorted by **annualized % descending**. No
    per-ticket risk-tag pill needed once the group heading exists (redundant).
-5. Footer: educational-only disclaimer + "personal use only, not for
-   redistribution" note.
+5. No footer disclaimer text — @jimb asked for it removed; don't re-add it in
+   future weeks unless he asks.
 6. Open the file in the browser (`Start-Process <path>`) after every
    meaningful change so @jimb can eyeball it before iterating further.
 
