@@ -79,8 +79,9 @@ repeat weekly whenever @jimb pastes a new article URL.
    indigo/violet accent gradient, dark-default + light theme + toggle,
    Lucide-style stroke SVG icons, Inter font).
 2. Single self-contained `weekly-options-calendar.html`, no build step, saved
-   to the session's `files/` folder (not committed, not shared — personal
-   use only). Include a "Week of / generated <timestamp>, local time" stamp
+   to `C:\Users\JimBrown\OneDrive\Trading\Vader\weekly-options-calendar.html`
+   (the standing output location — personal use only; overwrite it each week
+   rather than creating dated copies unless @jimb asks to keep history). Include a "Week of / generated <timestamp>, local time" stamp
    in the header so stale data is obvious.
 3. Layout: a Mon–Fri grid of day cards. Use **CSS Grid `subgrid`** so every
    day's rule/event box and trade list start at the *same* shared row across
