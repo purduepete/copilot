@@ -88,10 +88,22 @@ repeat weekly whenever @jimb pastes a new article URL.
    Extract the actual publish date from the fetched page's metadata (look
    for `"datePublished":"..."` or `<meta property="article:published_time"
    content="...">` in the raw HTML) rather than assuming "today" or the
-   Monday of the trading week — convert from UTC to local time per @jimb's
-   personal instructions. Show it in the header as "Published <date>" plus a
-   separate "Calendar generated <timestamp>, local time" line so it's clear
-   which date is the article's and which is when the HTML was built.
+   Monday of the trading week, and convert from UTC to local time per
+   @jimb's personal instructions. Show it in the header as "Published <date>"
+   plus a separate "Calendar generated <timestamp>, local time" line so it's
+   clear which date is the article's and which is when the HTML was built.
+   Do not add extra qualifier text after the generated timestamp (e.g. no
+   "personal reference only, verify pricing before acting"); keep that line
+   to just the date/time.
+2b. The Monday-Friday day cards must use the actual calendar dates of the
+   week the article covers, computed from that same publish date (e.g. a
+   Monday 2026-08-10 publish date means the day cards run Mon Aug 10 through
+   Fri Aug 14) -- never guess a following week or an arbitrary date.
+2c. No em dashes (\u2014, "&mdash;") anywhere in the generated HTML text
+   (headers, rules, notes, meta lines). Use periods, commas, colons,
+   semicolons, or parentheses instead, per @jimb's writing-style rules. En
+   dashes for date ranges (e.g. "Monday-Friday") are fine; it's the em dash
+   used as a clause-separator that's banned.
 3. Layout: a Mon–Fri grid of day cards. Use **CSS Grid `subgrid`** so every
    day's rule/event box and trade list start at the *same* shared row across
    all 5 columns, regardless of how long that day's rule text or event
