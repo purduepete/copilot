@@ -25,17 +25,27 @@ repeat weekly whenever @jimb pastes a new article URL.
 - @jimb has his own **paid** subscription to `themultiplier.substack.com`.
   `web_fetch` alone only returns the free preview — the paywalled body isn't
   in the anonymous HTML at all.
-- To read the full paywalled article, @jimb exports his Substack session
-  cookie (`substack.sid` or similar) from browser DevTools → Application →
-  Cookies, and pastes **only the cookie value** into the chat.
-- Fetch the full page with `Invoke-WebRequest -Headers @{Cookie=...}` (or
-  `curl.exe -H "Cookie: ..."`), save to a temp file, then grep the raw HTML
-  for the section headers and list items to extract data. Do NOT use
+- The Substack session cookie value is stored at
+  `C:\Files\Dev\main\config\vader\substack_config.json` (key `"vader"`). Read
+  it from there first — do NOT ask @jimb to paste the cookie again unless
+  that file is missing or the stored value stops working (401/redirect to
+  login), in which case ask him to re-export a fresh one from browser
+  DevTools → Application → Cookies and update that file.
+- **That config file must never be committed.** It lives in its own git repo
+  (`C:\Files\Dev\main\config`, remote `github.com/purduepete/config`) and is
+  covered by a `.gitignore` entry (`vader/substack_config.json`) — verify
+  that entry is still present (`git check-ignore -v
+  vader\substack_config.json` from that repo root) before ever running `git
+  add`/`git commit` there. If the `.gitignore` entry is ever missing, add it
+  before touching git, and never `git add -A`/`git add .` in that repo
+  without checking `git status` first for the `vader/` folder.
+- Fetch the full page with `Invoke-WebRequest -Headers @{Cookie="substack.sid=<value>"}`
+  (or `curl.exe -H "Cookie: ..."`), save to a temp file, then grep the raw
+  HTML for the section headers and list items to extract data. Do NOT use
   `web_fetch` for the authenticated pull — it can't carry cookies.
-- **Never persist the cookie value** anywhere (no file, no repo, no memory).
-  Use it in one command, then let it go. Tell @jimb it's equivalent to a
-  password and worth rotating (log out/in elsewhere) once you're done for the
-  week.
+- Treat the cookie value as equivalent to a password: don't print it in chat
+  output beyond what's needed to construct the request, and don't copy it
+  anywhere besides that one config file.
 - **Copyright:** only extract structured facts (ticker, put/call, strike,
   expiry, DTE, delta, annualized %, premium $, collateral $, risk tag) and
   short paraphrases of the day-by-day trading rules. Never reproduce the
