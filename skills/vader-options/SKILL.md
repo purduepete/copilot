@@ -8,7 +8,8 @@ description: >-
   options calendar", "build my weekly options calendar", "update the options
   calendar", "pull this week's multiplier newsletter", "new vader options
   picks", "weekly trade calendar", "options newsletter to html", "refresh the
-  covered call calendar".
+  covered call calendar", "telegram signals dashboard", "start the vader
+  telegram server", "live vader telegram calendar".
 argument-hint: <substack article URL>
 ---
 
@@ -157,3 +158,48 @@ paywalled content under his subscription — mainly to reconfirm the
 copyright/personal-use guardrails and flag any technical gaps (e.g. embedding
 the cookie in output). It is not a database-altering change, so this is a
 light-touch check, not a mandatory gate.
+
+## Second capability: live Telegram VADER signals dashboard
+
+VADER also posts daily signals into a private Telegram channel, and
+`webportfolio`'s `telegram_ingest` pipeline already parses those into the
+`telegram_signal` SQL table (production Azure SQL DB). This is a second,
+separate output alongside the Substack weekly calendar, built in session
+`ae15e7af`:
+
+- **Live query, not a static snapshot.** Unlike the Substack calendar (one
+  dated HTML file per article), this reads the DB directly on every page
+  load. The current week's day-card grid grows in place as new
+  `report_date`s land, from just Monday early in the week up to all 5 days
+  by Friday.
+- **Both puts and calls, always.** Raw structured fields from the DB, not
+  paraphrased newsletter prose. No copyright concerns since it's @jimb's own
+  data pipeline output, not a third party's article text.
+- **Files**:
+  - `C:\Files\Dev\main\copilot\skills\vader-options\telegram-dashboard\server.py`
+    — local Flask app, SELECT-only against `telegram_signal`, binds
+    `127.0.0.1:5057` only, reads DB creds from webportfolio's own
+    `config\config.ini`. Supports `?week=YYYY-MM-DD` for week navigation and
+    returns `isCurrentWeek`/`hasPriorWeekData`/`hasNextWeekData` flags.
+  - Same folder's `requirements.txt` and `README.md` (start instructions +
+    full security notes).
+  - `C:\Users\JimBrown\OneDrive\Trading\Vader\vader-telegram-live.html` —
+    single permanent file (not re-dated; content is always live), same
+    subgrid/risk-tier/dark-light design system as the Substack calendar,
+    with prev/next-week navigation arrows. Fetches from the local server on
+    load; shows a clear inline message if the server isn't running.
+- **To use it**: start the server (`python server.py` from the
+  `telegram-dashboard` folder, after `pip install -r requirements.txt`),
+  then open `vader-telegram-live.html` in a browser.
+- **Security guardrails** (same spirit as the Substack cookie handling):
+  DB credentials are read from webportfolio's existing config file, never
+  duplicated or committed anywhere else. This script is SELECT-only by code
+  discipline; an independent review (GPT-family + Mai-family, session
+  `ae15e7af`) recommended a dedicated read-only SQL login as a follow-up
+  hardening step, which @jimb chose to defer for now. If that hardening
+  request comes later, treat it as a small, separate follow-up, not a reason
+  to touch anything else here.
+- This capability lives entirely outside the `webportfolio` repo on purpose
+  (personal, read-only side tool, no GitHub issue), per @jimb's explicit
+  choice to avoid that repo's mandatory workflow for something that isn't a
+  production feature.
