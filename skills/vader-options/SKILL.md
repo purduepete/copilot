@@ -78,10 +78,12 @@ repeat weekly whenever @jimb pastes a new article URL.
 1. Load the `webapp-style` skill for the design tokens (squared corners,
    indigo/violet accent gradient, dark-default + light theme + toggle,
    Lucide-style stroke SVG icons, Inter font).
-2. Single self-contained `weekly-options-calendar.html`, no build step, saved
-   to `C:\Users\JimBrown\OneDrive\Trading\Vader\weekly-options-calendar.html`
-   (the standing output location — personal use only; overwrite it each week
-   rather than creating dated copies unless @jimb asks to keep history). Include a "Week of / generated <timestamp>, local time" stamp
+2. Single self-contained HTML file, no build step, named
+   `weekly-options-calendar-<week-of-monday-date>.html` (e.g.
+   `weekly-options-calendar-2026-08-17.html`) and saved to
+   `C:\Users\JimBrown\OneDrive\Trading\Vader\` (the standing output folder —
+   personal use only). Create a new dated file each week rather than
+   overwriting the prior week's, so the history of past calendars is kept. Include a "Week of / generated <timestamp>, local time" stamp
    in the header so stale data is obvious.
 3. Layout: a Mon–Fri grid of day cards. Use **CSS Grid `subgrid`** so every
    day's rule/event box and trade list start at the *same* shared row across
