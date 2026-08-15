@@ -104,6 +104,15 @@ repeat weekly whenever @jimb pastes a new article URL.
    semicolons, or parentheses instead, per @jimb's writing-style rules. En
    dashes for date ranges (e.g. "Monday-Friday") are fine; it's the em dash
    used as a clause-separator that's banned.
+2d. **All intraday market-event times in the article (data releases,
+   earnings, jobs reports, Fed announcements, etc.) are stated in Eastern
+   Time.** @jimb is in Pacific Time, so convert every clock time to Pacific
+   before showing it (subtract 3 hours during EDT/PDT, which covers most of
+   the trading year; check for standard-time overlap around early
+   November-early March, where the offset is also 3 hours since both zones
+   shift together). Show the Pacific time first, with the Eastern time in
+   parentheses for reference, e.g. "5:30 AM Pacific (8:30 AM Eastern)" -
+   never show a bare Eastern time unlabeled.
 3. Layout: a Mon–Fri grid of day cards. Use **CSS Grid `subgrid`** so every
    day's rule/event box and trade list start at the *same* shared row across
    all 5 columns, regardless of how long that day's rule text or event
