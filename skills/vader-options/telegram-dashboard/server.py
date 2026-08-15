@@ -1,11 +1,12 @@
 """
 Vader Telegram Live Dashboard - local read-only Flask server.
 
-Serves live VADER option signals (covered calls + cash-secured puts) parsed
-from the private Telegram channel and stored in webportfolio's production
-`telegram_signal` SQL table, so `vader-telegram-live.html` can render the
-same Monday-Friday calendar layout as the Substack weekly calendar, but
-backed by live data instead of a static newsletter.
+Serves live VADER cash-secured-put option signals parsed from the private
+Telegram channel and stored in webportfolio's production `telegram_signal`
+SQL table, so `vader-telegram-live.html` can render the same Monday-Friday
+calendar layout as the Substack weekly calendar, but backed by live data
+instead of a static newsletter. Puts only, per @jimb's request; covered
+calls are excluded from this view.
 
 SECURITY / SCOPE (read this before changing anything):
   * SELECT-only. This script must never INSERT/UPDATE/DELETE. There is no
@@ -117,8 +118,8 @@ DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 # The dedup SQL below mirrors webportfolio's own getCspExplorer/getLatestCspSignals
 # pattern (telegramSignalService.ts): partition by (report_date, contract_key),
 # prefer the tier-bucketed row over a Top-Picks-only row, and OR is_top_pick
-# across duplicates. Unlike that production query, this one does NOT filter
-# option_right, so both puts ('P') and calls ('C') come back.
+# across duplicates. Puts only ('P') - per @jimb's request the dashboard omits
+# covered calls entirely.
 SIGNAL_QUERY = """
 WITH base AS (
     SELECT
@@ -150,7 +151,7 @@ WITH base AS (
                      s.annualized_yield DESC
         ) AS rn
     FROM telegram_signal s
-    WHERE s.is_current = 1 AND s.parse_status = 'parsed'
+    WHERE s.is_current = 1 AND s.parse_status = 'parsed' AND s.option_right = 'P'
       AND s.report_date BETWEEN ? AND ?
 )
 SELECT
@@ -164,7 +165,7 @@ ORDER BY report_date, tier, option_right, annualized_yield DESC
 EXISTS_QUERY = """
 SELECT TOP 1 1 AS found
 FROM telegram_signal
-WHERE is_current = 1 AND parse_status = 'parsed'
+WHERE is_current = 1 AND parse_status = 'parsed' AND option_right = 'P'
   AND report_date BETWEEN ? AND ?
 """
 
