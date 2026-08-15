@@ -103,6 +103,10 @@ day-specific trading rules.
    `C:\Users\JimBrown\OneDrive\Trading\Vader\` (the standing output folder -
    personal use only). Create a new dated file each week rather than
    overwriting the prior week's, so the history of past calendars is kept.
+   The `weboptions` Flask server reads this exact folder directly (no
+   copying needed) to serve a card-based index of every week at
+   `http://<LAN-IP>:5057/calendars` - dropping a correctly-named file here is
+   all that's needed for it to show up there.
    Extract the actual publish date from the fetched page's metadata (look
    for `"datePublished":"..."` or `<meta property="article:published_time"
    content="...">` in the raw HTML) rather than assuming "today" or the
@@ -212,6 +216,14 @@ separate output alongside the Substack weekly calendar. As of session
     symbol filter, collapsible risk-tier groups, and a simple footer
     timestamp. The committed source contains a placeholder token
     (`__WEBOPTIONS_API_KEY__`) instead of a real key.
+  - `web/calendars-index.html` - a card-based index of every weekly
+    Substack calendar, served at `/calendars`. The server reads
+    `weekly-options-calendar-*.html` filenames directly out of
+    `OneDrive\Trading\Vader\` (configurable via `WEBOPTIONS_CALENDARS_DIR`)
+    - dropping a correctly-named file there is all that's needed for it to
+    show up on this page, newest-first, linking to `/calendars/<date>`. The
+    dashboard and calendars-index pages cross-link each other in their
+    headers.
   - **This capability no longer lives under this skill's folder or
     OneDrive** - both prior copies (`copilot/skills/vader-options/
     telegram-dashboard/` and `OneDrive\Trading\Vader\
