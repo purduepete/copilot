@@ -79,12 +79,19 @@ repeat weekly whenever @jimb pastes a new article URL.
    indigo/violet accent gradient, dark-default + light theme + toggle,
    Lucide-style stroke SVG icons, Inter font).
 2. Single self-contained HTML file, no build step, named
-   `weekly-options-calendar-<week-of-monday-date>.html` (e.g.
-   `weekly-options-calendar-2026-08-17.html`) and saved to
+   `weekly-options-calendar-<article-published-date>.html` (e.g.
+   `weekly-options-calendar-2026-08-10.html`, using the article's own publish
+   date, not a guessed "week of" date) and saved to
    `C:\Users\JimBrown\OneDrive\Trading\Vader\` (the standing output folder —
    personal use only). Create a new dated file each week rather than
-   overwriting the prior week's, so the history of past calendars is kept. Include a "Week of / generated <timestamp>, local time" stamp
-   in the header so stale data is obvious.
+   overwriting the prior week's, so the history of past calendars is kept.
+   Extract the actual publish date from the fetched page's metadata (look
+   for `"datePublished":"..."` or `<meta property="article:published_time"
+   content="...">` in the raw HTML) rather than assuming "today" or the
+   Monday of the trading week — convert from UTC to local time per @jimb's
+   personal instructions. Show it in the header as "Published <date>" plus a
+   separate "Calendar generated <timestamp>, local time" line so it's clear
+   which date is the article's and which is when the HTML was built.
 3. Layout: a Mon–Fri grid of day cards. Use **CSS Grid `subgrid`** so every
    day's rule/event box and trade list start at the *same* shared row across
    all 5 columns, regardless of how long that day's rule text or event
