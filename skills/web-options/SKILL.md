@@ -199,20 +199,19 @@ separate output alongside the Substack weekly calendar. As of session
     Binds this machine's **specific LAN IPv4 address** (not `127.0.0.1`,
     not `0.0.0.0`) so it's reachable from other devices on the home network
     during dev. Reads DB creds from webportfolio's own `config\config.ini`.
-    Every `/api/*` route requires an `X-API-Key` header matching the value
-    in `server/secrets.ini` (gitignored, never committed; copy
-    `secrets.example.ini` and set a real random value). Supports
-    `?week=YYYY-MM-DD` for week navigation and returns
-    `isCurrentWeek`/`hasPriorWeekData`/`hasNextWeekData` flags.
+    Also serves the dashboard page itself (see below). Every `/api/*` route
+    requires an `X-API-Key` header matching the value in `server/secrets.ini`
+    (gitignored, never committed; copy `secrets.example.ini` and set a real
+    random value). Supports `?week=YYYY-MM-DD` for week navigation and
+    returns `isCurrentWeek`/`hasPriorWeekData`/`hasNextWeekData` flags.
   - `server/requirements.txt`, `README.md` (start instructions, full
     security notes, API-key rotation steps).
   - `web/vader-telegram-live.html` - single permanent file (not re-dated;
     content is always live), same subgrid/risk-tier/dark-light design
     system as the Substack calendar, with prev/next-week navigation,
     symbol filter, collapsible risk-tier groups, and a simple footer
-    timestamp. On first load it prompts once for the server's `host:port`
-    and the API key, then remembers both in `sessionStorage` for that
-    browser tab/session only (not `localStorage`).
+    timestamp. The committed source contains a placeholder token
+    (`__WEBOPTIONS_API_KEY__`) instead of a real key.
   - **This capability no longer lives under this skill's folder or
     OneDrive** - both prior copies (`copilot/skills/vader-options/
     telegram-dashboard/` and `OneDrive\Trading\Vader\
@@ -220,19 +219,33 @@ separate output alongside the Substack weekly calendar. As of session
     became the single source of truth.
 - **To use it**: from `weboptions\server`, `pip install -r
   requirements.txt`, set up `secrets.ini`, run `python server.py` (it prints
-  the LAN address it bound to), then open `weboptions\web\
-  vader-telegram-live.html` in a browser and answer the two prompts.
+  the LAN address it bound to and the dashboard URL). Then just browse
+  directly to `http://<LAN-IP>:5057/vader-telegram-live.html` (or
+  `http://<LAN-IP>:5057/`, which redirects there) from any device on the
+  home LAN - no local file, no prompts. The server serves the page itself
+  with the real API key auto-injected in place of the placeholder, and sets
+  `Cache-Control: no-store` on that response so a rotated key never sticks
+  in a cached copy.
 - **Security guardrails**: DB credentials are read from webportfolio's
   existing config file, never duplicated or committed anywhere else. The
   server is SELECT-only by code discipline; an independent review
   (GPT-family + Mai-family, session `ae15e7af`) recommended a dedicated
   read-only SQL login as a follow-up hardening step, which @jimb chose to
-  defer for now. The LAN-bind + shared-secret-API-key remote-access model
-  (added later in the same session, also independently reviewed by
-  GPT-5.4 + Mai-1.1-flash) is documented in the `weboptions` README; known
-  accepted limitations are plaintext HTTP and the still-not-read-only-
-  enforced DB creds. If either hardening request comes later, treat it as
-  a small, separate follow-up, not a reason to touch anything else here.
+  defer for now - this remains the single highest-priority follow-up
+  hardening item. The LAN-bind + shared-secret-API-key remote-access model
+  (added later in the same session, independently reviewed by GPT-5.4 +
+  Mai-1.1-flash) is documented in the `weboptions` README. **Important
+  honest note, from a second independent review** (GPT-5.4 approve-with-
+  changes, Mai-1.1-flash reject) after the page itself moved to being
+  served by this app: once the API key is embedded in every served page,
+  it is NOT real per-request authentication - anyone who can browse to the
+  page can view-source the key out and call `/api/*` directly. @jimb
+  reviewed this trade-off directly and chose to keep the header check
+  anyway, as a light nuisance control, not a security boundary; **the real
+  trust boundary is being on the home LAN**. Known accepted limitations
+  remain plaintext HTTP and the still-not-read-only-enforced DB creds. If
+  any hardening request comes later, treat it as a small, separate
+  follow-up, not a reason to touch anything else here.
 - This capability lives entirely outside the `webportfolio` repo on purpose
   (personal, side-project tool, no GitHub issue), per @jimb's explicit
   choice to avoid that repo's mandatory workflow for something that isn't a
