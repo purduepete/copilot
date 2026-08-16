@@ -155,6 +155,44 @@ day-specific trading rules.
    future weeks unless he asks.
 6. Open the file in the browser (`Start-Process <path>`) after every
    meaningful change so @jimb can eyeball it before iterating further.
+7. **Also write a JSON sidecar** to
+   `C:\Files\Dev\main\weboptions\data\calendars\weekly-options-calendar-<publish-date>.json`.
+   The HTML is for eyeballing; the sidecar is the real handoff. The Node
+   server on jimbrownhome cannot read the laptop's OneDrive folder, so a week
+   that never reaches this file never reaches the dashboard.
+   Shape (display strings exactly as written in the HTML - the ingest step
+   normalizes them):
+   ```json
+   {
+     "publishDate": "2026-08-10",
+     "title": null,
+     "macro": [{ "label": "VIX at its lowest close", "text": "..." }],
+     "days": [
+       {
+         "name": "Monday", "date": "Aug 10",
+         "rule": "...", "event": null,
+         "trades": [
+           { "ticker": "PM", "type": "put", "strike": "$175P",
+             "expiry": "2026-09-18", "dte": 42, "delta": "-0.19",
+             "ann": "9.7%", "premium": "$195", "collateral": "$17,500",
+             "risk": "conservative", "note": "..." }
+         ]
+       }
+     ]
+   }
+   ```
+   All five weekdays must be present even when a day has no trades: the rule
+   and the event are the point of an empty day. `macro` carries every
+   headline in the banner, which is 3 or 4 depending on the week.
+8. Ingest it, from the weboptions repo root, with the operator credentials
+   (never the `weboptions_ro` service login):
+   ```powershell
+   $env:WEBPORTFOLIO_CONFIG_PATH='C:\Files\Dev\main\webportfolio\config\config.ini'
+   npx tsx backend/tools/ingest-calendar.ts .\data\calendars --confirm
+   ```
+   It dry-runs without `--confirm`, and skips a week whose contents have not
+   changed. Re-running after an edit needs `--force`. Note that `npm run`
+   swallows `--confirm`, so call the tool through `npx tsx` directly.
 
 ### Weekly repeat workflow
 
@@ -168,7 +206,9 @@ When @jimb pastes a new article URL:
    the day-of-week rules, respecting the article's own day-grouping headers.
 4. Rebuild `weekly-options-calendar.html` with the new week's data, following
    the layout conventions above.
-5. Open it, and iterate on any feedback before considering the week done.
+5. Write the JSON sidecar and ingest it (steps 7 and 8 above). A week is not
+   done until it is in SQL.
+6. Open it, and iterate on any feedback before considering the week done.
 
 ### Independent review
 
