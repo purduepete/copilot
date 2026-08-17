@@ -23,6 +23,10 @@ none exists by design.
 - `Install-Skills.ps1` also links skills from `$ExtraSkillRepos` (e.g. the confidential
   `bedrock_analysis\skills`) **only if that path exists** locally — so a
   machine without that repo simply skips it.
+- `settings\machine-overrides.json` can exclude skill names for the shared `work`
+  and `home` computer classes. A machine can add one-off exclusions through
+  `%USERPROFILE%\.copilot\skills-ignore.txt`. The installer skips those skills and
+  removes existing junctions while leaving real folders untouched.
 - The CLI reads skills at startup, so tell the user to run `/restart` after any skill
   change for it to take effect.
 

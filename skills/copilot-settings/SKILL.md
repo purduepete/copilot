@@ -78,13 +78,16 @@ script):
 
 **Where it lives**: `copilot\settings\machine-overrides.json` — a repo-only file
 (there's no copy of it on `%USERPROFILE%\.copilot`; the CLI doesn't read it, only the
-sync script does):
+settings sync and skill installer scripts read it):
 ```json
 {
-  "work": { "model": "gpt-5.6-sol" },
-  "home": { "model": "claude-sonnet-5" }
+  "work": { "model": "gpt-5.6-sol", "ignoredSkills": [] },
+  "home": { "model": "claude-sonnet-5", "ignoredSkills": [] }
 }
 ```
+
+`ignoredSkills` controls which skill junctions `Install-Skills.ps1` removes for
+that machine class. The settings sync leaves this list unchanged.
 
 **How it behaves:**
 

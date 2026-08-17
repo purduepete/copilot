@@ -7,7 +7,8 @@ description: >-
   git pull, on a new machine, or when a skill isn't loading.
   WHEN: "relink my skills", "re-link skills", "junction my skills", "reinstall my
   skills", "fix skill links", "my skills aren't loading", "link skills after pull",
-  "install my skills on this machine".
+  "install my skills on this machine", "ignore a skill on this computer",
+  "home-only skill", "work-only skill".
 argument-hint: (none)
 ---
 
@@ -23,6 +24,7 @@ Copilot CLI via a **directory junction** for each skill into:
 - missing link  → creates the junction (`+ Linked …`)
 - junction pointing at a stale/old target → re-points it (`~ Re-linked …`)
 - already correct → leaves it (`= … already linked`)
+- skill listed in the machine-local ignore file → skips it and removes its junction
 - a **real folder** (not a junction) with that name → **skipped with a warning**
   (won't clobber real data; remove it manually to let the junction take over)
 
@@ -37,6 +39,28 @@ pwsh -NoProfile -File C:\Files\Dev\main\copilot\skills\Install-Skills.ps1
 ```
 Junctions need no admin rights. Re-running is always safe (idempotent).
 
+## Ignore skills by computer class
+
+Edit `C:\Files\Dev\main\copilot\settings\machine-overrides.json`. Add skill folder
+names to `ignoredSkills` under `work` or `home`:
+
+```json
+{
+  "work": {
+    "model": "gpt-5.6-sol",
+    "ignoredSkills": ["plex"]
+  }
+}
+```
+
+The installer uses the same `Get-MachineClass` rules as `copilot-settings`. The
+next run removes existing junctions for excluded skills. Real folders are left
+untouched.
+
+For an exception on one specific computer, add names to
+`%USERPROFILE%\.copilot\skills-ignore.txt`, one per line. Blank lines and lines
+beginning with `#` are ignored. These local names are combined with the class list.
+
 ## Verify
 ```powershell
 $repo = 'C:\Files\Dev\main\copilot\skills'
@@ -49,7 +73,8 @@ foreach ($n in $names) {
   "{0} {1}" -f $(if($ok){'OK '}else{'MISSING'}), $n
 }
 ```
-Report any `MISSING` or any `not a junction` warning so @jimb can resolve it.
+Compare `MISSING` names with the active class's `ignoredSkills`. Report any other
+missing skill or `not a junction` warning so @jimb can resolve it.
 
 ## Notes
 - This only links **skill folders**; it does not pull. Run `git pull` first if you

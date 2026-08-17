@@ -92,19 +92,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $script:RepoRoot = Split-Path -Parent $RepoSettings
-
-function Get-MachineClass {
-    <#
-      Classifies $env:COMPUTERNAME into "work" or "home". Returns $null for an
-      unrecognized machine - every caller must treat $null as "leave per-machine keys
-      alone", never as "fall back to some default".
-    #>
-    param([string]$ComputerName = $env:COMPUTERNAME)
-
-    if ($ComputerName -like 'XFINJIMB*' -or $ComputerName -like 'CPC-jimb-*') { return 'work' }
-    if ($ComputerName -like 'JIMBROWN*') { return 'home' }
-    return $null
-}
+. (Join-Path $PSScriptRoot 'Machine-Class.ps1')
 
 function Invoke-Git {
     <#

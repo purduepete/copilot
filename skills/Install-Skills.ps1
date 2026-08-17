@@ -13,6 +13,12 @@
   a different (e.g. old/deleted) target, it is re-pointed at this repo. Real (non-
   junction) folders are left untouched so no data is lost.
 
+  Skills can be excluded by machine class through settings\machine-overrides.json,
+  using the shared work/home classification in tools\Machine-Class.ps1. A machine
+  can add local exclusions in %USERPROFILE%\.copilot\skills-ignore.txt. Blank lines
+  and lines beginning with # are ignored. An excluded skill's existing junction is
+  removed.
+
   Run on each new laptop after cloning the repo to C:\Files\Dev\main\copilot.
   Junctions do not require admin rights (unlike symlinks).
 
@@ -23,6 +29,10 @@
 param(
     [string]$SkillsRepo = $PSScriptRoot,
     [string]$CopilotTarget = (Join-Path $env:USERPROFILE '.copilot\skills'),
+    [string]$IgnoreFile = (Join-Path $env:USERPROFILE '.copilot\skills-ignore.txt'),
+    [string]$MachineOverridesFile = (Join-Path (Split-Path $PSScriptRoot -Parent) 'settings\machine-overrides.json'),
+    [string]$MachineClassScript = (Join-Path (Split-Path $PSScriptRoot -Parent) 'tools\Machine-Class.ps1'),
+    [string]$ComputerName = $env:COMPUTERNAME,
     # Personal global instructions folder in this repo, linked into
     # %USERPROFILE%\.copilot\instructions so its *.instructions.md load in every repo.
     [string]$GlobalInstructionsRepo = (Join-Path (Split-Path $PSScriptRoot -Parent) 'global-instructions'),
@@ -37,8 +47,52 @@ param(
     )
 )
 
+if (-not (Test-Path -LiteralPath $MachineClassScript -PathType Leaf)) {
+    throw "Machine classification script not found: $MachineClassScript"
+}
+. $MachineClassScript
+
+function Get-IgnoredSkillNames {
+    param(
+        [string]$Path,
+        [string]$OverridesPath,
+        [string]$MachineClass
+    )
+
+    $names = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::OrdinalIgnoreCase
+    )
+
+    if (Test-Path -LiteralPath $Path -PathType Leaf) {
+        foreach ($line in Get-Content -LiteralPath $Path) {
+            $name = $line.Trim()
+            if ($name -and -not $name.StartsWith('#')) {
+                $null = $names.Add($name)
+            }
+        }
+    }
+
+    if ($MachineClass -and (Test-Path -LiteralPath $OverridesPath -PathType Leaf)) {
+        $overrides = Get-Content -LiteralPath $OverridesPath -Raw | ConvertFrom-Json -AsHashtable
+        if ($overrides.ContainsKey($MachineClass)) {
+            foreach ($name in @($overrides[$MachineClass]['ignoredSkills'])) {
+                $trimmed = ([string]$name).Trim()
+                if ($trimmed) {
+                    $null = $names.Add($trimmed)
+                }
+            }
+        }
+    }
+
+    return ,$names
+}
+
 function Install-SkillJunctions {
-    param([string]$SkillsRepo, [string]$Target)
+    param(
+        [string]$SkillsRepo,
+        [string]$Target,
+        [System.Collections.Generic.HashSet[string]]$IgnoredSkills
+    )
 
     New-Item -ItemType Directory -Path $Target -Force | Out-Null
 
@@ -46,6 +100,21 @@ function Install-SkillJunctions {
         $name = $_.Name
         $link = Join-Path $Target $name
         $dest = $_.FullName
+
+        if ($IgnoredSkills.Contains($name)) {
+            if (Test-Path -LiteralPath $link) {
+                $item = Get-Item -LiteralPath $link -Force
+                if ($item.LinkType -eq 'Junction') {
+                    Remove-Item -LiteralPath $link -Force -Recurse
+                    Write-Host "- Ignored $name (removed junction)"
+                    return
+                }
+                Write-Warning "$link is ignored but exists and is not a junction - leaving it untouched."
+                return
+            }
+            Write-Host "- Ignored $name"
+            return
+        }
 
         if (Test-Path -LiteralPath $link) {
             $item = Get-Item -LiteralPath $link -Force
@@ -102,13 +171,26 @@ function Install-DirectoryJunction {
     Write-Host "+ Linked global instructions -> $Source"
 }
 
+$machineClass = Get-MachineClass -ComputerName $ComputerName
+$ignoredSkills = Get-IgnoredSkillNames `
+    -Path $IgnoreFile `
+    -OverridesPath $MachineOverridesFile `
+    -MachineClass $machineClass
+if ($ignoredSkills.Count -gt 0) {
+    $scope = if ($machineClass) { "$machineClass machines plus local overrides" } else { 'local overrides' }
+    Write-Host "Ignoring skills for $scope"
+}
+elseif (-not $machineClass) {
+    Write-Warning "Machine class not recognized for $ComputerName; only local skill exclusions can apply."
+}
+
 Write-Host "--- Copilot CLI ($CopilotTarget) ---"
-Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $CopilotTarget
+Install-SkillJunctions -SkillsRepo $SkillsRepo -Target $CopilotTarget -IgnoredSkills $ignoredSkills
 
 foreach ($extra in $ExtraSkillRepos) {
     if (Test-Path -LiteralPath $extra) {
         Write-Host "`n--- Extra skills ($extra) ---"
-        Install-SkillJunctions -SkillsRepo $extra -Target $CopilotTarget
+        Install-SkillJunctions -SkillsRepo $extra -Target $CopilotTarget -IgnoredSkills $ignoredSkills
     }
     else {
         Write-Host "`n- Skipping (not present): $extra"
