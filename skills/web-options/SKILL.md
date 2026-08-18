@@ -1,27 +1,27 @@
 ---
 name: web-options
 description: >-
-  Build and extend @jimb's personal options-trading web dashboards. Three
-  capabilities: (1) local HTML calendar of covered-call/CSP picks from a
-  weekly Multiplier/Substack article, by risk tier and day; (2) live HTML
-  dashboard reading VADER Telegram signals from the webportfolio database via
-  a local Flask server; (3) DB-backed "Weekly Report" archive of the
-  Multiplier's weekly results/performance article (P&L/hit-rate/callouts).
-  (2) and (3) live in the `weboptions` repo. Named generically; only current
-  data sources are Vader-specific. WHEN: "vader options calendar", "build my
-  weekly options calendar", "update the options calendar", "pull this week's
-  multiplier newsletter", "new vader options picks", "weekly trade calendar",
-  "options newsletter to html", "refresh the covered call calendar",
-  "telegram signals dashboard", "start the vader telegram server", "live
-  vader telegram calendar", "weboptions", "web options dashboard", "weekly
-  options results", "weekly performance report", "vader weekly report".
+  Build and extend @jimb's personal options-trading web dashboards. Two
+  capabilities today: (1) turn a weekly Multiplier/Substack options-newsletter
+  article (fetched with his own subscriber session cookie) into a personal,
+  local HTML weekly calendar dashboard of covered-call/cash-secured-put trade
+  picks, grouped by risk tier and day; (2) a live HTML dashboard backed by a
+  local Flask server reading VADER Telegram signals from the webportfolio
+  database, developed in the `weboptions` repo. Named generically since the
+  dashboard/server code isn't Vader-specific, even though today's only data
+  sources are. WHEN: "vader options calendar", "build my weekly options
+  calendar", "update the options calendar", "pull this week's multiplier
+  newsletter", "new vader options picks", "weekly trade calendar", "options
+  newsletter to html", "refresh the covered call calendar", "telegram signals
+  dashboard", "start the vader telegram server", "live vader telegram
+  calendar", "weboptions", "web options dashboard".
 argument-hint: <substack article URL>
 ---
 
 # Web Options — options-trading dashboards
 
-Three related but independent capabilities, all personal-use dashboards for
-options-trading picks and results. Built starting in session `ae15e7af-...`.
+Two related but independent capabilities, both personal-use HTML dashboards
+for options-trading picks. Built starting in session `ae15e7af-...`.
 Originally named `vader-options` (renamed here since the code itself is
 generic; only the current data sources happen to be VADER/Multiplier).
 
@@ -30,9 +30,6 @@ generic; only the current data sources happen to be VADER/Multiplier).
 2. **Live Telegram dashboard** - a small local Flask API + a permanent HTML
    file that queries a live database on every load, developed in the
    `weboptions` GitHub repo (`C:\Files\Dev\main\weboptions`).
-3. **Weekly Report** - a DB-backed archive of the Multiplier's separate
-   weekly *results/performance* article (P&L, hit rate, roll chains,
-   assignments), also in the `weboptions` app.
 
 ## Capability 1: weekly Substack calendar
 
@@ -309,97 +306,3 @@ separate output alongside the Substack weekly calendar. As of session
   the `jimbrownhome` server for permanent hosting with automated startup
   and data refresh. That's a distinct, later request - don't build it
   unprompted.
-
-## Capability 3: Weekly Report (performance/results archive)
-
-The Multiplier also publishes a separate weekly *results* article (distinct
-from Capability 1's Monday-Friday trade-picks calendar): realized P&L, hit
-rate, roll chains, assignments, and an open-position summary. Example:
-`https://themultiplier.substack.com/p/6853-in-weekly-options-income-from`.
-Lives in the `weboptions` app (DB-backed, same JSON-sidecar-then-ingest
-pattern as Capability 1's calendar, not a static HTML file), under a
-standalone **"Reports"** nav section, path `/reports/latest` and
-`/reports/<publishDate>`.
-
-### Workflow, given a new article URL
-
-1. `web_fetch` the URL. This article's free preview loaded the full body with
-   no paywall hit or cookie needed - if a future week truncates, fall back to
-   the same authenticated `Invoke-WebRequest -Headers @{Cookie=...}` pattern
-   as Capability 1, using the same stored cookie
-   (`C:\Files\Dev\main\config\substack\substack_config.json`, key `"vader"`).
-2. **Get the actual publish date from the article's own `datePublished`
-   metadata, never the title or "today."** The title's date range (e.g.
-   "August 10-14 Review") is the week being *reviewed*, not the publish date;
-   the article itself typically posts the following Sunday/Monday. Extract
-   it by saving the raw HTML and regex-matching `"datePublished":"([^"]+)"`
-   in the JSON-LD block (`Invoke-WebRequest -UseBasicParsing`, then
-   `$content -match '"datePublished":"([^"]+)"'`) - `web_fetch`'s markdown
-   conversion strips this metadata, so fetch raw HTML for this step. Convert
-   from UTC to local per @jimb's personal instructions (usually the same
-   calendar date).
-3. Extract the headline metrics: net P&L, closed/winning/roll leg counts, hit
-   rate %, winners $ / roll cost $, collateral and return %, new
-   positions/premium, net cash, median days held, and the open-position
-   summary (total, calls/puts split, green/yellow/red counts). Percentages
-   are **percentage points** (e.g. `92.1`, not `0.921`), matching the
-   calendar feature's convention.
-4. Extract 2-5 notable-trade callouts (roll chains, assignments, defensive
-   rolls) as short paraphrases only, never verbatim article prose. Tag each
-   with `ticker` and `kind` (`roll` / `assignment` / `close` / `note` - an
-   unrecognized kind falls back to `note` rather than failing ingest).
-5. Write `C:\Files\Dev\main\weboptions\data\reports\weekly-report-<publishDate>.json`:
-   ```json
-   {
-     "publishDate": "2026-08-16",
-     "title": "$6,853 in Weekly Options Income from Selling Puts and Calls: August 10-14 Review & Case Studies",
-     "sourceUrl": "https://themultiplier.substack.com/p/6853-in-weekly-options-income-from",
-     "metrics": {
-       "netPnl": 6853, "closedLegs": 38, "winningLegs": 35, "rollLegs": 3,
-       "hitRate": 92.1, "winnersAmount": 6911, "rollCost": 58,
-       "collateral": 455150, "returnPct": 1.51, "newPositions": 38,
-       "newPremium": 12853, "netCash": 8748, "medianDaysHeld": 10,
-       "openPositionsTotal": 87, "openCalls": 55, "openPuts": 32,
-       "openGreen": 23, "openYellow": 24, "openRed": 40
-     },
-     "macro": [{ "label": "VIX", "text": "Opened 15.46 Monday, closed 14.25 Friday, the week's low." }],
-     "callouts": [
-       { "ticker": "ALB", "kind": "roll", "headline": "Roll chain from $135 to $116 closed keeping ~97% of premium",
-         "body": "Walked the strike down three times as ALB fell, then the stock reversed and both final legs closed near max profit." }
-     ]
-   }
-   ```
-   `sourceUrl` is required for provenance/audit. All five weekday-style
-   fields aren't needed here (unlike the calendar's per-day structure) -
-   this is one row per published week.
-6. Ingest it, from the `weboptions` repo root, with operator credentials
-   (never the `weboptions_ro` read-only login), same as the calendar feature:
-   ```powershell
-   $env:WEBPORTFOLIO_CONFIG_PATH='C:\Files\Dev\main\webportfolio\config\config.ini'
-   npx tsx backend/tools/migrate.ts --confirm         # only if 007/008 aren't applied yet
-   npx tsx backend/tools/ingest-report.ts data/reports --confirm
-   ```
-   It dry-runs without `--confirm`, skips a week whose contents haven't
-   changed (source hash), and needs `--force` to re-ingest an edited week.
-   `npm run ingest-report` swallows `--confirm` - always call through
-   `npx tsx` directly when a confirm/force flag is needed.
-7. A week isn't done until it's confirmed in SQL and visible at
-   `/reports/latest` (or the specific `/reports/<publishDate>` route).
-
-### Copyright guardrail (same as Capability 1)
-
-Only lawfully-accessed, already-subscribed newsletter content - never bulk
-scraping or paywall bypass. Only structured facts (P&L numbers, tickers,
-dates, percentages) and short paraphrases go into the JSON/HTML. Never store
-or display verbatim article prose, headers, or editorial wording.
-
-### Notes
-
-- Previous/Next navigation on the report detail page walks nearest-existing
-  `publishDate`, not a fixed weekly offset, since backfilled weeks won't be
-  contiguous like the calendar's Monday-Friday days are.
-- Backfilling older weeks uses this exact same workflow - @jimb supplies the
-  article URL, and the JSON sidecar + `ingest-report.ts` path handles any
-  date, contiguous or not.
-- Built and independently reviewed (Mai + GPT-family, converged
-  approve-with-changes) in session `15f42f18-...`.
