@@ -12,9 +12,10 @@ description: >-
   sources are. WHEN: "vader options calendar", "build my weekly options
   calendar", "update the options calendar", "pull this week's multiplier
   newsletter", "new vader options picks", "weekly trade calendar", "options
-  newsletter to html", "refresh the covered call calendar", "telegram signals
-  dashboard", "start the vader telegram server", "live vader telegram
-  calendar", "weboptions", "web options dashboard".
+  newsletter to html", "telegram signals dashboard", "start the vader telegram
+  server", "weboptions", "web options dashboard", "what selling percentage
+  should I use", "take profit percentage", "profit target per tier",
+  "analyze my options results".
 argument-hint: <substack article URL>
 ---
 
@@ -306,3 +307,61 @@ separate output alongside the Substack weekly calendar. As of session
   the `jimbrownhome` server for permanent hosting with automated startup
   and data refresh. That's a distinct, later request - don't build it
   unprompted.
+
+## Planned capability 3: per-tier profit-take recommendation
+
+**Not built. Recorded 2026-08-19 as a future request.** Don't start it
+unprompted; when @jimb asks, confirm the open questions below first.
+
+The goal: analyze the historical signal data and recommend a **selling
+percentage per risk tier** that maximizes profit. "Selling %" means the
+share of the credit captured at which the position should be bought back
+and closed, the standard "take profit at X% of max profit" rule. The
+recommendation is **per tier** (conservative / balanced / aggressive), not
+one global number, because the tiers have different delta and duration
+profiles and almost certainly different optimal exits.
+
+Decisions already made (@jimb, 2026-08-19):
+
+- **Objective is total credit captured**, not return per day of capital
+  committed. He considered both and chose raw credit, so optimize for the
+  dollars kept rather than for capital turnover. If a low take-profit level
+  turns out to win badly on an annualized basis, it is worth mentioning as a
+  secondary observation, but the recommended number follows total credit.
+- **Tier is the primary cut, delta is the allowed second one.** Start with a
+  number per tier, and break it down further by entry delta where the data
+  supports it. Nothing else (DTE, IV, VIX) is in scope unless he asks.
+
+Data available for this, all in the shared PROD DB (see the weboptions repo
+instructions for the read-only access model):
+
+- `opt.telegram_signal` for the entry side: tier, delta, premium,
+  annualized yield, collateral, expiry.
+- `opt.telegram_entry_quote` for the market as actually captured at entry
+  (`mark`, `delta`, `is_illiquid_quote`), one row per contract per report
+  date. **Capture began 2026-08-05 and cannot be backfilled**, so the usable
+  sample starts there and grows forward. Say so plainly in any output rather
+  than implying a longer history.
+- `opt.telegram_contract_price` is **the end-of-day source, and the one to
+  build this on** (@jimb's answer to "which table"). It carries the forward
+  daily path of each contract, which is what makes a "would this exit have
+  fired, and on which day" backtest possible at all. Only `regular_close`
+  rows are trustworthy; `missed` and `holiday` sessions are gaps, not zeroes,
+  and must not be treated as a day the exit failed to trigger. End-of-day
+  granularity also means an intraday touch of the target is invisible, so the
+  result is a conservative lower bound on how often an exit would have
+  filled. State that rather than implying tick-level accuracy.
+
+Guardrails:
+
+- WebOptions is a reader. Any new table this needs goes in the `optcfg`
+  schema, never `opt`.
+- The sample will be small for a long while. Report the number of closed
+  contracts behind every per-tier number and refuse to give a
+  recommendation for a tier that doesn't have enough of them, rather than
+  producing a confident percentage from a handful of trades. The delta
+  breakdown splits an already thin sample again, so treat it as optional:
+  show it only where a bucket clears the same bar, and fall back to the
+  tier-level number otherwise.
+- This is personal analysis of @jimb's own data, not trading advice. Keep
+  the output framed as what the historical data shows.
