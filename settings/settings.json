@@ -17,5 +17,6 @@
   "beep": true,
   "showTimestamps": true,
   "showTipsOnStartup": true,
-  "showToolDurations": true
+  "showToolDurations": true,
+  "planModel": "auto"
 }
