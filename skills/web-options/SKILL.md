@@ -1,21 +1,16 @@
 ---
 name: web-options
 description: >-
-  Build and extend @jimb's personal options-trading web dashboards. Two
-  capabilities today: (1) turn a weekly Multiplier/Substack options-newsletter
-  article (fetched with his own subscriber session cookie) into a personal,
-  local HTML weekly calendar dashboard of covered-call/cash-secured-put trade
-  picks, grouped by risk tier and day; (2) a live HTML dashboard backed by a
-  local Flask server reading VADER Telegram signals from the webportfolio
-  database, developed in the `weboptions` repo. Named generically since the
-  dashboard/server code isn't Vader-specific, even though today's only data
-  sources are. WHEN: "vader options calendar", "build my weekly options
-  calendar", "update the options calendar", "pull this week's multiplier
-  newsletter", "new vader options picks", "weekly trade calendar", "options
-  newsletter to html", "telegram signals dashboard", "start the vader telegram
-  server", "weboptions", "web options dashboard", "what selling percentage
-  should I use", "take profit percentage", "profit target per tier",
-  "analyze my options results".
+  Build and extend @jimb's personal options-trading web dashboards. Includes a
+  local HTML weekly calendar from Multiplier/Substack options-newsletter
+  articles and a live HTML dashboard backed by VADER Telegram signals from the
+  webportfolio database, developed in the `weboptions` repo. WHEN: "vader
+  options calendar", "build my weekly options calendar", "update the options
+  calendar", "pull this week's multiplier newsletter", "new vader options
+  picks", "weekly trade calendar", "options newsletter to html", "telegram
+  signals dashboard", "start the vader telegram server", "weboptions", "web
+  options dashboard", "what selling percentage should I use", "take profit
+  percentage", "profit target per tier", "analyze my options results".
 argument-hint: <substack article URL>
 ---
 
