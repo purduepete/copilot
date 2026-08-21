@@ -33,7 +33,32 @@ git --no-pager diff --stat
 Stage only files that belong to **this** change. Do **not** `git add -A` blindly
 when unrelated edits are present — ask which scope to ship if it's ambiguous.
 
-### 2. Write a structured commit message
+### 2. Run staged checks once, then repository validation
+
+Commands that invoke Git hooks can exceed the execution subagent's fixed reporting
+limit. Run `npx lint-staged`, repository smoke tests, and `git commit` with the
+**synchronous terminal tool**. Never delegate them to an execution subagent.
+
+After staging the intended files:
+
+```powershell
+git diff --cached --name-only
+npx lint-staged
+git add <the same intended files>  # re-stage any auto-fixes
+git diff --cached --check
+```
+
+Then run the repository's required validation, such as webportfolio's smoke suite:
+
+```powershell
+pwsh ./scripts/run-smoke-tests.ps1 -EnvironmentName azure-dev
+```
+
+If `npx lint-staged` succeeds before validation, commit with `--no-verify` so Husky
+does not run that same staged check a second time. If it was not run successfully in
+this sequence, use a normal commit and let the hook run.
+
+### 3. Write a structured commit message
 - **Subject:** imperative mood, <= 72 chars ("Add X", "Fix Y" — not "Added"/"Fixes").
 - **Body:** explain *why*, not just *what* (wrap ~72 cols). Optional for trivial changes.
 - **Always append** the trailer (unless @jimb says not to):
@@ -41,10 +66,17 @@ when unrelated edits are present — ask which scope to ship if it's ambiguous.
   Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
   ```
 ```powershell
-git commit -q -m "Imperative subject" -m "Why this change exists." -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git commit --no-verify -q -m "Imperative subject" -m "Why this change exists." -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git rev-parse --short HEAD
+git status --short
+git rev-list --left-right --count origin/main...HEAD
 ```
 
-### 3. ⚠️ Deploy gate (worklog_web ONLY) — do this BEFORE pushing
+Verify that the commit completed before starting the push. Keep commit and push as
+separate terminal operations so a slow hook or failed commit cannot silently skip the
+push step.
+
+### 4. ⚠️ Deploy gate (worklog_web ONLY) — do this BEFORE pushing
 `worklog_web\.github\workflows\deploy.yml` deploys the Function app on push to
 `main` when the changed paths match its filter:
 - `api/**`
@@ -66,7 +98,7 @@ git diff --cached --name-only
 Everything in `src/` EXCEPT the three bundled modules above is a dev-only script
 and must never be added back into the deploy `paths:` filter.
 
-### 4. Push and report
+### 5. Push and report
 ```powershell
 git push -q origin HEAD 2>&1 | Select-Object -Last 3
 "pushed $(git rev-parse --short HEAD)"
