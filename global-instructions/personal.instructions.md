@@ -13,6 +13,13 @@ machines to sync. Repo-specific rules still belong in each repo's
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
 - Treat the WorkLog category alias `dev` as `development`.
+- **VS Code Marketplace publisher is `lerxst`.** Set `"publisher": "lerxst"` in any
+  extension `package.json`, and publish with `npx @vscode/vsce login lerxst` then
+  `npx @vscode/vsce publish`. My GitHub account is `purduepete` and is unrelated to the
+  marketplace publisher, so `repository`/`bugs`/`homepage` URLs still point at
+  `github.com/purduepete/...`. The marketplace PAT comes from Azure DevOps with
+  **All accessible organizations** and the **Marketplace > Manage** scope. Never ask me
+  for the token in chat or put it in a command; I enter it at the `vsce login` prompt.
 - **Always display times in my local time zone**, never UTC. When a data source
   stores timestamps in UTC (e.g. the Copilot session store's `created_at`), convert
   to local time before showing them, and label them as local.
