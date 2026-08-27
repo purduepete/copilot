@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run AI Skill Manager Extension",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/ai-skill-manager-extension"],
+      "outFiles": ["${workspaceFolder}/ai-skill-manager-extension/out/**/*.js"],
+      "preLaunchTask": "compile AI Skill Manager Extension"
+    }
+  ]
+}

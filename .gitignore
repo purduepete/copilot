@@ -4,3 +4,7 @@ open-github-items.html
 
 # Timestamped backups written by tools/Sync-CopilotSettings.ps1
 *.bak-*
+
+!.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
