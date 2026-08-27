@@ -1,10 +1,9 @@
 # Personal global Copilot instructions (@purduepete)
 
 Shared across **all** repositories and machines. The canonical copy lives in the
-`copilot` repo at `global-instructions\personal.instructions.md` and is linked into
-`%USERPROFILE%\.copilot\instructions\` by `skills\Install-Skills.ps1` (directory
-junction, no admin required). Edit here, commit/push, then `git pull` on other
-machines to sync. Repo-specific rules still belong in each repo's
+`copilot` repo at `global-instructions\personal.instructions.md`. Edit here,
+commit/push, then update the instruction location configured on other machines.
+Repo-specific rules still belong in each repo's
 `.github/copilot-instructions.md`, which take precedence for that repo.
 
 ## Preferences

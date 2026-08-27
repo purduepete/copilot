@@ -11,22 +11,8 @@ none exists by design.
 - Each skill is a folder `skills/<name>/` containing a `SKILL.md` (and optional
   helper `.ps1` scripts referenced by **absolute path**, e.g.
   `C:\Files\Dev\main\worklog_web\cli\wl.ps1`).
-- The Copilot CLI loads skills from `%USERPROFILE%\.copilot\skills`. Skills are **not
-  copied** there — `skills/Install-Skills.ps1` creates a directory **junction** per
-  skill folder so repo edits are picked up live. It is idempotent and self-healing:
-  it links new folders, re-points stale junctions, and leaves real (non-junction)
-  folders untouched. Run it after cloning on a new machine, after a `git pull`, or
-  when a skill isn't loading:
-  ```powershell
-  pwsh -File C:\Files\Dev\main\copilot\skills\Install-Skills.ps1
-  ```
-- `Install-Skills.ps1` also links skills from `$ExtraSkillRepos` (e.g. the confidential
-  `bedrock_analysis\skills`) **only if that path exists** locally — so a
-  machine without that repo simply skips it.
-- `settings\machine-overrides.json` can exclude skill names for the shared `work`
-  and `home` computer classes. A machine can add one-off exclusions through
-  `%USERPROFILE%\.copilot\skills-ignore.txt`. The installer skips those skills and
-  removes existing junctions while leaving real folders untouched.
+- Register this repository's skills root with Copilot CLI after cloning or when it is
+  no longer available: `/skills add C:\Files\Dev\main\copilot\skills`.
 - The CLI reads skills at startup, so tell the user to run `/restart` after any skill
   change for it to take effect.
 

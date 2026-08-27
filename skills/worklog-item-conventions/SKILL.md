@@ -1,17 +1,12 @@
 ---
 name: worklog-item-conventions
 description: >-
-  Conventions for referencing and wording WorkLog entries. (1) RESOLUTION: "item N" /
-  "task N" with no date means the Nth entry of TODAY by start-time order, mapped to its
-  actual global id — never fall back to a prior day; empty today = no-op. (2) NAMING: keep
-  the item TITLE (the "Item" column) short and scannable and put the detail in the
-  ACCOMPLISHMENT; both title AND accomplishment are mandatory, and for mined
-  (vscode/session) work dig into the transcript to make both representative.
-  WHEN: creating/starting/closing a WorkLog task, naming a task, writing an accomplishment,
-  "the item column should be simpler", "shorten the title", "carry this over to the
-  accomplishment", "make the title cleaner", "add accomplishments", "title isn't
-  representative", "dig deeper", "delete item N", "edit item N", "stop item N", "item N with
-  no date", "which day does item N mean", "delete task 1", "no day reference assume today".
+  Resolve a WorkLog "item N" or "task N" as today's Nth entry by start time, mapped to its
+  global id. Never fall back to a prior day; an empty day is a no-op. Keep item titles short
+  and put concrete detail in an accomplishment, including for mined work. WHEN: creating,
+  starting, stopping, or editing a WorkLog task; naming a task; writing an accomplishment;
+  "shorten the title", "add accomplishments", "delete item N", "edit item N", "stop item N",
+  "item N with no date", "which day does item N mean", "delete task 1".
 argument-hint: the item/task number and/or the wording change (e.g. "shorten item 3's title and move detail to accomplishment")
 ---
 

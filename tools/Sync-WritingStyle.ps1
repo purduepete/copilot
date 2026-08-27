@@ -10,11 +10,11 @@ Re-run this after editing the Google Drive copy to resync.
 [CmdletBinding()]
 param(
     [string]$Source = 'G:\My Drive\ai\anti-ai-writing-style.md',
-    [string]$Dest   = 'C:\Files\Dev\main\copilot\global-instructions\writing-style.instructions.md'
+    [string]$Dest = 'C:\Files\Dev\main\copilot\global-instructions\writing-style.instructions.md'
 )
 
 if (-not (Test-Path -LiteralPath $Source)) {
-    throw "Source not found: $Source"
+    throw "Writing-style source not found: $Source. Mount Google Drive or pass -Source with the canonical file path."
 }
 
 $body = Get-Content -LiteralPath $Source -Raw
@@ -66,15 +66,16 @@ $out = $out -replace "`r`n", "`n"
 [IO.File]::WriteAllText($Dest, $out, (New-Object Text.UTF8Encoding $false))
 
 $srcLines = ($body -split "`n").Count
-$dstLines = ($out  -split "`n").Count
+$dstLines = ($out -split "`n").Count
 Write-Host "source : $Source ($($body.Length) chars, $srcLines lines)"
 Write-Host "dest   : $Dest ($($out.Length) chars, $dstLines lines)"
 
 # Prove the body survived the copy byte for byte.
 $written = [IO.File]::ReadAllText($Dest)
-$bodyLf  = $body -replace "`r`n", "`n"
+$bodyLf = $body -replace "`r`n", "`n"
 if ($written.EndsWith($bodyLf)) {
     Write-Host 'verify : OK - rules copied verbatim'
-} else {
+}
+else {
     throw 'verify FAILED - copied body does not match source'
 }
