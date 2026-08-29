@@ -89,9 +89,9 @@ day-specific trading rules.
 
 ### Build the dashboard
 
-1. Load the `webapp-style` skill for the design tokens (squared corners,
-   indigo/violet accent gradient, dark-default + light theme + toggle,
-   Lucide-style stroke SVG icons, Inter font).
+1. Use the shared design tokens: squared corners, indigo/violet accent gradient,
+   dark-default plus a light theme and toggle, Lucide-style stroke SVG icons,
+   Inter font.
 2. Single self-contained HTML file, no build step, named
    `weekly-options-calendar-<article-published-date>.html` (e.g.
    `weekly-options-calendar-2026-08-10.html`, using the article's own publish
