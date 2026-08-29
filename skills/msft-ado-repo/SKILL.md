@@ -46,8 +46,8 @@ $Local = 'C:\Files\Dev\msft\FDE_Revenue_Bedrock'
 
 ## Auth — reuse the Git Credential Manager token (never print it)
 
-Same source as `Rebuild-OpenWorkItems.ps1`: pull the cached OAuth token for the
-ADO host, then hand it to the `az devops` CLI as its PAT. **Do not echo the token.**
+Pull the cached OAuth token for the ADO host, then hand it to the `az devops` CLI
+as its PAT. **Do not echo the token.**
 ```powershell
 $inp = "protocol=https`nhost=starlightagilebi.visualstudio.com`n`n"
 $tok = ($inp | git credential fill 2>$null | Where-Object { $_ -match '^password=' }) -replace '^password=',''
@@ -59,7 +59,7 @@ az devops configure --defaults organization=$Org project=$Proj 2>$null
 for `az repos`, `az boards`, and `az repos pr` against this org — no `az login` or
 separate PAT needed. If a machine ever returns `TF400813 / unauthorized`, **fall
 back to the REST API** with `Authorization = "Bearer $tok"` (the proven path in
-`Rebuild-OpenWorkItems.ps1` and `git-ship`). Prefer `az`; use REST only if `az`
+`git-ship`). Prefer `az`; use REST only if `az`
 can't auth.
 
 > **JSON-parsing gotcha (bit me in testing):** `az` prints a cp1252 encoding

@@ -1,8 +1,7 @@
 # Copilot instructions for the `copilot` repo
 
-This repo holds **@purduepete's personal GitHub Copilot CLI skills**, plus the
-**Copilot Reference Hub** (`instructions.html`) and two work-item dashboard
-generators. There is **no application to build** — it's PowerShell scripts and
+This repo holds **@purduepete's personal GitHub Copilot CLI skills** and the shared
+global instructions. There is **no application to build** — it's PowerShell scripts and
 Markdown that get consumed by the Copilot CLI. Do not add build/test/lint tooling;
 none exists by design.
 
@@ -41,36 +40,6 @@ argument-hint: <optional one-liner>
   ```
 - Keep skills small and judgment-focused; reference scripts by absolute path rather
   than duplicating long logic in the Markdown body.
-
-## The Reference Hub must stay in sync
-
-`instructions.html` is a self-contained HTML doc (the "Copilot Reference Hub") with a
-**"My skills" catalog table** at `<h4 id="sk-catalog">`, `<table class="skills">`.
-
-- **Whenever you add or remove a skill, add/remove its catalog row.** The table is
-  sorted **alphabetically by skill name**; insert new rows in the correct position, do
-  not append. Skill name goes in `<td><code>…</code></td>` (the `class="skills"` CSS
-  keeps the first column from wrapping).
-- Validate the HTML before committing — tags must balance and every nav `href="#id"`
-  must resolve:
-  ```powershell
-  $h = Get-Content instructions.html -Raw
-  "table: $(([regex]::Matches($h,'<table')).Count)/$(([regex]::Matches($h,'</table>')).Count)  tr: $(([regex]::Matches($h,'<tr>')).Count)/$(([regex]::Matches($h,'</tr>')).Count)"
-  ```
-- The end-to-end workflow for creating/removing a skill (scaffold → junction → commit
-  → store memory → **update the hub catalog** → tell user to `/restart`) lives in the
-  **`skill-authoring`** skill. Follow it; updating the hub is a required step.
-
-## Dashboards
-
-- `Rebuild-OpenWorkItems.ps1` → `open-work-items.html` (ADO work items assigned to @Me
-  in org StarlightAgileBI; auth via the Git Credential Manager bearer token — never
-  print it).
-- `Rebuild-OpenGitHubItems.ps1` → `open-github-items.html` (open GitHub issues via the
-  `gh` CLI; owner `purduepete` by default).
-- Both **output HTML files are git-ignored** — they're regenerated on demand (by the
-  `worklist` skill). The two dashboards intentionally share look/feel; change both
-  generators together.
 
 ## Commits
 
