@@ -1,3 +1,8 @@
+---
+applyTo: '**'
+description: "@jimb's writing rules. Govern every response, commit message, PR, report, comment, and doc. Always in effect."
+---
+
 <!--
   SOURCE OF TRUTH: "G:\My Drive\ai\anti-ai-writing-style.md" (@jimb's own file).
   This is a synced copy. Edit the Google Drive original, then re-run

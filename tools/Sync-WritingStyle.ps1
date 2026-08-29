@@ -19,7 +19,13 @@ if (-not (Test-Path -LiteralPath $Source)) {
 
 $body = Get-Content -LiteralPath $Source -Raw
 
+# The applyTo frontmatter must stay on line 1 or VS Code will not auto-load the rules.
 $header = @'
+---
+applyTo: '**'
+description: "@jimb's writing rules. Govern every response, commit message, PR, report, comment, and doc. Always in effect."
+---
+
 <!--
   SOURCE OF TRUTH: "G:\My Drive\ai\anti-ai-writing-style.md" (@jimb's own file).
   This is a synced copy. Edit the Google Drive original, then re-run

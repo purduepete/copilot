@@ -1,3 +1,8 @@
+---
+applyTo: '**'
+description: "@jimb's global workflow, tooling, and review preferences. Apply in every repository."
+---
+
 # Personal global Copilot instructions (@purduepete)
 
 Shared across **all** repositories and machines. The canonical copy lives in the
