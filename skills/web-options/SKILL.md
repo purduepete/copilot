@@ -37,8 +37,10 @@ day-specific trading rules.
 ### Access model (read this first)
 
 - @jimb has his own **paid** subscription to `themultiplier.substack.com`.
-  `web_fetch` alone only returns the free preview - the paywalled body isn't
-  in the anonymous HTML at all.
+  Fetch the public page first. Some articles expose the complete slate. Compare
+  the advertised contract count with the deduplicated rows and confirm the
+  timing headings and event tables are present. Use the stored subscription
+  cookie only when the public response is incomplete.
 - The Substack session cookie value is stored at
   `C:\Files\Dev\main\config\substack\substack_config.json` (key `"vader"`). Read
   it from there first - do NOT ask @jimb to paste the cookie again unless
@@ -149,8 +151,8 @@ day-specific trading rules.
    per-ticket risk-tag pill needed once the group heading exists (redundant).
 5. No footer disclaimer text - @jimb asked for it removed; don't re-add it in
    future weeks unless he asks.
-6. Open the file in the browser (`Start-Process <path>`) after every
-   meaningful change so @jimb can eyeball it before iterating further.
+6. Open the final rendered file in the browser (`Start-Process <path>`) so
+  @jimb can inspect it before the SQL write.
 7. **Also write a JSON sidecar** to
    `C:\Files\Dev\main\weboptions\data\calendars\weekly-options-calendar-<publish-date>.json`.
    The HTML is for eyeballing; the sidecar is the real handoff. The Node
@@ -180,41 +182,61 @@ day-specific trading rules.
    All five weekdays must be present even when a day has no trades: the rule
    and the event are the point of an empty day. `macro` carries every
    headline in the banner, which is 3 or 4 depending on the week.
+  The sidecar is the single content source. Validate it and generate the HTML:
+  ```powershell
+  npm run validate-calendar -- .\data\calendars\weekly-options-calendar-<date>.json <count> <iso-published-timestamp>
+  npm run render-calendar -- .\data\calendars\weekly-options-calendar-<date>.json <count> <iso-published-timestamp>
+  npm run test:calendar
+  ```
+  `render-calendar` writes to `C:\Users\JimBrown\OneDrive\Trading\Vader\`
+  unless a fourth positional value names another file or directory. Do not
+  hand-copy the data into HTML or run the full test suite for a sidecar-only
+  weekly update.
 8. Ingest it, from the weboptions repo root, with the operator credentials
    (never the `weboptions_ro` service login):
    ```powershell
    $env:WEBPORTFOLIO_CONFIG_PATH='C:\Files\Dev\main\webportfolio\config\config.ini'
-   npx tsx backend/tools/ingest-calendar.ts .\data\calendars --confirm
+  npx tsx backend/tools/ingest-calendar.ts .\data\calendars\weekly-options-calendar-<date>.json
    ```
-   It dry-runs without `--confirm`, and skips a week whose contents have not
-   changed. Re-running after an edit needs `--force`. Note that `npm run`
-   swallows `--confirm`, so call the tool through `npx tsx` directly.
+  This first command is the dry run. Review its one-file summary and obtain
+  the independent review described below, then rerun it with `--confirm`.
+  Run the dry command once more afterward and require `unchanged`. Re-running
+  after an intentional edit needs `--force`. Note that `npm run` swallows
+  `--confirm`, so call the tool through `npx tsx` directly.
 
 ### Weekly repeat workflow
 
 When @jimb pastes a new article URL:
 
-1. `web_fetch` it first - grab whatever's in the free preview for context.
-2. Ask for the session cookie value if the paywalled body is needed (most
-   weeks it will be).
-3. Fetch authenticated, extract the macro notes, key events, and the trade
-   table (ticker/strike/expiry/delta/ann%/premium/collateral/risk tag) plus
-   the day-of-week rules, respecting the article's own day-grouping headers.
-4. Rebuild `weekly-options-calendar.html` with the new week's data, following
-   the layout conventions above.
-5. Write the JSON sidecar and ingest it (steps 7 and 8 above). A week is not
-   done until it is in SQL.
-6. Open it, and iterate on any feedback before considering the week done.
+1. Fetch the public page. Count the advertised and deduplicated contracts and
+  confirm all timing sections are present. Fetch with the stored cookie only
+  if that completeness check fails. Never ask @jimb for a cookie that is
+  already valid in the config file.
+2. Extract the publish metadata, macro facts, key events, trade facts, and
+  day rules. Convert every market time to Pacific while writing the sidecar.
+3. Write the dated JSON sidecar. Run `validate-calendar` with the advertised
+  trade count and source publication timestamp.
+4. Run `render-calendar`, then `test:calendar`. Open the HTML once and use one
+  browser check for desktop, 320px mobile, both themes, ticket count, and
+  horizontal overflow.
+5. Dry-run the ingest against the one dated JSON file.
+6. Send the source-handling facts, validator result, focused tests, browser
+  result, and dry-run summary to one independent reviewer. This one review
+  covers the copyright/secret check and the mandatory database-write check.
+7. On `SHIP`, rerun the one-file ingest with `--confirm`, then dry-run it once
+  more and require `unchanged` with a matching source hash.
+
+Do not run the full repository suite for a weekly sidecar update. Run it only
+when shared application or ingestion code changed.
 
 ### Independent review
 
-Per @jimb's personal instructions, a plan for building/updating this
-dashboard should get a quick independent-model sanity check (different model
-family than the primary) before finalizing, since it involves fetching
-paywalled content under his subscription - mainly to reconfirm the
-copyright/personal-use guardrails and flag any technical gaps (e.g. embedding
-the cookie in output). It is not a database-altering change, so this is a
-light-touch check, not a mandatory gate.
+Use one independent reviewer from a different model family after validation
+and the ingest dry run. Ask for one verdict on the copyright and secret rules,
+artifact counts, test/browser evidence, and the proposed database write. A
+`SHIP` verdict satisfies the light content check and the mandatory pre-write
+database review. Record the model and verdict. Never run the confirmed ingest
+before that verdict.
 
 ## Capability 2: live Telegram VADER signals dashboard
 
