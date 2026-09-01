@@ -149,6 +149,12 @@ suggestions.
 
 ## Pull requests
 
+- **Lint changed Python for the security ruleset before opening a PR.** Run
+  `python -m ruff check --no-cache --select S <changed paths>` (`ruff` is not on PATH here,
+  so use the module form). Clear every finding or state in the PR why each one stays.
+- **Point the independent review at OWASP classes, not only correctness.** Ruff and bandit
+  have no zip-slip rule, so a path-traversal write in an archive extractor reached PR 216619
+  untouched. Ask the reviewer how the change breaks, not whether it is right.
 - **Before creating a PR, show an HTML of all changed files** (dark/light themed, per
   the communication-style rules above). Present it and let @jimb review the change set
   *before* the PR is opened, not after.
