@@ -143,6 +143,9 @@ suggestions.
   share information; prefer it for anything substantial.
 - **For any HTML you produce, include both a dark and a light theme** (with a way to
   toggle / respect the system preference).
+- **Always open the HTML for me, every time.** Don't hand me a path or a link and wait.
+  Open it in the browser as soon as it is written, and reopen it after every regeneration
+  so what I'm looking at is never a stale render.
 
 ## Pull requests
 
