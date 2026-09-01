@@ -171,6 +171,11 @@ Natural-language phrases that map to specific actions:
   ask the user what they were doing, infer category/project via rule 3
   (`Suggest-WorkDefaults.ps1`), and `add` it with the gap's exact `-Start`/`-End` (so the
   new entries chain cleanly and never overlap per rule 9).
+- **"fill gaps by extending preceding"** → run `Find-WorkGaps.ps1 -Json`, then extend
+  each task immediately before a gap through the next entry's start. Preserve fixed-time
+  entries such as lunch and meetings. For an opening gap with no preceding task, move the
+  first task's start back to the start-of-day marker. Apply edits sequentially, verify each
+  stored range, then rerun `Find-WorkGaps.ps1` and require zero gaps and zero overlaps.
 - **"start of work day"** → `startday` (0-min marker). **"end of work day"** → first
   `stop` any open running item, then **run gap analysis**
   (`pwsh -File C:\Files\Dev\main\worklog_web\src\Find-WorkGaps.ps1`) and present any
