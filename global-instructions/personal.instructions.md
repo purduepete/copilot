@@ -17,6 +17,8 @@ Repo-specific rules still belong in each repo's
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
 - Treat the WorkLog category alias `dev` as `development`.
+- When @jimb says "commit," interpret it as commit and push by default. Commit only when he
+  explicitly says not to push or asks to keep the commit local.
 - **VS Code Marketplace publisher is `lerxst`.** Set `"publisher": "lerxst"` in any
   extension `package.json`, and publish with `npx @vscode/vsce login lerxst` then
   `npx @vscode/vsce publish`. My GitHub account is `purduepete` and is unrelated to the
