@@ -158,7 +158,7 @@ suggestions.
   changed file with a plain-language summary plus its full searchable, expandable patch.
   Include expand-all and collapse-all controls. Regenerate and reopen the report whenever
   HEAD changes. Do not fall back to the rounded, light-first raw-diff template.
-- **Reviewers: Jesus Anaya Valdes and Rodrigo Cadena only, and both REQUIRED.** Do not add
+- **Reviewers: Jesus Anaya Valdes and `v-ssfikas` only, and both REQUIRED.** Do not add
   anyone else as an approver, and never leave a reviewer optional. `az repos pr reviewer add`
   creates *optional* reviewers, so set `isRequired` afterwards via the REST API:
   `PUT .../pullRequests/<id>/reviewers/<reviewerId>?api-version=7.1` with
