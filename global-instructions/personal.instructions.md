@@ -167,6 +167,14 @@ suggestions.
   `PUT .../pullRequests/<id>/reviewers/<reviewerId>?api-version=7.1` with
   `{"isRequired": true, "id": "<reviewerId>"}`. Verify with
   `az repos pr show --query "reviewers[].{name:displayName, required:isRequired}"`.
+- **Proof of presence is @jimb's to complete, never mine.** It is a human-presence
+  attestation, so automating it defeats the control. When a PR needs it, say so plainly and
+  stop. The method is **always Microsoft**.
+- **Set the PR description over REST, not the CLI.** `az repos pr create --description`
+  silently truncates a multi-line body to its first line. Create the PR, then
+  `PATCH .../pullRequests/<id>?api-version=7.1` with `{"description": "..."}` and read the
+  length back. `--work-items` on create can also no-op; verify with
+  `az repos pr work-item list` and attach separately if it is empty.
 - **After creating a PR, always check its comment threads**. Don't assume a fresh PR has
   none. The `GitOps` **PR Assistant** posts an automated AI code review within a minute or
   two, and it **also rewrites the PR description** with its own generated summary, silently
