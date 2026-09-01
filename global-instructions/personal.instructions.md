@@ -189,6 +189,30 @@ suggestions.
   severity, and the high-severity ones are often legitimate). Fetch threads via
   `GET .../pullRequests/<id>/threads?api-version=7.1` and filter out `commentType == "system"`.
 
+## Developer branch and shipping
+
+@jimb develops on `jimb/main` in `FDE_Revenue_Bedrock` and pushes it to origin. Feature
+branches are cut from `origin/main` and carry cherry-picks. Written after PR 216619, where a
+cherry-pick took one commit of a two-commit change and the missing half surfaced only as a
+merge conflict, and the branch had drifted 18 commits before anyone looked.
+
+- **One shippable change is one commit on `jimb/main`.** Amend or squash before shipping so
+  every cherry-pick is self-contained. If a change grew across commits, collapse it first.
+- **Cut the feature branch from `origin/main`, never from `jimb/main`.**
+- **Verify the cherry-pick before opening the PR.** For every path being shipped,
+  `git diff origin/main...<feature> -- <paths>` must equal
+  `git diff origin/main...jimb/main -- <paths>`. Any difference means part of the change was
+  left behind. This is the gate; skipping it is what let PR 216619 go out incomplete.
+- **Keep personal-only files off `jimb/main`.** Emptied developer shortcut manifests and
+  Fabric's own "Committing N items from workspace" commits rewrite shared files and make the
+  branch unmergeable. Park them where they can never be a cherry-pick source.
+- **Never treat the `jimb/main` tip as the source for a shared file.** Fabric's workspace
+  export writes to the same branch, so a file can look repaired there and still be stale
+  against main. The `setup_catalog` seeds read as restored on the branch and were 383 lines
+  behind `origin/main`. Compare against `origin/main` before shipping any shared file.
+- **Reset `jimb/main` onto `origin/main` after every merge** and re-apply only the personal
+  overlay. Drift is what forced the 18-commit cleanup after PR 216619.
+
 ## Naming conventions
 
 **Fabric notebooks** (the `FDE_Revenue_Bedrock` data platform) are named:
