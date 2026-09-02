@@ -43,10 +43,9 @@ come from a different model family/provider than the primary model** so it is le
 likely to repeat the same assumptions: GPT/ChatGPT primary → Claude or Gemini;
 Claude primary → GPT/ChatGPT or Gemini; Gemini primary → GPT/ChatGPT or Claude.
 
-- **Claude Sonnet 4.6** (`claude-sonnet-4.6`): default for strong reasoning, code
-  review, architecture, and higher-stakes validation.
-- **Claude Haiku 4.5** (`claude-haiku-4.5`): default for fast, narrow independent
-  checks and routine validation when the primary model is not Claude.
+- **Claude Sonnet 5** (`Claude Sonnet 5 (copilot)`): Anthropic model for every
+  independent review when the primary model is not Claude, including routine checks,
+  code review, architecture, and higher-stakes validation.
 - **Gemini 3.5 Flash** (`gemini-3.5-flash`): fast validation when the primary model
   is Claude, and large-context reading.
 
@@ -65,8 +64,8 @@ Gemini, Claude primary to GPT plus Gemini, and Gemini primary to GPT plus Claude
 Record the exact model and verdict for every validation.
 
 The `## Preferences` rule for DB-altering changes is satisfied by an independent
-review from Claude Sonnet 4.6, Claude Haiku 4.5, or Gemini 3.5 Flash, subject to the
-model-family rule above.
+review from Claude Sonnet 5 or Gemini 3.5 Flash, subject to the model-family rule
+above.
 
 ### Route cheap work to a cheap model
 
@@ -77,7 +76,7 @@ tokens only on the final synthesis.
 
 | Kind of work | Model |
 |---|---|
-| Read-only Q&A, doc/repo lookups, summarizing existing files, "what does X say / where does Y live" | Delegate to `explore`, or a `task` sub-agent overridden to `gemini-3.5-flash` / `gpt-5.4-mini` / `claude-haiku-4.5` |
+| Read-only Q&A, doc/repo lookups, summarizing existing files, "what does X say / where does Y live" | Delegate to `explore`, or a `task` sub-agent overridden to `gemini-3.5-flash` / `gpt-5.4-mini` |
 | Code changes, debugging, architecture & design judgment, PR review, anything touching a live DB | Keep the premium model |
 
 Rule of thumb: if the task is read-only, the answer already exists in docs or config,
