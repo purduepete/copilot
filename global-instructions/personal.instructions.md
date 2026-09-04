@@ -150,6 +150,12 @@ away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
 - Credentials are the `PUSHOVER_USER_KEY` and `PUSHOVER_APP_TOKEN` environment variables, user
   scope. Never put them in a repo, a command line, a chat message, or the question tool. A
   missing key makes the script warn and exit 0, so it can never fail the work.
+- **The keys are per machine.** @jimb works across several laptops and copies chats between
+  them, so the repo can be current here while the environment is empty. Check before assuming
+  the notifier will fire, and say so plainly when it will not.
+- **Warn him to set the keys from a terminal outside VS Code.** The `Last Command` line is
+  attached to the chat context, so a `SetEnvironmentVariable` call run in a watched terminal
+  writes the secret straight into the transcript and forces a rotation.
 
 ## Communication style
 
