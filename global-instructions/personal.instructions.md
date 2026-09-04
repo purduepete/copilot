@@ -128,6 +128,29 @@ suggestions.
     hundred-million-row frames it forces spill *and* defeats columnar pruning. Reading
     the source twice is usually faster.
 
+### Notify on completion (Pushover)
+
+@jimb does not sit and watch a running turn. **Any turn of 5 minutes or more ends with a push
+notification** so the result reaches his phone instead of sitting in a chat tab he has walked
+away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
+
+- **Stamp the clock in the first terminal command of the turn**, before any real work:
+  `& C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1 -Stamp`
+- **Send as the last action** before handing the turn back:
+  `& C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1 -Title '<outcome>' -Message '<what happened, what is next>'`
+- **Call it unconditionally.** The 5-minute threshold is enforced inside the script, which
+  exits quietly under it, so elapsed time never has to be judged by eye. `-ThresholdMinutes`
+  tunes it, `-Force` sends regardless, `-Priority 1` bypasses quiet hours (use for a failure
+  or a question that blocks everything else).
+- **Write the title to read on a lock screen with no other context**, e.g.
+  `ferry_tracker: deployed, arrivals landing in 3 min`. Put the decision @jimb needs to make
+  in the message body.
+- A long turn that ends by **asking a question** still gets a notification. Waiting on an
+  unread question is the exact failure this prevents.
+- Credentials are the `PUSHOVER_USER_KEY` and `PUSHOVER_APP_TOKEN` environment variables, user
+  scope. Never put them in a repo, a command line, a chat message, or the question tool. A
+  missing key makes the script warn and exit 0, so it can never fail the work.
+
 ## Communication style
 
 - **Writing rules live in `writing-style.instructions.md`** (same folder, loaded every
