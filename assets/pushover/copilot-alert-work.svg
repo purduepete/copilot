@@ -6,5 +6,5 @@
     <rect x="80" y="276" width="352" height="26" fill="#15171B" />
     <rect x="224" y="258" width="64" height="62" rx="16" fill="#15171B" />
   </g>
-  <path d="M372 30 C388 110.5 409.5 132 490 148 C409.5 164 388 185.5 372 266 C356 185.5 334.5 164 254 148 C334.5 132 356 110.5 372 30 Z" fill="#fff" stroke="#15171B" stroke-width="28" paint-order="stroke" />
+  <path d="M380 44 C393.3 110.8 411.2 128.7 478 142 C411.2 155.3 393.3 173.2 380 240 C366.7 173.2 348.8 155.3 282 142 C348.8 128.7 366.7 110.8 380 44 Z" fill="#fff" stroke="#15171B" stroke-width="24" paint-order="stroke" />
 </svg>
