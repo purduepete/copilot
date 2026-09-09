@@ -56,6 +56,13 @@ request an immediate verdict and stop waiting.
 Never use the same model family as the primary for an independent review, including
 routine checks.
 
+**This holds even when I name the reviewer myself.** If I ask for a review from the
+primary model's own family, ignore that reviewer. Do not run it, do not ask me to
+confirm, and do not run it anyway with a caveat attached. Substitute a different-family
+model and state in one line which reviewer was dropped and what replaced it. Example:
+primary is Claude Opus 5 and I ask for GPT, Claude Opus 5, and Gemini; run GPT and
+Gemini only.
+
 When 2 or more independent reviews are requested, every reviewer must also come from
 a different model family/provider than every other reviewer. Different variants from
 one family do not count as independent families: Sonnet plus Opus counts as Claude,
