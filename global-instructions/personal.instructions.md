@@ -46,7 +46,7 @@ Claude primary → GPT/ChatGPT or Gemini; Gemini primary → GPT/ChatGPT or Clau
 - **Claude Sonnet 5** (`Claude Sonnet 5 (copilot)`): Anthropic model for every
   independent review when the primary model is not Claude, including routine checks,
   code review, architecture, and higher-stakes validation.
-- **Gemini 3.5 Flash** (`gemini-3.5-flash`): fast validation when the primary model
+- **Gemini 3.8 Flash** (`gemini-3.8-flash`): fast validation when the primary model
   is Claude, and large-context reading.
 
 A narrow validation gets 60 seconds. Ask for a verdict from the supplied evidence
