@@ -176,6 +176,12 @@ away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
 - **Be concise; lead with the answer, minimal preamble.**
 - **Plan first, then implement.** I don't do well when work jumps straight to
   implementation. Lay out a short plan and let me confirm before you build.
+- **Ground every decision you bring me in the exact code.** Before presenting options, open
+  the real code, query, config, or DDL and show the specific lines the choice turns on. Name
+  the file and line numbers. Options described in the abstract cost a round trip and usually
+  hide the one detail that decides it, so do the reading first and let me choose from
+  concrete alternatives. This applies to any judgement call, not only code: schema changes,
+  runtime budgets, scope decisions, and data assumptions.
 - **I'm a visual person, and dense text is not great.** HTML is by far the best way to
   share information; prefer it for anything substantial.
 - **For any HTML you produce, include both a dark and a light theme** (with a way to
