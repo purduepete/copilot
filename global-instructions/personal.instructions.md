@@ -154,6 +154,10 @@ away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
   in the message body.
 - A long turn that ends by **asking a question** still gets a notification. Waiting on an
   unread question is the exact failure this prevents.
+- **Every plan handoff notifies when the work lands.** When a plan leaves Plan mode for
+  implementation, the implementing turn ends with a send, pass or fail, using `-Force` so the
+  5-minute threshold cannot swallow a short run. Title names the repo and the outcome, body says
+  what still needs checking.
 - Credentials are the `PUSHOVER_USER_KEY` and `PUSHOVER_APP_TOKEN` environment variables, user
   scope. Never put them in a repo, a command line, a chat message, or the question tool. A
   missing key makes the script warn and exit 0, so it can never fail the work.
