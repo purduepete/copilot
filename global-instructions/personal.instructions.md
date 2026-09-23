@@ -63,6 +63,10 @@ model and state in one line which reviewer was dropped and what replaced it. Exa
 primary is Claude Opus 5 and I ask for GPT, Claude Opus 5, and Gemini; run GPT and
 Gemini only.
 
+**Never use Grok or any other xAI model**, for reviews or any other sub-agent work,
+even when it is the only family left. When dropping a reviewer leaves no permitted
+family to substitute, run the remaining reviewers and say so.
+
 When 2 or more independent reviews are requested, every reviewer must also come from
 a different model family/provider than every other reviewer. Different variants from
 one family do not count as independent families: Sonnet plus Opus counts as Claude,
