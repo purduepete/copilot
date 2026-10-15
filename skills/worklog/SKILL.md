@@ -186,17 +186,18 @@ Natural-language phrases that map to specific actions:
   untracked-gap detection and render as divider rows on the dashboard.
 - **"learning about &lt;x>"** → `start "Learning about <x>" -Category education -Project personal`.
 - **"get calendar tasks" / "import my calendar" / "import meetings" / "log my meetings" / "calendar to worklog"** →
-  run `pwsh -File C:\Files\Dev\main\worklog_web\src\Import-CalendarDay.ps1 -Json` (add
-  `-Date <yyyy-MM-dd>` for another day). It reads the day's Outlook meetings (organized/
-  accepted, busy, already-started only — skips all-day OOO/holds, free/tentative/declined,
-  and personal non-meeting blocks), infers project from history, and dedupes against
-  existing entries. **Present the preview**, then on confirmation re-run with `-Apply` to
-  add the `new` entries. For any `needproj` items, ask the user for the project (or infer
-  via rule 3) and `add` them individually with the meeting's exact `-Start`/`-End`;
-  `conflict`/`logged` items are left alone. For a **past day with no start-of-day marker**,
-  add `-OpenDay` so it sets `startday` (anchored at the earliest kept meeting) before adding.
-- **"prepare for work day"** → morning routine: show today's **calendar** (only on the
-  work computer — see below), surface overnight items to address, then `start` a prep task
+  use WorkIQ `fetch` on `/me/calendarView` for the requested local-time window
+  (default: the whole local day), selecting event IDs, subjects, start/end, organizer,
+  location, and any needed agenda fields. Do not use Outlook COM or
+  `Import-CalendarDay.ps1`. Show a preview first. Add only meetings that have ended,
+  using the subject and exact times returned by WorkIQ. Before each add, infer category
+  and project from WorkLog history (rule 3), check the day bounds and overlaps (rules 8
+  and 9), and ensure the meeting is not already logged. Ask for a project if history
+  cannot resolve it. Add entries one at a time with an accomplishment, then verify each
+  persisted before adding the next. Leave ongoing and future meetings unlogged until
+  they end.
+- **"prepare for work day"** → morning routine: show today's **calendar** through WorkIQ,
+  surface overnight items to address, then `start` a prep task
   (`-Category admin -Project work`).
 - **"since my last item" / "after my last task"** → use `start … -AfterLast` (auto-sets the
   start to the most recent session's end, so no overlap). Don't look up the prior end time manually.
@@ -252,9 +253,7 @@ Natural-language phrases that map to specific actions:
   any write is visible on refresh — there is no HTML file to regenerate.
 - **Data caveat.** In the stored state, `current` must be a **scalar session id or `null`**,
   never `[]` — an empty array breaks `Stop-Work`.
-- **Calendar (approved machines only).** Only read the Outlook calendar when
-  `$env:COMPUTERNAME` starts with `xfinjimb` or `CPC-jimb-M4XXG`; otherwise skip it.
-  See the `calendar` skill.
+- **Calendar.** Use WorkIQ for Outlook calendar reads. See the `calendar` skill.
 
 ## Common recurring tasks
 
