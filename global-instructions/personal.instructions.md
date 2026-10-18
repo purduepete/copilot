@@ -19,7 +19,10 @@ Repo-specific rules still belong in each repo's
   recovery tooling without a concrete need. Keep required database reviews.
 - **Ask about consequential trade-offs early.** Establish acceptable data gaps,
   downtime and scope before designing a migration. Reuse answers already given.
-  For my personal applications, capture gaps are acceptable unless I say otherwise.
+  Assume my work is for personal use unless I explicitly say otherwise.
+  Data gaps and downtime are acceptable by default. Do not design for zero data
+  loss, continuous availability or enterprise-grade migration controls unless I
+  request them. Keep basic integrity checks, credential safety and required DB reviews.
   Keep the old site available during snapshot, copy and import where practical;
   stop its collector before starting the replacement collector.
 - **Report actual progress in simple terms.** Distinguish requested, launched,
