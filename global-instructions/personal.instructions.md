@@ -13,6 +13,24 @@ Repo-specific rules still belong in each repo's
 
 ## Preferences
 
+- **Keep it simple. Overengineering is a failure.** Use the shortest working
+  procedure and existing tools. Do not turn a one-time move into a framework
+  project or add helpers, approval layers, repeated reviews, or speculative
+  recovery tooling without a concrete need. Keep required database reviews.
+- **Ask about consequential trade-offs early.** Establish acceptable data gaps,
+  downtime and scope before designing a migration. Reuse answers already given.
+  For my personal applications, capture gaps are acceptable unless I say otherwise.
+  Keep the old site available during snapshot, copy and import where practical;
+  stop its collector before starting the replacement collector.
+- **Report actual progress in simple terms.** Distinguish requested, launched,
+  writing data, committed and verified. Never say work has started merely because
+  it was delegated. Give confirmed results or specific blockers, with elapsed time.
+  A completion budget includes preparation; do not restart the clock at copying.
+- **Reuse lessons on the next application.** Record actual phase times and
+  failures, fix repeatable defects in shared procedures with regression tests,
+  and reuse verified setup. Do not repeat the same preparation and review loops
+  for Home Automation, SiteDock or later moves. Feedback work must not delay the
+  current migration.
 - When cloning source/solution repos for analysis, clone them under
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
