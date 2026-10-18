@@ -37,7 +37,7 @@ Repo-specific rules still belong in each repo's
   for Home Automation, SiteDock or later moves. Feedback work must not delay the
   current migration.
 - **Deployment and migration access requirements.** Every deployed solution must
-  work through a Cloudflare hostname (for example `ferry.jimlertech.com`) and a
+  work through a Cloudflare hostname (for example `ferry-tracker.jimlertech.com`) and a
   private Tailscale fallback. Assign each solution a documented, explicit Tailscale
   HTTPS port so multiple sites can share the host. Verify both access paths before
   calling the deployment complete.
@@ -63,6 +63,32 @@ Repo-specific rules still belong in each repo's
   temporary loss of access are acceptable unless I say otherwise, subject to the
   standing Webportfolio exception above. Prefer a direct source-to-destination
   comparison; add extra copies or rehearsals only for a concrete requirement.
+- **Use the `public` schema in per-solution PostgreSQL databases.** Each solution
+  has its own database, so put its tables in `public`. Do not recreate the source
+  database's schema names (for example Azure SQL `fit` or `dbo`).
+- **Solution naming.** PostgreSQL databases use underscores between words
+  (`web_bookmarks`, `fit_track`, `work_log`, `web_inventory`). The solution id,
+  folders on the host, Cloudflare hostname, GitHub repo and local folder use the
+  same words joined by hyphens (`web-bookmarks`, `fit-track`, `work-log`,
+  `web-inventory`).
+- **Migration guardrails.** Written after WebBookmarks ran 76 minutes on a 144-row
+  app and an agent restored Cloudflare aliases I had removed.
+  - Time box: a small app targets 45 minutes, with a hard stop at 90. Check progress
+    every 15 minutes, tell me as soon as one runs past its target, and stop to
+    diagnose at the hard stop.
+  - Run one migration at a time, directly or through a single agent. Never run
+    agents in parallel against shared infrastructure (Cloudflare, SiteDock, the
+    tunnel).
+  - Only the parent session writes Cloudflare, and only through
+    `solution-deploy\scripts\Set-CloudflareHostnames.ps1`, whose allowlist holds
+    exactly one public hostname per app. No aliases. Delegated agents request
+    route changes and never "repair" routes from their own snapshot.
+  - Follow the fixed checklist and add nothing: stop the source, dump and import,
+    compare row counts, start, verify Tailscale plus the Cloudflare Access redirect,
+    update the SiteDock favorite, clean up. Skip extra hardening, test suites and
+    side deliverables unless I ask.
+  - Stop the source app as part of cutover and keep it stopped. Do not restart a
+    retired source for rollback convenience.
 - When cloning source/solution repos for analysis, clone them under
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
