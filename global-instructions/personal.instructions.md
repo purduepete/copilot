@@ -36,6 +36,33 @@ Repo-specific rules still belong in each repo's
   and reuse verified setup. Do not repeat the same preparation and review loops
   for Home Automation, SiteDock or later moves. Feedback work must not delay the
   current migration.
+- **Deployment and migration access requirements.** Every deployed solution must
+  work through a Cloudflare hostname (for example `ferry.jimlertech.com`) and a
+  private Tailscale fallback. Assign each solution a documented, explicit Tailscale
+  HTTPS port so multiple sites can share the host. Verify both access paths before
+  calling the deployment complete.
+- **Cloudflare Access replaces duplicate application login by default.** When
+  migrating an existing solution with token-based user authentication, use the
+  configured Cloudflare Access policy as the primary public-access authentication
+  and remove the duplicate application-token requirement unless I override this.
+  A Cloudflare DNS record or tunnel alone does not authenticate users: verify the
+  actual Access policy and its intended API exceptions. The private fallback relies
+  on Tailscale access controls. Keep database permissions, secret protection and
+  origin restrictions; do not expose an unauthenticated origin directly to the
+  public internet. Preserve tokens needed for outbound service integrations.
+- **Cleanup is part of migration completion.** Inventory databases, files,
+  credentials and scheduled tasks created during the work. Remove test databases,
+  duplicate payloads, temporary credentials and obsolete tasks once no longer
+  needed, with the required independent review before database deletion. Check
+  live dependencies first. Move runtime components out of preparation folders,
+  retain needed backups and migration records in permanent locations, and verify
+  the live app and both access paths after cleanup. Keep tasks needed for startup,
+  capture, monitoring or future deployments.
+- **Keep migrations relatively fast and simple.** Use the shortest working
+  stop/copy/import/compare/start procedure and existing tools. Data gaps and
+  temporary loss of access are acceptable unless I say otherwise, subject to the
+  standing Webportfolio exception above. Prefer a direct source-to-destination
+  comparison; add extra copies or rehearsals only for a concrete requirement.
 - When cloning source/solution repos for analysis, clone them under
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
