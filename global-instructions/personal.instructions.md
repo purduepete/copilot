@@ -19,8 +19,10 @@ Repo-specific rules still belong in each repo's
   recovery tooling without a concrete need. Keep required database reviews.
 - **Ask about consequential trade-offs early.** Establish acceptable data gaps,
   downtime and scope before designing a migration. Reuse answers already given.
-  Assume my work is for personal use unless I explicitly say otherwise.
-  Data gaps and downtime are acceptable by default. Do not design for zero data
+  Assume my work is for personal use. **Webportfolio is the sole standing
+  exception:** do not assume data gaps or downtime are acceptable for it.
+  For all other projects, data gaps and downtime are acceptable by default
+  unless I explicitly change that requirement. Do not design for zero data
   loss, continuous availability or enterprise-grade migration controls unless I
   request them. Keep basic integrity checks, credential safety and required DB reviews.
   Keep the old site available during snapshot, copy and import where practical;
