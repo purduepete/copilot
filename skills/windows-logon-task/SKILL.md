@@ -140,7 +140,7 @@ Get-CimInstance Win32_Process -Filter "Name='conhost.exe'" |
 
 ## Reference implementation
 
-`C:\Files\Dev\main\powershell\prod\plex`:
+`C:\Files\Dev\main\plex\desktop` (repo `purduepete/plex`):
 
 - `Start-PlexWebUIHidden.ps1` is the launcher.
 - `Install-PlexWebUIStartup.ps1` registers the task, starts it, and verifies the PID.
