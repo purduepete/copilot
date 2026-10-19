@@ -3,7 +3,7 @@
 The WorkLog tooling, Copilot CLI skills, and work/GitHub dashboards that used to
 live here have **moved** to the cloud-hosted **`worklog_web`** project:
 
-- Repo: https://github.com/purduepete/worklog_web
+- Repo: https://github.com/purduepete/work-log
 - Live dashboard: https://func-worklog-umcla2.azurewebsites.net/
 
 ## Still here

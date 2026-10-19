@@ -39,9 +39,9 @@ destructive or mutating, and `delete` reports success even for a nonexistent id.
 
 ### How to resolve (when today has entries)
 
-1. Read the active profile: `pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile`.
+1. Read the active profile: `pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile`.
 2. List recent entries and **filter to today's date**, sorted by start:
-   `pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 log -Days 2`
+   `pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 log -Days 2`
    (`log -Days 1` can come back empty late in the day; use a small window and filter by
    today's date yourself). `status` shows `Logged today` — if it's `0m` and no open
    sessions, today is empty ⇒ rule 2 (no-op).
@@ -55,8 +55,8 @@ destructive or mutating, and `delete` reports success even for a nonexistent id.
 
 ```powershell
 # "delete item 1" — today HAS entries: resolve today's 1st entry to its real id, then delete
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 log -Days 2   # filter to today, sort by start
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 delete -Id <resolvedTodayId>
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 log -Days 2   # filter to today, sort by start
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 delete -Id <resolvedTodayId>
 
 # "delete item 1" — today has NO entries: do nothing, just report it
 #   "There are no entries logged today, so there's no item 1 to delete."
@@ -104,7 +104,7 @@ accomplishment when stopping (`stop "<accomplishment>"`) or via `edit`.
 
 ```powershell
 # Tidy an existing entry: short title, detail to accomplishment
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> `
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 edit -Id <id> `
   -Title "WorkLog dashboard UX improvements" `
   -Accomplishment "Shift-click date-range selection; in-page modals replace native prompt/confirm; themed goal stepper; detached serve."
 ```

@@ -9,7 +9,7 @@ none exists by design.
 
 - Each skill is a folder `skills/<name>/` containing a `SKILL.md` (and optional
   helper `.ps1` scripts referenced by **absolute path**, e.g.
-  `C:\Files\Dev\main\worklog_web\cli\wl.ps1`).
+  `C:\Files\Dev\main\work-log\cli\wl.ps1`).
 - Register this repository's skills root with Copilot CLI after cloning or when it is
   no longer available: `/skills add C:\Files\Dev\main\copilot\skills`.
 - The CLI reads skills at startup, so tell the user to run `/restart` after any skill

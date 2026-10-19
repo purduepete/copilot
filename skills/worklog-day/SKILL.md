@@ -40,7 +40,7 @@ that's already open.
 
 ### 1. Read the active profile
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile
 ```
 Note the `Current profile:` and whether bounds are enforced. Use that profile
 (override with `-Profile <name>` only if the user asks for the other log).
@@ -51,7 +51,7 @@ Note the `Current profile:` and whether bounds are enforced. Use that profile
 
 ### 2. Check whether the day is already open (idempotent guard)
 ```powershell
-pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\src\Get-DayClose.ps1 -Json
+pwsh -NoProfile -File C:\Files\Dev\main\work-log\src\Get-DayClose.ps1 -Json
 ```
 Parse `{ dayOpen, dayClosed, ... }`:
 
@@ -63,17 +63,17 @@ Parse `{ dayOpen, dayClosed, ... }`:
 
 ### 3. Mark the start of the day
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 startday
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 startday
 ```
 To back-date it, pass an explicit time (e.g. the user says "I started at 8"):
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 startday -At "2026-07-02 08:00"
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 startday -At "2026-07-02 08:00"
 ```
 No time given → use now (the default).
 
 ### 4. Verify it persisted
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 status
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 status
 ```
 Re-running `Get-DayClose.ps1 -Json` should now show `dayOpen:true`. Give a
 one-line confirmation (e.g. "Work day started on the *work* profile.").
@@ -110,7 +110,7 @@ the source of the day summary used in Part 3.
 1. **Read the day's sessions** from the cloud via the CLI's `state` command:
 
    ```powershell
-   $d = pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 state -Profile work | ConvertFrom-Json
+   $d = pwsh -NoProfile -File C:\Files\Dev\main\work-log\cli\wl.ps1 state -Profile work | ConvertFrom-Json
    $day = (Get-Date).ToString('yyyy-MM-dd')   # or the requested date
    $d.sessions | Where-Object { $_.start -like "$day*" } | Sort-Object start |
      ForEach-Object { "[$($_.category)/$($_.project)] title='$($_.title)' acc='$($_.accomplishment)'" }
@@ -124,13 +124,13 @@ the source of the day summary used in Part 3.
 3. **Save it** as the day's commentary:
 
    ```powershell
-   pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 summary "<highlights text>"
+   pwsh -NoProfile -File C:\Files\Dev\main\work-log\cli\wl.ps1 summary "<highlights text>"
    ```
 
    For a past day, pass `-Date`:
 
    ```powershell
-   pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 summary "<highlights text>" -Date "2026-06-23"
+   pwsh -NoProfile -File C:\Files\Dev\main\work-log\cli\wl.ps1 summary "<highlights text>" -Date "2026-06-23"
    ```
 
 4. **Confirm** to the user with the final two-line text, then tell them to refresh the
@@ -153,7 +153,7 @@ before every mutation**, then run `endday`.
 
 ### 1. Check readiness
 ```powershell
-pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\src\Get-DayClose.ps1 -Json
+pwsh -NoProfile -File C:\Files\Dev\main\work-log\src\Get-DayClose.ps1 -Json
 ```
 Parse the JSON: `{ ready, blockers[], running, gaps[], totalGapMin, summarySet, dayOpen, dayClosed }`.
 
@@ -168,7 +168,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
 - **Running task** (`running:{id,title,minutes}`): ask whether to stop it and for
   an accomplishment, then:
   ```powershell
-  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 stop -Id <id> -Text "<accomplishment>"
+  pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 stop -Id <id> -Text "<accomplishment>"
   ```
   (Add `-At "<yyyy-MM-dd HH:mm>"` to back-date the stop.)
 
@@ -176,7 +176,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   single non-work entry titled **"Away from work"** with **category `personal`** and
   **project `n/a`** — no need to ask per gap:
   ```powershell
-  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add -Text "Away from work" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category personal -Project "n/a"
+  pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 add -Text "Away from work" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category personal -Project "n/a"
   ```
   Only diverge from this default if the user has already told you what a specific
   gap was (then use that title/category instead). Never invent billable work.
@@ -187,7 +187,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   read the day's sessions, follow the Rules, skip lunch/travel/empty rows) and
   save it, overwriting any earlier summary so it reflects the *full* day:
   ```powershell
-  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 summary "<one-to-two line recap>"
+  pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 summary "<one-to-two line recap>"
   ```
   This resolves the `summarySet:false` blocker too, but do it even when
   `summarySet` is already `true` so the highlights aren't stale.
@@ -198,7 +198,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   required, not optional: a work/meeting entry with an empty accomplishment is a
   blocker. List today's entries and inspect each `accomplishment` field:
   ```powershell
-  $d = pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 state -Profile work | ConvertFrom-Json
+  $d = pwsh -NoProfile -File C:\Files\Dev\main\work-log\cli\wl.ps1 state -Profile work | ConvertFrom-Json
   $d.sessions | Where-Object { $_.start -like "$day*" -and $_.category -notin @('lunch','personal','Day') } |
     Sort-Object start | ForEach-Object { "id=$($_.id) [$($_.category)] acc='$($_.accomplishment)'" }
   ```
@@ -206,7 +206,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   one-line outcome (what shipped/decided/was explored — not a restatement of the
   title) and set it:
   ```powershell
-  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Accomplishment "<concrete outcome>"
+  pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 edit -Id <id> -Accomplishment "<concrete outcome>"
   ```
   **Hard cap: 50 words.** This mirrors the `worklog` skill's session-logging rule and
   applies to *every* accomplishment, however it was created. Lead with the outcome
@@ -227,7 +227,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   `wl.ps1 state` (filter `sessions` to today, excluding only the `Day` category), then
   for each remaining projectless id:
   ```powershell
-  pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id <id> -Project "n/a"
+  pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 edit -Id <id> -Project "n/a"
   ```
 
 Re-run `Get-DayClose.ps1 -Json` after resolving; loop until `ready:true`.
@@ -235,7 +235,7 @@ Re-run `Get-DayClose.ps1 -Json` after resolving; loop until `ready:true`.
 ### 3. End the day
 Only when `ready` is true and the user confirms:
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 endday
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 endday
 ```
 Then give a one-line confirmation (day closed, total tracked, summary).
 

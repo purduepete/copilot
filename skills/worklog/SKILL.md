@@ -24,12 +24,12 @@ Personal time tracking via a **cloud-hosted** PowerShell CLI (Azure Functions + 
 one entry point, which calls the hosted API (auth via `az` token, no secret):
 
 ```
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 <command> [args]
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 <command> [args]
 ```
 
 Profiles keep logs separate: `work` and `home`. Each machine has a **default
 profile** — **don't assume `work`**: read it first with
-`pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile` (prints `Current profile: <name>`)
+`pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile` (prints `Current profile: <name>`)
 and use that as the active profile, overriding with `-Profile <name>` only when the user
 asks for the other log. Everything persists to the cloud DB and is visible on the web
 dashboard (https://func-worklog-umcla2.azurewebsites.net/).
@@ -73,7 +73,7 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
    so tasks chain without gaps. Confirm if the gap is large or ambiguous.
 3. **Infer fields from history before asking.** When creating a task, if
    **category** or **project** is missing, first run
-   `pwsh -File C:\Files\Dev\main\worklog_web\src\Suggest-WorkDefaults.ps1 -Title "<title>" -Json`.
+   `pwsh -File C:\Files\Dev\main\work-log\src\Suggest-WorkDefaults.ps1 -Title "<title>" -Json`.
    - If it returns `tier` ≠ `none`, **use the suggested `category`/`project`** (and
      `ado` if present); just state what you applied so the user can correct it. Prefer
      the top suggestion; mention an alternative only if `confidence` < 0.6.
@@ -166,7 +166,7 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
 Natural-language phrases that map to specific actions:
 
 - **"find gaps" / "untracked time" / "what did I miss" / "what's unaccounted"** → run
-  `pwsh -File C:\Files\Dev\main\worklog_web\src\Find-WorkGaps.ps1 -Json` (add
+  `pwsh -File C:\Files\Dev\main\work-log\src\Find-WorkGaps.ps1 -Json` (add
   `-Date <yyyy-MM-dd>` for another day). Present the gaps, then **offer to fill each one**:
   ask the user what they were doing, infer category/project via rule 3
   (`Suggest-WorkDefaults.ps1`), and `add` it with the gap's exact `-Start`/`-End` (so the
@@ -178,7 +178,7 @@ Natural-language phrases that map to specific actions:
   stored range, then rerun `Find-WorkGaps.ps1` and require zero gaps and zero overlaps.
 - **"start of work day"** → `startday` (0-min marker). **"end of work day"** → first
   `stop` any open running item, then **run gap analysis**
-  (`pwsh -File C:\Files\Dev\main\worklog_web\src\Find-WorkGaps.ps1`) and present any
+  (`pwsh -File C:\Files\Dev\main\work-log\src\Find-WorkGaps.ps1`) and present any
   untracked gaps (>= 10 min), offering to fill them per the "find gaps" routine above;
   then **update the day's summary** (`summary "<text>"`,
   e.g. via the worklog-highlights routine), then `endday`
@@ -211,12 +211,12 @@ Natural-language phrases that map to specific actions:
 - **Prefer a single Markdown note** over many small notes — the dashboard note modal renders
   basic Markdown (bold, `code`, bullet lists, line breaks, links).
 - **Logging from VS Code chat.** For "get vscode tasks" / "log my work from chat" / "what did I do in the last hour":
-  run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-GapMinutes 90] [-Json]`, present a
+  run `pwsh -File C:\Files\Dev\main\work-log\src\Get-VSCodeWork.ps1 -Folder <repo> [-Date d | -LastMinutes N] [-GapMinutes 90] [-Json]`, present a
   numbered table (ID | work | start | end) — the script splits the session into blocks on idle gaps (`-GapMinutes`, default 90) —
   let the user pick an ID, then `-Create -Block <ID>` (logs the block with its exact start/end). Don't parse transcripts manually.
-  - **Scan all repos, not just the cwd.** "get vscode tasks" means **every repo two levels under `C:\Files\Dev\` (i.e. `C:\Files\Dev\*\*`, e.g. `C:\Files\Dev\main\webbookmarks`), excluding any folder named `clustergit`** — don't ask for / assume a single folder. Enumerate VS Code `workspaceStorage` (`%APPDATA%\Code\User\workspaceStorage\*\workspace.json`), keep the folders that match that pattern and have a `GitHub.copilot-chat\transcripts` dir, then run `Get-VSCodeWork.ps1 -Folder <repo>` against each for the target day (default today). Present blocks grouped by repo; if a repo has no transcripts for the day, skip it. If **no** repo has activity for the day, say so and surface the most-recent untracked block as a fallback.
+  - **Scan all repos, not just the cwd.** "get vscode tasks" means **every repo two levels under `C:\Files\Dev\` (i.e. `C:\Files\Dev\*\*`, e.g. `C:\Files\Dev\main\web-bookmarks`), excluding any folder named `clustergit`** — don't ask for / assume a single folder. Enumerate VS Code `workspaceStorage` (`%APPDATA%\Code\User\workspaceStorage\*\workspace.json`), keep the folders that match that pattern and have a `GitHub.copilot-chat\transcripts` dir, then run `Get-VSCodeWork.ps1 -Folder <repo>` against each for the target day (default today). Present blocks grouped by repo; if a repo has no transcripts for the day, skip it. If **no** repo has activity for the day, say so and surface the most-recent untracked block as a fallback.
 - **Logging from a Copilot CLI session.** For "get sessions tasks" / "get session tasks" / "log my Copilot work" / "create tasks from today's session" / "what did I do in this session":
-  run `pwsh -File C:\Files\Dev\main\worklog_web\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
+  run `pwsh -File C:\Files\Dev\main\work-log\src\Get-CopilotWork.ps1 [-Date d | -Current | -LastMinutes N] [-GapMinutes 30] [-Json]`.
   It reads today's `~/.copilot/session-state/*/events.jsonl` (default = all of today's sessions; `-Current` = the live one), chunks `user.message`
   events on idle gaps, and presents a numbered table. Pick one, then `-Create -Block <ID> -Category <c> -Project <p>`.
   - **Always add an accomplishment when logging session tasks.** Every entry created from a session (or via `add`/`stop` for one) must get a
@@ -243,7 +243,7 @@ Natural-language phrases that map to specific actions:
   - **Never combine `-Json` with `-Create`.** `Get-CopilotWork.ps1`/`Get-VSCodeWork.ps1` `return` on `-Json` **before** the create branch, so
     `-Json -Create` prints JSON and logs **nothing**. Use `-Json` only to read blocks; drop it when creating.
 - **Proactive proposal (zero-entry logging).** For "what am I working on" / "log what I'm doing now" / "propose a task" / a scheduled
-  proactive check: run `pwsh -File C:\Files\Dev\main\worklog_web\src\Suggest-CurrentWork.ps1 [-Json]`. It fuses **live signals** — the active
+  proactive check: run `pwsh -File C:\Files\Dev\main\work-log\src\Suggest-CurrentWork.ps1 [-Json]`. It fuses **live signals** — the active
   Copilot CLI session (`inuse.*.lock`) + recent **git** commits/dirty trees across your repos + WorkLog state — into a single confirm-ready
   entry for the current untracked stretch (window = first activity after the last tracked time -> now, trimmed by the non-overlap boundary).
   It **stays silent while a task is already running** and infers title/category/project (reporting a `confidence` of high/medium/low). Show the
@@ -275,7 +275,7 @@ the **end of the last logged entry** (rule 2); use the provided end time (the ta
 
 ```powershell
 # Duplicate today's item 4 into the next slot, ending 12:45
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add "<copied title>" -Start "2026-06-24 12:20" -End "2026-06-24 12:45" -Category <copied-cat> -Project <copied-proj>
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 add "<copied title>" -Start "2026-06-24 12:20" -End "2026-06-24 12:45" -Category <copied-cat> -Project <copied-proj>
 ```
 
 ## Notes (date-bound, not time-bound)
@@ -297,29 +297,29 @@ the `work` / `home` profile split) and render to their own **notes-dashboard.htm
 
 ```powershell
 # Jot a date-bound note for today
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 note "Ask Sri about the ADR split" -Category followup -Tags bedrock
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 note "Ask Sri about the ADR split" -Category followup -Tags bedrock
 
 # Note for a specific date, then view the dashboard
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 note "Renew ADO PAT" -Date 2026-07-01
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 notes
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 note "Renew ADO PAT" -Date 2026-07-01
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 notes
 ```
 
 ## Examples
 
 ```powershell
 # Begin a task now, linked to an ADO item
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 start "Fix MS Sales pull" -Ado 435324 -Category development
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 start "Fix MS Sales pull" -Ado 435324 -Category development
 
 # Stop the open task with an accomplishment
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 stop "Patched view, validated row counts"
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 stop "Patched view, validated row counts"
 
 # Back-fill a finished meeting, chaining from the last entry's end time
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add "AI In-the-middle weekly open session" -Start "2026-06-24 12:00" -End "2026-06-24 12:30" -Category meeting -Project AI
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 add "AI In-the-middle weekly open session" -Start "2026-06-24 12:00" -End "2026-06-24 12:30" -Category meeting -Project AI
 
 # Fix a field on an existing entry
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 edit -Id 38 -Project AI
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 edit -Id 38 -Project AI
 
 # Refresh dashboards
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 dashboard
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 serve        # live-edit ("start work log")
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 dashboard
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 serve        # live-edit ("start work log")
 ```

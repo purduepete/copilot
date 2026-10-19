@@ -22,7 +22,7 @@ start/end-of-day constraints apply to it. Both are managed through the one WorkL
 entry point:
 
 ```
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile [name] [-Bounds on|off|default]
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile [name] [-Bounds on|off|default]
 ```
 
 ## Command vocabulary (what the user says -> what to run)
@@ -52,7 +52,7 @@ profile into the work-day constraints with `set time bound on`.
 "Get profile" / "what profile am I on?" / "get time bound"
 
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile
 # -> Current profile: home
 # -> Daily start/end bounds: not enforced (default)
 ```
@@ -65,7 +65,7 @@ profile); `(explicit)` means it was set with `-Bounds`.
 "Set profile home" / "change profile to work" / "switch to the home log"
 
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile home
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile home
 # -> Default profile for this machine set to 'home'.
 ```
 
@@ -74,11 +74,11 @@ user already said). Then persist their answer for that profile:
 
 ```powershell
 # time bound ON for the named profile (requires startday/endday)
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile work -Bounds on
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile work -Bounds on
 # time bound OFF (no startday/endday needed, log any time)
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Bounds off
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile side -Bounds off
 # revert to the built-in default for that profile
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile work -Bounds default
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile work -Bounds default
 ```
 
 - `-Bounds` accepts **`on`** (enforce), **`off`** (don't), **`default`** (clear the
@@ -95,19 +95,19 @@ profile (positional or `-Profile`), independent of the machine default.
 
 ```powershell
 # List every profile with row counts (* = this machine's default)
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile -List
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile -List
 
 # Create a new, empty profile (optional -Label / -Org for ADO linking)
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Create
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Create -Label 'Side gig'
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile side -Create
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile side -Create -Label 'Side gig'
 
 # Rename a profile — MIGRATES all of its data (sessions, task-notes, notes,
 # commentary) to the new name in one transaction. Fails if the new name exists.
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile side -Rename hobby
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile side -Rename hobby
 
 # Delete a profile AND ALL its data — strictly guarded (see below)
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile hobby -Delete        # dry run: shows what WOULD be deleted, deletes nothing
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 profile hobby -Delete -Yes   # actually delete it
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile hobby -Delete        # dry run: shows what WOULD be deleted, deletes nothing
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile hobby -Delete -Yes   # actually delete it
 ```
 
 ### Delete guardrails (all enforced — do not try to bypass)

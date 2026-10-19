@@ -51,7 +51,7 @@ subject and exact start/end from WorkIQ, infer category and project from WorkLog
 then follow its preview, overlap, and persistence checks.
 
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 add "<Subject>" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category meeting -Project <project> -Accomplishment "<brief outcome>"
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 add "<Subject>" -Start "<yyyy-MM-dd HH:mm>" -End "<yyyy-MM-dd HH:mm>" -Category meeting -Project <project> -Accomplishment "<brief outcome>"
 ```
 
 Capitalize the first word of the title. Never log meetings that have not ended.

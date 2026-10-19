@@ -42,8 +42,8 @@ If the user says "there is a gh task for it" without a number, locate it:
 Use **`tasknote`** with a Markdown link (the dashboard renders `[text](url)`):
 
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 tasknote `
-  "GitHub: [#6 Prioritize favorites in command palette fuzzy search](https://github.com/purduepete/webbookmarks/issues/6) — state: closed" `
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 tasknote `
+  "GitHub: [#6 Prioritize favorites in command palette fuzzy search](https://github.com/purduepete/web-bookmarks/issues/6) — state: closed" `
   -Id <resolvedId>
 ```
 
@@ -58,7 +58,7 @@ If the user is closing the WorkLog item *and* wants the GitHub issue closed, do 
 one call instead of a separate note:
 
 ```powershell
-pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 close "<accomplishment>" `
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 close "<accomplishment>" `
   -Id <resolvedId> -Issue <N> -RepoPath C:\Files\Dev\main\<repo> -CloseIssue
 ```
 
@@ -69,7 +69,7 @@ pwsh -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 close "<accomplishment>" `
 After writing, confirm the note landed on the right session:
 
 ```powershell
-$j = pwsh -NoProfile -File C:\Files\Dev\main\worklog_web\cli\wl.ps1 state -Profile <profile> | ConvertFrom-Json
+$j = pwsh -NoProfile -File C:\Files\Dev\main\work-log\cli\wl.ps1 state -Profile <profile> | ConvertFrom-Json
 ($j.sessions | Where-Object { $_.id -eq <resolvedId> }).notes
 ```
 
