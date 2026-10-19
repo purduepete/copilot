@@ -36,6 +36,10 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   that theme's default. An app may let the user pick another highlight from web-portfolio's
   `HIGHLIGHT_COLOR_OPTIONS` list, but the defaults are fixed. Expose it as the
   `--local-highlight-color` variable (or `--accent` in apps without Tailwind).
+
+  Existing apps that keep their own highlight by choice: Home Automation (slate), Ferry Tracker
+  (teal), Work Log (`#4d8dff`, plus its extra themes) and Plex (gold). Leave Web Bookmarks
+  untouched. Every other app, and every new app, uses the defaults above.
 - **Surfaces per theme** (page background is `--theme-gray-900`):
 
   | Token | light | midnight | dark (optional) |
