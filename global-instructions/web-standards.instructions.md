@@ -74,7 +74,8 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
 - An inline script in `index.html` applies the class, `color-scheme`, and the `theme-color` meta
   **before** first paint. No flash of the wrong theme.
 - The theme hook updates `meta[name="theme-color"]` in the same effect that writes the class, using
-  the page-background value from the table above.
+  the color of the fixed top bar (usually the page background; the panel color when the top bar
+  uses it).
 - When the preference is `system`, listen to `prefers-color-scheme` changes and re-resolve.
 
 ## PWA and iOS
@@ -90,7 +91,9 @@ Follow `ios-pwa-chrome.instructions.md` in this folder. The short version for `i
 ```
 
 Never add `apple-mobile-web-app-status-bar-style` or a zoom lock. Fixed layers offset by
-`--safe-area-*` variables built from `env(safe-area-inset-*)`.
+`--safe-area-*` variables built from `env(safe-area-inset-*)`. The top bar, or the app shell, is
+`position: fixed` or `sticky`, touches the top edge, and spans the full width, or Safari 26 blurs
+the header text (see the Safari 26 section of `ios-pwa-chrome.instructions.md`).
 
 ## Deployment
 
@@ -127,3 +130,7 @@ rules in `personal.instructions.md`. For a new app:
 Diff the app's `index.html` head and `:root` tokens against web-portfolio before touching other
 CSS. Then check, in order: font stack, corner radius, highlight defaults, theme options and
 default, `theme-color` sync, Prettier and ESLint config, script names, and its `sites.json` entry.
+
+Reading files cannot catch iOS layout bugs. An app passes the PWA and iOS checks only after it is
+saved to the home screen and checked on an iPhone in portrait and an iPad in landscape, across 2
+launches, in light and midnight. Until then, report it as unverified on device.

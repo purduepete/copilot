@@ -62,6 +62,34 @@ When one app renders correctly and another does not, **diff the `index.html` hea
 any CSS.** Three rounds of padding math went into chasing this symptom before the meta tag was
 found.
 
+## Safari 26: the top bar must be fixed or sticky and full width
+
+Written 2026-10-19 after site-dock took 4 deploys to fix on iPad landscape (fixed in site-dock
+`d8c353c`). The header text looked blurred and the status bar faded into the header.
+
+In iOS and iPadOS 26 standalone apps, Safari blurs page content near the top edge and tints the
+status bar on its own. It skips the blur and uses your color only when a `position: fixed` or
+`position: sticky` element is **within 4px of the top edge and at least 80% of the viewport wide**,
+with an opaque `background-color` and no `backdrop-filter`.
+
+- The top bar, or the whole app frame, must meet that rule. web-portfolio's navbar is
+  `sticky top-0` at full width with `pt-[var(--safe-area-top)]` (`Navbar.tsx` line 288).
+- Layouts with side-by-side headers (sidebar brand plus workspace header) fail, because each header
+  is under 80%. Make the shell itself the element:
+  `.app { position: fixed; inset: 0; background: var(--panel); padding-top: env(safe-area-inset-top); }`
+- `theme-color` and the pre-paint `html` background are the top bar's color, not the page
+  background, when the 2 differ. Otherwise the status bar shows a different color than the header.
+- These did not work in site-dock: changing header heights or colors inside a non-fixed layout,
+  and a separate fixed strip only as tall as `env(safe-area-inset-top)`.
+
+## Diagnosing a top-edge problem on device
+
+- **Measure before changing anything.** Ask for a home-screen screenshot, read the pixel colors
+  down the top 80 rows, and enlarge the header next to web-portfolio's at the same position. That
+  shows whether the problem is a color, a clip, or a blur.
+- Change one thing per deploy and confirm it on the device before the next change. Do not report a
+  layout bug as fixed until @jimb confirms it from a fresh home-screen launch.
+
 ## After deploying
 
 Apps using `vite-plugin-pwa` with `registerType: "autoUpdate"` cache the shell. The first relaunch

@@ -89,6 +89,11 @@ Repo-specific rules still belong in each repo's
     side deliverables unless I ask.
   - Stop the source app as part of cutover and keep it stopped. Do not restart a
     retired source for rollback convenience.
+- **Reach home hosts by their `.local` names** (`jimbrownhome.local`,
+  `jimbrownhome1.local`) so traffic stays on the LAN and skips Tailscale. Use the
+  Tailscale names only when testing the Tailscale access path itself.
+  jimbrownhome1 has no SSH or WinRM. Reach it with the admin share
+  (`\\jimbrownhome1.local\c$`) and `New-CimSession -Protocol Dcom` for tasks and processes.
 - When cloning source/solution repos for analysis, clone them under
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
