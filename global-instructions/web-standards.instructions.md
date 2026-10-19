@@ -102,8 +102,9 @@ Every app ships these icon files in `frontend/public`, copied from web-portfolio
   changes (Playwright with `channel: 'msedge'` works without downloading a browser).
 
 Use the midnight panel color as the background and steel blue `#6b8cae` for the glyph, unless the
-app already has its own mark. SiteDock looks for `/favicon.svg` first when it shows a favorite, so
-the same file covers the dock.
+app already has its own mark. Site Dock looks for `/favicon.svg` first when it shows a favorite, so
+the same file covers the dock. Apps that serve their own routes (FastAPI, a PowerShell listener)
+must answer `/favicon.svg` and `/apple-touch-icon.png` at the site root, not only under `/icons/`.
 
 Never add `apple-mobile-web-app-status-bar-style` or a zoom lock. Fixed layers offset by
 `--safe-area-*` variables built from `env(safe-area-inset-*)`. The top bar, or the app shell, is
@@ -117,11 +118,16 @@ rules in `personal.instructions.md`. For a new app:
 
 - Solution id, host folder, GitHub repo and local folder use hyphens (`web-bookmarks`). The
   PostgreSQL database uses underscores (`web_bookmarks`) and the `public` schema.
+- The display name is the same words, capitalized and separated by spaces: "Site Dock",
+  "Work Log", "Web Bookmarks", never "SiteDock" or "WorkLog". Use it everywhere a person reads
+  the name: `<title>`, `apple-mobile-web-app-title`, the manifest `name`, the header wordmark,
+  messages and tooltips, and the `name` in `sites.json`. Code identifiers (`SiteDockToken`,
+  `WorkLog.psm1`) keep their joined form.
 - Cloudflare hostname is `<solution-id>.jimlertech.com`, behind Cloudflare Access. One hostname,
   no aliases, written only through `Set-CloudflareHostnames.ps1`.
 - Tailscale fallback is `https://jimbrownhome1.tail8ad282.ts.net:<port>/`. Take the next unused
   port in `sites.json` and add the entry there in the same change.
-- Add a SiteDock favorite. Verify both access paths before calling it deployed.
+- Add a Site Dock favorite. Verify both access paths before calling it deployed.
 
 ## Code conventions
 
@@ -145,8 +151,8 @@ rules in `personal.instructions.md`. For a new app:
 Diff the app's `index.html` head and `:root` tokens against web-portfolio before touching other
 CSS. Then check, in order: font stack, corner radius, highlight defaults, theme options and
 default, `theme-color` sync, icon files (`/favicon.svg` and a 180x180 `/apple-touch-icon.png`
-both return 200 from the deployed app), Prettier and ESLint config, script names, and its
-`sites.json` entry.
+both return 200 from the deployed app), display name spacing, Prettier and ESLint config, script
+names, and its `sites.json` entry.
 
 Reading files cannot catch iOS layout bugs. An app passes the PWA and iOS checks only after it is
 saved to the home screen and checked on an iPhone in portrait and an iPad in landscape, across 2
