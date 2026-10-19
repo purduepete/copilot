@@ -83,12 +83,27 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
 Follow `ios-pwa-chrome.instructions.md` in this folder. The short version for `index.html`:
 
 ```html
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<!-- iOS ignores an SVG favicon when adding to the home screen and needs this PNG. -->
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-title" content="App Name" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <meta name="theme-color" content="#020617" />
 <meta name="mobile-web-app-capable" content="yes" />
 ```
+
+Every app ships these icon files in `frontend/public`, copied from web-portfolio's pattern:
+
+- `favicon.svg`: the browser tab icon, a rounded card on a 64x64 viewBox.
+- `apple-touch-icon.svg`: the source for the iOS icon. Same glyph, full bleed with square corners
+  and an opaque background, because iOS applies its own rounded mask and a transparent or inset
+  card leaves light wedges.
+- `apple-touch-icon.png`: that source rendered at exactly 180x180. Re-render it whenever the SVG
+  changes (Playwright with `channel: 'msedge'` works without downloading a browser).
+
+Use the midnight panel color as the background and steel blue `#6b8cae` for the glyph, unless the
+app already has its own mark. SiteDock looks for `/favicon.svg` first when it shows a favorite, so
+the same file covers the dock.
 
 Never add `apple-mobile-web-app-status-bar-style` or a zoom lock. Fixed layers offset by
 `--safe-area-*` variables built from `env(safe-area-inset-*)`. The top bar, or the app shell, is
@@ -129,7 +144,9 @@ rules in `personal.instructions.md`. For a new app:
 
 Diff the app's `index.html` head and `:root` tokens against web-portfolio before touching other
 CSS. Then check, in order: font stack, corner radius, highlight defaults, theme options and
-default, `theme-color` sync, Prettier and ESLint config, script names, and its `sites.json` entry.
+default, `theme-color` sync, icon files (`/favicon.svg` and a 180x180 `/apple-touch-icon.png`
+both return 200 from the deployed app), Prettier and ESLint config, script names, and its
+`sites.json` entry.
 
 Reading files cannot catch iOS layout bugs. An app passes the PWA and iOS checks only after it is
 saved to the home screen and checked on an iPhone in portrait and an iPad in landscape, across 2
