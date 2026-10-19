@@ -31,8 +31,8 @@ Profiles keep logs separate: `work` and `home`. Each machine has a **default
 profile** — **don't assume `work`**: read it first with
 `pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 profile` (prints `Current profile: <name>`)
 and use that as the active profile, overriding with `-Profile <name>` only when the user
-asks for the other log. Everything persists to the cloud DB and is visible on the web
-dashboard (https://func-worklog-umcla2.azurewebsites.net/).
+asks for the other log. Everything persists to PostgreSQL on jimbrownhome1 and is
+visible on the web dashboard (https://work-log.jimlertech.com/app).
 
 ## Commands
 
@@ -106,7 +106,7 @@ dashboard (https://func-worklog-umcla2.azurewebsites.net/).
 5. **Correct obvious typos** in category/project/title (e.g. "Investigatoin" → "Investigation"),
    and tell the user what you changed so they can revert.
 6. **"Start work log"** = the hosted dashboard at
-   https://func-worklog-umcla2.azurewebsites.net/ (sign in with Microsoft).
+   https://work-log.jimlertech.com/app (sign in with Google or Microsoft).
    **"Recreate / rebuild the html"** = `dashboard` (just opens that URL — the page is
    always live).
 7. **"Item N" = per-day position, not the global id.** When the user says "item 5"

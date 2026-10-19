@@ -134,7 +134,7 @@ the source of the day summary used in Part 3.
    ```
 
 4. **Confirm** to the user with the final two-line text, then tell them to refresh the
-   web dashboard (https://func-worklog-umcla2.azurewebsites.net/) to see it.
+   web dashboard (https://work-log.jimlertech.com/app) to see it.
 
 **Highlights notes**
 - The commentary is stored per-profile in the cloud DB under `commentary[yyyy-MM-dd]`.
