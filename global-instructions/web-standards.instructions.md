@@ -165,12 +165,15 @@ rules in `personal.instructions.md`. For a new app:
   `--no-warn-ignored` to the staged ESLint run. When `package.json` lives in a subfolder, use
   `"prepare": "cd .. && husky"` and a root `.husky/pre-commit` of `cd <folder> && npx lint-staged`.
 - **Adopting the tooling in an existing repo** (done for Ferry Tracker, Fit Track, Site Dock, Web
-  Inventory and Web Options): add `* text=auto eol=lf` to `.gitattributes` so Windows checkouts
+  Inventory, Web Options, Home Automation, Plex Track, Work Log and Solution Directory): add `* text=auto eol=lf` to `.gitattributes` so Windows checkouts
   match Prettier, exclude any `index.html` whose inline script is CSP-hashed in `.prettierignore`,
   commit the config first, then the reformat alone, then list the reformat in
   `.git-blame-ignore-revs`. Scope `no-console` to browser code; server and CLI logging is fine. A
   justified exception gets an `eslint-disable-next-line <rule> -- <reason>` on the exact line, after
-  Prettier has run, since Prettier can split a line away from its directive.
+  Prettier has run, since Prettier can split a line away from its directive. Also exclude HTML
+  whose tests read exact source text (Home Automation's pages), and make CSS-matching tests
+  tolerant of whitespace and quote style. Plex Track and Work Log render their UI from
+  PowerShell, so their tooling covers only JS tests, Markdown, JSON and YAML.
 - **Tests:** Vitest for unit tests, Playwright for an end-to-end smoke test of the main page in
   light and dark.
 - **npm script names:** `dev`, `build`, `preview`, `lint`, `lint:fix`, `format`, `format:check`,
