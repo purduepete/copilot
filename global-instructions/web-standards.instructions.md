@@ -83,8 +83,13 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
 - **Exception: work-log** keeps its named theme set (nord, dracula, rose, tokyo, paper and the
   default). It still needs `system`, `light` and `midnight` among them, with midnight as the
   default; the others stay as extras.
-- The toggle cycles `light` → `midnight` (→ `dark` where present). A settings control lists every
-  preference, including `system`.
+- **One theme control in the header.** Use either a compact dropdown listing every preference
+  (`system`, `light`, `midnight`, plus any extras) or a toggle that cycles `light` → `midnight`
+  (→ `dark` where present), never both side by side. An app with a toggle in the header lists the
+  full set, including `system`, on a settings or appearance page.
+- Header dropdowns match the height and top edge of the icon buttons beside them (same height
+  token, no stray `margin-top`). `Test-WebStandard.mjs` fails an app with more than one header
+  theme control or a misaligned one.
 - Persist the preference in `localStorage`. Classes on `<html>`: `light`, `dark theme-midnight`,
   or `dark` (gray dark only). Also set `style.colorScheme`.
 - An inline script in `index.html` applies the class, `color-scheme`, and the `theme-color` meta
