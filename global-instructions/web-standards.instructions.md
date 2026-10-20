@@ -135,6 +135,17 @@ Never add `apple-mobile-web-app-status-bar-style` or a zoom lock. Fixed layers o
 `position: fixed` or `sticky`, touches the top edge, and spans the full width, or Safari 26 blurs
 the header text (see the Safari 26 section of `ios-pwa-chrome.instructions.md`).
 
+## Data storage
+
+- An app that stores data uses PostgreSQL 18 on `jimbrownhome1:5432`, with its own database
+  (underscores, `public` schema) and separate owner, migration and runtime roles. Runtime never
+  runs DDL; schema changes go through the migration identity.
+- Follow `solution-deploy\docs\PostgreSQL.md` for roles, password files and reviewed SQL plans,
+  and `solution-deploy\docs\PostgreSQLBackups.md` for the nightly backup that covers the new
+  database. Every database-altering step gets an independent review first.
+- Azure SQL is legacy. Only Web Portfolio and Web Options use it. New apps never use it, and
+  existing PostgreSQL apps never move to it.
+
 ## Deployment
 
 The source of truth is `C:\Files\Dev\main\solution-deploy\site\sites.json`, plus the deployment

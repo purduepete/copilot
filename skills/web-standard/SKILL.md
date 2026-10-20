@@ -51,8 +51,11 @@ source of truth for hosting. It needs, at minimum:
   readiness endpoint, graceful stop, shared-state paths, routes).
 - An entry in `solution-deploy\environments\production.json` with `newInstallation: true`, a
   unique app id, account, port, hostname and database.
-- Its own PostgreSQL database (underscores, `public` schema) with separate owner, migration and
-  runtime roles. Every database-altering step gets an independent review first.
+- Its own PostgreSQL database on `jimbrownhome1:5432` (underscores, `public` schema) with
+  separate owner, migration and runtime roles, following `solution-deploy\docs\PostgreSQL.md`
+  and covered by the backup in `docs\PostgreSQLBackups.md`. Every database-altering step gets
+  an independent review first. Never use Azure SQL for a new app; only Web Portfolio and Web
+  Options still use it.
 - A `\JimlerTech\SolutionDeploy-<app>` task that starts the app with no window, and a check after
   a reboot without signing in.
 - Naming: hyphens for the solution id, folders, repo and hostname.
