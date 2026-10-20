@@ -1,6 +1,6 @@
 ---
 applyTo: '**/*.html, **/*.css, **/*.tsx, **/*.jsx, **/vite.config.*, **/tailwind.config.*, **/eslint.config.*, **/.prettierrc*'
-description: "@jimb's web app standard: look, custom dropdowns, dark/light themes, iOS PWA, deployment, and code conventions. Apply when building or changing any of his web sites."
+description: "@jimb's web app standard: look, custom dropdowns, dark/light themes, iOS PWA, deployment, and code conventions. Use when building a new web page, new site or new app, or changing any of his web sites."
 ---
 
 # Web app standard
@@ -62,7 +62,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   Use the appropriate accessible button/listbox or menu-radio pattern with a label,
   expanded state and selected state. Support arrows, Home/End, Enter/Space, Escape,
   Tab and outside-click dismissal, with correct focus return. Keep popups within the
-  viewport and usable by touch. Test keyboard selection, dismissal, persistence and
+  viewport and usable by touch. A popup inside a scrolling or `overflow` container (tables,
+  virtualized lists) renders in a portal on `document.body` so the container cannot clip it;
+  web-portfolio's `SelectField` is the pattern. Test keyboard selection, dismissal, persistence and
   both themes; include a regression check rejecting native selects in the changed UI.
   OS-owned file, date and time pickers are separate controls.
 - **Motion:** background transitions 0.3s; entrance animations `fade-in` / `fade-up` 0.6s
@@ -87,9 +89,10 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
   (`system`, `light`, `midnight`, plus any extras) or a toggle that cycles `light` → `midnight`
   (→ `dark` where present), never both side by side. An app with a toggle in the header lists the
   full set, including `system`, on a settings or appearance page.
-- Header dropdowns match the height and top edge of the icon buttons beside them (same height
-  token, no stray `margin-top`). `Test-WebStandard.mjs` fails an app with more than one header
-  theme control or a misaligned one.
+- Every control in the header bar (icon buttons, dropdowns, segmented groups, text buttons such as
+  Logout) shares one height token (36px in web-portfolio) and the same top edge, with no stray
+  `margin-top` or padding on a group wrapper. `Test-WebStandard.mjs` fails an app with more than
+  one header theme control or a misaligned one.
 - Persist the preference in `localStorage`. Classes on `<html>`: `light`, `dark theme-midnight`,
   or `dark` (gray dark only). Also set `style.colorScheme`.
 - An inline script in `index.html` applies the class, `color-scheme`, and the `theme-color` meta
@@ -149,6 +152,13 @@ rules in `personal.instructions.md`. For a new app:
 - Tailscale fallback is `https://jimbrownhome1.tail8ad282.ts.net:<port>/`. Take the next unused
   port in `sites.json` and add the entry there in the same change.
 - Add a Site Dock favorite. Verify both access paths before calling it deployed.
+- **Frontend deploys have no downtime.** Copy the new hashed assets first and `index.html` last,
+  and keep the previous build's assets so open tabs can still lazy-load. No backend restart unless
+  the inline scripts in `index.html` changed (their CSP hashes are read at startup).
+- **Build-time settings live in a deploy script.** When the production bundle needs a variable
+  (web-portfolio needs `VITE_AUTH_MODE=access`), the repo's deploy script sets it and refuses a
+  bundle built without it. Never copy a plain `npm run build` output to the host. For
+  web-portfolio use `scripts\Deploy-PlatformFrontend.ps1`.
 
 ## Code conventions
 
