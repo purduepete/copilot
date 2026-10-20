@@ -44,20 +44,44 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
 
 ## 3. New app only
 
-- Ids: hyphens for the solution, folders, repo and hostname; underscores for the PostgreSQL
-  database, `public` schema.
-- Add the `sites.json` entry with the next unused Tailscale port.
-- Add the theme storage key to the `apps` map in `solution-deploy\scripts\Test-WebStandard.mjs`.
+Follow "Add a new solution" in `C:\Files\Dev\main\solution-deploy\docs\Deployment.md`; it is the
+source of truth for hosting. It needs, at minimum:
+
+- `deploy\application.json` in the app repo (runtime, build, entrypoint, reserved port, JSON
+  readiness endpoint, graceful stop, shared-state paths, routes).
+- An entry in `solution-deploy\environments\production.json` with `newInstallation: true`, a
+  unique app id, account, port, hostname and database.
+- Its own PostgreSQL database (underscores, `public` schema) with separate owner, migration and
+  runtime roles. Every database-altering step gets an independent review first.
+- A `\JimlerTech\SolutionDeploy-<app>` task that starts the app with no window, and a check after
+  a reboot without signing in.
+- Naming: hyphens for the solution id, folders, repo and hostname.
+- The `sites.json` entry with the next unused Tailscale port, and the theme storage key in the
+  `apps` map of `solution-deploy\scripts\Test-WebStandard.mjs`.
 - Cloudflare hostname `<solution-id>.jimlertech.com` behind Access, written only by the parent
   session through `Set-CloudflareHostnames.ps1`. No aliases.
-- Add the tooling: Prettier, ESLint, husky + lint-staged, the standard npm script names.
-- Add a Site Dock favorite.
+- The tooling: Prettier, ESLint, husky + lint-staged, the standard npm script names.
+- A Site Dock favorite.
 
 ## 4. Validate and deploy
 
 1. In the repo: Prettier, `lint`, `typecheck`, `build`, and the repo's own tests or smoke script.
-2. Deploy with the repo's deploy script, never a hand copy of `npm run build`.
-   Web Portfolio: `scripts\Deploy-PlatformFrontend.ps1`. Copy assets first and `index.html` last.
+   Commit and push with the Copilot trailer. Deploys ship committed code.
+2. Check how the app is hosted: is it listed under `apps` in
+   `solution-deploy\environments\production.json`?
+   - **Framework app** (listed; today Ferry Tracker, Home Automation, Site Dock). Deploy only
+     through the framework, following "Deploy a later version" in `docs\Deployment.md`:
+     `.\Deploy.ps1 -Action Plan -App <id> -Environment production -Target jimbrownhome1 -OpenReport`,
+     then Stage, Deploy and Verify, each with @jimb's approval. Never hand-copy files into its
+     release folder: the release then no longer matches its recorded commit. If Plan stops with
+     "Managed destination exists without central placement authority", stop and tell @jimb.
+     Recording placement is a reviewed production step; do not adopt or bypass it.
+   - **Hand-placed app** (everything else). Its release lives under
+     `\\jimbrownhome1.local\c$\ProgramData\SolutionDeploy\apps\<id>\releases\` and starts from
+     `shared\Start-Service.ps1`. Use the repo's deploy script when it has one (Web Portfolio:
+     `scripts\Deploy-PlatformFrontend.ps1`), never a plain `npm run build` copy. Copy hashed
+     assets first and `index.html` last. Restart through the `\JimlerTech\SolutionDeploy-<id>`
+     task only when backend code or CSP-hashed inline scripts changed.
 3. From `C:\Files\Dev\main\solution-deploy`, run both paths:
 
    ```powershell
@@ -68,7 +92,6 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
    Use `--public --signin` if Cloudflare Access asks for a sign-in. Pass flags to node directly;
    `npm run` drops them.
 4. Work is done only when both runs print PASS. Fix and redeploy on FAIL.
-5. Commit and push with the Copilot trailer.
 
 ## 5. Report
 
