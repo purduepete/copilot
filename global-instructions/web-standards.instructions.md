@@ -1,6 +1,6 @@
 ---
 applyTo: '**/*.html, **/*.css, **/*.tsx, **/*.jsx, **/vite.config.*, **/tailwind.config.*, **/eslint.config.*, **/.prettierrc*'
-description: "@jimb's web app standard: look, dark/light themes, iOS PWA, deployment, and code conventions. Apply when building or changing any of his web sites."
+description: "@jimb's web app standard: look, custom dropdowns, dark/light themes, iOS PWA, deployment, and code conventions. Apply when building or changing any of his web sites."
 ---
 
 # Web app standard
@@ -53,6 +53,18 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   hard-code hex values. Tailwind is optional. If used, use v4 and map theme colors to
   `var(--theme-*)` the way web-portfolio does.
 - **Icons:** `lucide-react` (stroke icons). No emoji as UI icons.
+- **Dropdowns:** use custom, theme-aware dropdowns for every app-owned choice control,
+  including theme, settings and filters. Do not use a native `<select>` or `<datalist>`
+  popup, even when its closed control is styled. Reuse the app's existing dropdown
+  component; static pages follow the same rule without adding a UI framework.
+  The trigger and popup use the app font, square corners, surface/border/accent tokens,
+  visible selected state, focus indicator and themed scrollbars in Light and Midnight.
+  Use the appropriate accessible button/listbox or menu-radio pattern with a label,
+  expanded state and selected state. Support arrows, Home/End, Enter/Space, Escape,
+  Tab and outside-click dismissal, with correct focus return. Keep popups within the
+  viewport and usable by touch. Test keyboard selection, dismissal, persistence and
+  both themes; include a regression check rejecting native selects in the changed UI.
+  OS-owned file, date and time pickers are separate controls.
 - **Motion:** background transitions 0.3s; entrance animations `fade-in` / `fade-up` 0.6s
   ease-out. Honor `prefers-reduced-motion`.
 
