@@ -173,3 +173,8 @@ names, and its `sites.json` entry.
 Reading files cannot catch iOS layout bugs. An app passes the PWA and iOS checks only after it is
 saved to the home screen and checked on an iPhone in portrait and an iPad in landscape, across 2
 launches, in light and midnight. Until then, report it as unverified on device.
+
+Run `npm run check:web` in `C:\Files\Dev\main\solution-deploy` after changing or deploying any app.
+It checks every deployed app's theme, `theme-color`, head tags, icons, font, native dropdowns,
+console errors and 390px width, read-only. Add a new app's theme storage key to the `apps` map in
+`scripts/Test-WebStandard.mjs` when you add it to `sites.json`.
