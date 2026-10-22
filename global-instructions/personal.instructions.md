@@ -89,6 +89,15 @@ Repo-specific rules still belong in each repo's
     side deliverables unless I ask.
   - Stop the source app as part of cutover and keep it stopped. Do not restart a
     retired source for rollback convenience.
+- **Start services and background tasks at system startup, not at logon.** Use an
+  `-AtStartup` trigger plus a 5-minute repeat, run as `LOCAL SERVICE` or a dedicated
+  non-admin account with a stored password, so the work runs after a reboot with
+  nobody signed in. Use a logon trigger only when the workload needs the signed-in
+  session (for example the FitTrack upload watcher reads the per-user Google Drive
+  `G:` mount), and record that reason in the task description. Launch PowerShell by
+  full path, never bare `pwsh`: on jimbrownhome1 use
+  `C:\ProgramData\SolutionDeploy\runtime\powershell\7\pwsh.exe`. Follow the
+  `windows-logon-task` skill for the task shape.
 - **Reach home hosts by their `.local` names** (`jimbrownhome.local`,
   `jimbrownhome1.local`) so traffic stays on the LAN and skips Tailscale. Use the
   Tailscale names only when testing the Tailscale access path itself.

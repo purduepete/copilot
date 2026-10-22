@@ -1,20 +1,87 @@
 ---
 name: windows-logon-task
 description: >-
-  Start a PowerShell script or app at Windows logon with no terminal window
-  on screen. Covers the launcher pattern that actually hides a long-running
-  console script, the scheduled-task shape to copy, the approaches that look
-  right and fail, and how to verify the thing is really running.
+  Start a PowerShell script, service or app automatically on Windows. Defaults
+  to a system-startup task that runs with nobody signed in, and covers the
+  logon-task exception for work that needs the user session: the launcher
+  pattern that hides a long-running console script, the task shapes to copy,
+  the approaches that look right and fail, and how to verify it is running.
   WHEN: "run this at login", "start at logon", "launch on startup", "run in
   the background at startup", "a terminal window stays open at login", "hide
   the console window", "scheduled task at logon", "why is a powershell window
-  showing at startup", "make this start automatically", "autostart my script".
-argument-hint: Which script or app should start at logon, and any arguments it needs
+  showing at startup", "make this start automatically", "autostart my script",
+  "run at boot", "start without signing in", "run whether logged on or not".
+argument-hint: Which script or app should start automatically, and any arguments it needs
 ---
 
-# Start something at Windows logon with no terminal window
+# Start something automatically on Windows
 
-## The one rule
+## Startup first
+
+Default to a **system-startup task**. It runs after a reboot with nobody signed
+in, and it runs in session 0, so no window can ever appear on a desktop.
+
+Use a logon task only when the workload needs the signed-in user session:
+
+- a per-user mount, such as the Google Drive for Desktop `G:` drive (the
+  FitTrack upload watcher is the standing example)
+- a tray icon or any UI the user sees
+- a per-user app that only exists in that profile
+
+State that reason in the task's `-Description`. "It was easier" is not a reason.
+
+### Startup task shape
+
+Copy `solution-deploy\scripts\Install-LanProxy.ps1`. Registration needs an
+elevated session.
+
+```powershell
+$pwsh = 'C:\ProgramData\SolutionDeploy\runtime\powershell\7\pwsh.exe'
+$action = New-ScheduledTaskAction -Execute $pwsh -WorkingDirectory $root `
+    -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$root\Start-Thing.ps1`""
+$triggers = @(
+    New-ScheduledTaskTrigger -AtStartup
+    New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5)
+)
+$principal = New-ScheduledTaskPrincipal -UserId 'S-1-5-19' -LogonType ServiceAccount -RunLevel Limited
+$settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([timespan]::Zero) -MultipleInstances IgnoreNew `
+    -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
+    -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+Register-ScheduledTask -TaskPath '\JimlerTech\' -TaskName $taskName -Action $action -Trigger $triggers `
+    -Principal $principal -Settings $settings -Description '...' -Force | Out-Null
+```
+
+- `S-1-5-19` is `LOCAL SERVICE`. Use it when the work needs no network
+  credentials or secrets of its own.
+- When it needs its own file ACLs or database login, use a dedicated non-admin
+  local account with `-LogonType Password` and a stored password. SolutionDeploy
+  app tasks do this through `Install-AppBootTask` in `src\Lifecycle.psm1`. Keep
+  that password in a DPAPI credential file under
+  `C:\ProgramData\SolutionDeploy\control\task-credentials`, because changing the
+  task later (even its executable path) asks for it again.
+- Never S4U or `SYSTEM` for app workloads. `SYSTEM` is for host plumbing such as
+  the executor and backups.
+- The repeat trigger plus `IgnoreNew` is the watchdog: a crashed process comes
+  back within 5 minutes and a healthy one is not duplicated.
+- Put tasks in `\JimlerTech\` on jimbrownhome1.
+
+### Launch PowerShell by full path
+
+Never call bare `pwsh` or `pwsh.exe` from a task, a VBS or a launcher. On a
+machine with the Store build, the name resolves to the WindowsApps alias, which
+task accounts cannot run: the FitTrack watcher died with VBScript `800A0046`
+(Permission denied) from exactly this. On jimbrownhome1, use the fixed runtime
+`C:\ProgramData\SolutionDeploy\runtime\powershell\7\pwsh.exe`. Never hard-code a
+versioned path such as `C:\Program Files\PowerShell\7.6.7\pwsh.exe`; it breaks on
+the next PowerShell update.
+
+### Verify a startup task
+
+Start it by hand, then check the payload process and its listener or log. For a
+real proof, reboot and check again **before** anyone signs in, using
+`New-CimSession -Protocol Dcom` from another machine.
+
+## Logon tasks: the one rule
 
 **Never point a scheduled task at a long-running console script.** The task's
 process owns a console for its whole life, and `-WindowStyle Hidden` is only
@@ -53,9 +120,9 @@ comes back.
 Write the PID to a file so a matching stop function can kill it, and so the
 installer can prove the process came up.
 
-## The task shape
+## The logon task shape
 
-Keep it plain. Copy `C:\Files\Dev\main\utility\Scripts\Install.ps1`.
+Only for the exceptions listed under "Startup first". Keep it plain. Copy `C:\Files\Dev\main\utility\Scripts\Install.ps1`.
 
 ```powershell
 $argLine = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$launcherPath`" -Port $Port"
