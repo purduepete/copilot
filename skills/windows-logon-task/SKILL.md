@@ -39,10 +39,9 @@ elevated session.
 $pwsh = 'C:\ProgramData\SolutionDeploy\runtime\powershell\7\pwsh.exe'
 $action = New-ScheduledTaskAction -Execute $pwsh -WorkingDirectory $root `
     -Argument "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File `"$root\Start-Thing.ps1`""
-$triggers = @(
-    New-ScheduledTaskTrigger -AtStartup
-    New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5)
-)
+$triggers = @(New-ScheduledTaskTrigger -AtStartup)
+# Only for a repeat-safe watchdog (see below):
+# $triggers += New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(5) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $principal = New-ScheduledTaskPrincipal -UserId 'S-1-5-19' -LogonType ServiceAccount -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -ExecutionTimeLimit ([timespan]::Zero) -MultipleInstances IgnoreNew `
     -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
@@ -61,8 +60,18 @@ Register-ScheduledTask -TaskPath '\JimlerTech\' -TaskName $taskName -Action $act
   task later (even its executable path) asks for it again.
 - Never S4U or `SYSTEM` for app workloads. `SYSTEM` is for host plumbing such as
   the executor and backups.
-- The repeat trigger plus `IgnoreNew` is the watchdog: a crashed process comes
-  back within 5 minutes and a healthy one is not duplicated.
+- The startup trigger alone is the default. `-RestartCount` retries a failed
+  launch.
+- Add the repeat trigger only when the task needs periodic retries or
+  reconciliation, and only when every run is safe to repeat. That holds when
+  the action blocks for the life of the workload (the FitTrack VBS waits on
+  pwsh, which waits on python), or when the script checks for a live instance
+  and exits if one exists (the SolutionDeploy watchdog checks the recorded PID
+  and creation time).
+- `IgnoreNew` only skips a run while the previous action is still running.
+  If the action starts a detached process and exits, the next repeat starts
+  a second copy. A launcher like that needs a singleton check before it gets
+  a repeat.
 - Put tasks in `\JimlerTech\` on jimbrownhome1.
 
 ### Launch PowerShell by full path

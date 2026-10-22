@@ -90,9 +90,14 @@ Repo-specific rules still belong in each repo's
   - Stop the source app as part of cutover and keep it stopped. Do not restart a
     retired source for rollback convenience.
 - **Start services and background tasks at system startup, not at logon.** Use an
-  `-AtStartup` trigger plus a 5-minute repeat, run as `LOCAL SERVICE` or a dedicated
-  non-admin account with a stored password, so the work runs after a reboot with
-  nobody signed in. Use a logon trigger only when the workload needs the signed-in
+  `-AtStartup` trigger and run as `LOCAL SERVICE` or a dedicated non-admin account
+  with a stored password, so the work runs after a reboot with nobody signed in.
+  Add a repeat trigger only when the task needs periodic retries or reconciliation,
+  and only when each run is safe to repeat: the action blocks for the life of the
+  workload, or the script checks for a live instance before starting one.
+  `IgnoreNew` blocks only while the previous action is still running, so a repeat
+  of a launcher that exits after starting a detached process creates duplicates.
+  Use a logon trigger only when the workload needs the signed-in
   session (for example the FitTrack upload watcher reads the per-user Google Drive
   `G:` mount), and record that reason in the task description. Launch PowerShell by
   full path, never bare `pwsh`: on jimbrownhome1 use
