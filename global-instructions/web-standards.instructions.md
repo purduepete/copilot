@@ -167,10 +167,12 @@ rules in `personal.instructions.md`. For a new app:
   and keep the previous build's assets so open tabs can still lazy-load. No backend restart unless
   the inline scripts in `index.html` changed (their CSP hashes are read at startup).
 - **CSP must allow inline styles.** Any `Content-Security-Policy` an app sends, from its server or
-  a Cloudflare transform rule, needs `'unsafe-inline'` in `style-src`. The web-bookmarks
-  Tampermonkey palette injects a `<style>` into its shadow root, and `style-src 'self'` blocks it,
-  so the overlay renders as unstyled text (the Solution Directory did this until 2026-10-22). Keep
-  `script-src` strict; this exception covers styles only.
+  a Cloudflare transform rule, must allow `'unsafe-inline'` for `<style>` elements. Put it in
+  `style-src-elem` when the policy sets that directive (it overrides `style-src` for elements),
+  otherwise in `style-src`. The web-bookmarks Tampermonkey palette injects a `<style>` into its
+  shadow root, and `style-src 'self'` blocks it, so the overlay renders as unstyled text (the
+  Solution Directory did this until 2026-10-22). Keep `script-src` strict; this exception covers
+  styles only.
 - **Build-time settings live in a deploy script.** When the production bundle needs a variable
   (web-portfolio needs `VITE_AUTH_MODE=access`), the repo's deploy script sets it and refuses a
   bundle built without it. Never copy a plain `npm run build` output to the host. For
