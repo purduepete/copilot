@@ -64,6 +64,8 @@ source of truth for hosting. It needs, at minimum:
 - Cloudflare hostname `<solution-id>.jimlertech.com` behind Access, written only by the parent
   session through `Set-CloudflareHostnames.ps1`. No aliases.
 - The tooling: Prettier, ESLint, husky + lint-staged, the standard npm script names.
+- Any CSP includes `'unsafe-inline'` in `style-src`, or the web-bookmarks palette overlay renders
+  unstyled. `script-src` stays strict.
 - A Site Dock favorite.
 
 ## 4. Validate and deploy
