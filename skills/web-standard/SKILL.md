@@ -41,7 +41,9 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
 - Colors through CSS variables, square corners, `lucide-react` icons, no emoji icons.
 - Display name with spaces ("Web Portfolio") anywhere a person reads it.
 - Dates `mm/dd/yyyy`, times 24-hour `HH:mm`, local zone; `mm/dd` only where space is tight. No
-  month names, AM/PM or raw ISO dates on screen.
+  month names, AM/PM or raw ISO dates on screen. Label a time zone only when it is not Pacific.
+- Chart value axes fit the data with a little padding; do not pin them to zero or a full range
+  when that flattens the movement being charted.
 - No sideways scroll at 390px.
 
 ## 3. New app only

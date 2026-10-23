@@ -71,8 +71,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   ease-out. Honor `prefers-reduced-motion`.
 - **Dates and times:** a date reads `mm/dd/yyyy` (`10/23/2026`) and a time reads 24-hour
   `HH:mm` (`06:35`, `13:05`), zero-padded, in the user's local time zone. A timestamp is the two
-  joined by a space, with the zone abbreviation after it where zones could be confused
-  (`10/23/2026 13:05 PDT`). Where space is tight and the year is plain from context (chart axis
+  joined by a space (`10/23/2026 13:05`). Pacific is the default and is never labeled: no
+  `PDT`/`PST` suffix and no "All times Pacific" note. Add the zone abbreviation only to a time
+  shown in another zone (`10/23/2026 16:05 EDT`). Where space is tight and the year is plain from context (chart axis
   ticks, day-card heads, week ranges, stat asides) the year may drop to `mm/dd`. No month names
   (`Oct 23`), no weekday-led dates (`Fri, Oct 23`), no AM/PM and no raw ISO `2026-10-23` anywhere
   a person reads it. ISO stays the format for URLs, storage and APIs. Format through one shared
