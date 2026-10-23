@@ -40,6 +40,8 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   `#2f477b` on light with `#f8fafc` text. Apps with their own highlight are listed in the standard.
 - Colors through CSS variables, square corners, `lucide-react` icons, no emoji icons.
 - Display name with spaces ("Web Portfolio") anywhere a person reads it.
+- Dates `mm/dd/yyyy`, times 24-hour `HH:mm`, local zone; `mm/dd` only where space is tight. No
+  month names, AM/PM or raw ISO dates on screen.
 - No sideways scroll at 390px.
 
 ## 3. New app only

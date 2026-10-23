@@ -69,6 +69,15 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   OS-owned file, date and time pickers are separate controls.
 - **Motion:** background transitions 0.3s; entrance animations `fade-in` / `fade-up` 0.6s
   ease-out. Honor `prefers-reduced-motion`.
+- **Dates and times:** a date reads `mm/dd/yyyy` (`10/23/2026`) and a time reads 24-hour
+  `HH:mm` (`06:35`, `13:05`), zero-padded, in the user's local time zone. A timestamp is the two
+  joined by a space, with the zone abbreviation after it where zones could be confused
+  (`10/23/2026 13:05 PDT`). Where space is tight and the year is plain from context (chart axis
+  ticks, day-card heads, week ranges, stat asides) the year may drop to `mm/dd`. No month names
+  (`Oct 23`), no weekday-led dates (`Fri, Oct 23`), no AM/PM and no raw ISO `2026-10-23` anywhere
+  a person reads it. ISO stays the format for URLs, storage and APIs. Format through one shared
+  helper per app rather than inline `toLocaleString` calls, and pin `hourCycle: 'h23'` when using
+  `Intl`. A month-only axis tick may stay a month name.
 
 ## Dark and light themes
 
