@@ -39,6 +39,11 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
 - Highlight defaults: Steel Blue `#6b8cae` on midnight with `#0f172a` text; Midnight Blue
   `#2f477b` on light with `#f8fafc` text. Apps with their own highlight are listed in the standard.
 - Colors through CSS variables, square corners, `lucide-react` icons, no emoji icons.
+- Prefer compact pills for small option sets (sort order, view mode, 2 to 4 filters): a
+  rounded-full group of short text or icon buttons with `aria-pressed`, the active one filled
+  with the highlight. Reach for a pill before a dropdown or a row of full buttons; the
+  Solution Directory A-Z / calendar sort pill is the reference. The square-corner rule
+  allows `rounded-full` for pills.
 - Contextual help uses the standard's custom themed info box, opened from the `Info` icon
   only (plus keyboard focus and tap). Keep control rows compact; no browser `title` tooltip.
   Follow the standard's accessibility, dismissal and viewport checks.
