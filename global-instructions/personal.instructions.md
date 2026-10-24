@@ -297,6 +297,11 @@ away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
   and open the changed site in the browser for me to verify before committing or deploying.
   Keep the preview running for my review. State whether it uses live data or fixtures,
   and report a blocker if a working local preview cannot be opened.
+  **Run the preview server detached so it never blocks chat.** Start it with powershell
+  `mode: "async", detach: true`, never attached async or sync, because an attached server
+  keeps the turn busy and hangs chat on restart. To restart, find the listener's PID with
+  `Get-NetTCPConnection -LocalPort <port> -State Listen`, `Stop-Process -Id <PID>`, start
+  the new detached server, then confirm a 200 with `Invoke-WebRequest`.
 
 ## Pull requests
 
