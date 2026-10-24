@@ -292,6 +292,11 @@ away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
 - **Always open the HTML for me, every time.** Don't hand me a path or a link and wait.
   Open it in the browser as soon as it is written, and reopen it after every regeneration
   so what I'm looking at is never a stale render.
+- **Open a local preview after every site change.** Treat local verification as implied,
+  even when I don't ask. Start or reuse the local development server, confirm it responds,
+  and open the changed site in the browser for me to verify before committing or deploying.
+  Keep the preview running for my review. State whether it uses live data or fixtures,
+  and report a blocker if a working local preview cannot be opened.
 
 ## Pull requests
 
