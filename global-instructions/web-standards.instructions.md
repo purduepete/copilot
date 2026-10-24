@@ -257,7 +257,24 @@ Reading files cannot catch iOS layout bugs. An app passes the PWA and iOS checks
 saved to the home screen and checked on an iPhone in portrait and an iPad in landscape, across 2
 launches, in light and midnight. Until then, report it as unverified on device.
 
-Run `npm run check:web` in `C:\Files\Dev\main\solution-deploy` after changing or deploying any app.
-It checks every deployed app's theme, `theme-color`, head tags, icons, font, native dropdowns,
-console errors and 390px width, read-only. Add a new app's theme storage key to the `apps` map in
+For local-only changes, run the relevant app tests and open its local preview. Checks against
+deployed URLs do not validate unshipped edits.
+
+After deploying an app, run both checks from `C:\Files\Dev\main\solution-deploy`, filtered to
+that app:
+
+```powershell
+node .\scripts\Test-WebStandard.mjs --no-open --app '<app-id>'
+node .\scripts\Test-WebStandard.mjs --public --no-open --app '<app-id>'
+```
+
+Pass flags directly to `node`; `npm run` can drop them. Use `--public --signin` if Cloudflare
+Access requires sign-in. Both paths must print PASS before calling the deployment verified.
+
+Run the unfiltered `npm run check:web` sweep only when explicitly requested or when shared
+infrastructure or tooling changes affect multiple apps. A single-app change must not trigger
+checks of unrelated apps.
+
+The checks inspect theme, `theme-color`, head tags, icons, font, native dropdowns, console errors
+and 390px width, read-only. Add a new app's theme storage key to the `apps` map in
 `scripts/Test-WebStandard.mjs` when you add it to `sites.json`.

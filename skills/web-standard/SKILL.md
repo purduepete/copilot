@@ -82,6 +82,9 @@ source of truth for hosting. It needs, at minimum:
 
 ## 4. Validate and deploy
 
+For local-only changes, run the relevant app tests and open its local preview. Stop before the
+deployment steps below. Deployed-URL checks cannot validate unshipped edits.
+
 1. In the repo: Prettier, `lint`, `typecheck`, `build`, and the repo's own tests or smoke script.
    Commit and push with the Copilot trailer. Deploys ship committed code.
 2. Check how the app is hosted: is it listed under `apps` in
@@ -99,7 +102,7 @@ source of truth for hosting. It needs, at minimum:
      `scripts\Deploy-PlatformFrontend.ps1`), never a plain `npm run build` copy. Copy hashed
      assets first and `index.html` last. Restart through the `\JimlerTech\SolutionDeploy-<id>`
      task only when backend code or CSP-hashed inline scripts changed.
-3. From `C:\Files\Dev\main\solution-deploy`, run both paths:
+3. After deployment, from `C:\Files\Dev\main\solution-deploy`, run both paths for the changed app:
 
    ```powershell
    node .\scripts\Test-WebStandard.mjs --no-open --app '<app-id>'
@@ -108,7 +111,9 @@ source of truth for hosting. It needs, at minimum:
 
    Use `--public --signin` if Cloudflare Access asks for a sign-in. Pass flags to node directly;
    `npm run` drops them.
-4. Work is done only when both runs print PASS. Fix and redeploy on FAIL.
+   Run an unfiltered sweep only when explicitly requested or when shared infrastructure or
+   tooling changes affect multiple apps. Do not check unrelated apps for a single-app change.
+4. Deployment is verified only when both runs print PASS. Fix and redeploy on FAIL.
 
 ## 5. Report
 
