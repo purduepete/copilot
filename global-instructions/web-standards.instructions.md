@@ -53,6 +53,23 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   hard-code hex values. Tailwind is optional. If used, use v4 and map theme colors to
   `var(--theme-*)` the way web-portfolio does.
 - **Icons:** `lucide-react` (stroke icons). No emoji as UI icons.
+- **Info boxes and contextual help:** use a compact custom, theme-aware info box for
+  explanatory text and control status. Keep the control row compact; put longer help in the
+  box rather than an always-visible paragraph. Open it on hover over a dedicated Lucide
+  `Info` button, not the surrounding checkbox, label or row. Also support keyboard focus and
+  tap/click on that button. Do not use a browser `title` tooltip or `window.alert` for this help.
+  Reuse the app font, square corners, surface/text/muted/border tokens and restrained shadow
+  in Light and Midnight. Use a short heading, readable wrapping and compact padding. Keep the
+  box within the viewport; portal it when an ancestor would clip it.
+  Give the trigger an accessible name and connect the description with `aria-describedby`.
+  Expose open state with `aria-expanded`; use `role="tooltip"` for non-interactive help.
+  Keep the box open while the pointer moves onto it, and support Escape, outside-click and
+  focus-leaving dismissal. Keep explanatory text available to assistive technology while
+  visually collapsed. Errors must still be announced; never hide a failure solely in hover text.
+  Test icon-only hover, keyboard focus, touch activation, dismissal, both themes and 390px
+  overflow. Ferry Tracker's `frontend/src/components/NotificationControl.tsx` and
+  `.notification-description` styles are the initial reference; reuse an existing app helper
+  before adding another implementation.
 - **Dropdowns:** use custom, theme-aware dropdowns for every app-owned choice control,
   including theme, settings and filters. Do not use a native `<select>` or `<datalist>`
   popup, even when its closed control is styled. Reuse the app's existing dropdown

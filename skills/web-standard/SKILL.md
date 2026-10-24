@@ -39,6 +39,9 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
 - Highlight defaults: Steel Blue `#6b8cae` on midnight with `#0f172a` text; Midnight Blue
   `#2f477b` on light with `#f8fafc` text. Apps with their own highlight are listed in the standard.
 - Colors through CSS variables, square corners, `lucide-react` icons, no emoji icons.
+- Contextual help uses the standard's custom themed info box, opened from the `Info` icon
+  only (plus keyboard focus and tap). Keep control rows compact; no browser `title` tooltip.
+  Follow the standard's accessibility, dismissal and viewport checks.
 - Display name with spaces ("Web Portfolio") anywhere a person reads it.
 - Dates `mm/dd/yyyy`, times 24-hour `HH:mm`, local zone; `mm/dd` only where space is tight. No
   month names, AM/PM or raw ISO dates on screen. Label a time zone only when it is not Pacific.
