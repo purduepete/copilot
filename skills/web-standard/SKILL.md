@@ -70,6 +70,11 @@ source of truth for hosting. It needs, at minimum:
 - The tooling: Prettier, ESLint, husky + lint-staged, the standard npm script names.
 - Any CSP allows `'unsafe-inline'` in `style-src-elem` when set, otherwise in `style-src`, or the
   web-bookmarks palette overlay renders unstyled. `script-src` stays strict.
+- Any CSP `frame-ancestors` lists both Site Dock origins
+  (`https://site-dock.jimlertech.com`, `https://jimbrownhome1.tail8ad282.ts.net:8790`) and no
+  `X-Frame-Options` DENY/SAMEORIGIN is sent, or the app is blank inside Site Dock.
+- Settings that must survive a day on iPad are mirrored in a server-set cookie, because Safari
+  purges `localStorage` after the Access sign-in redirect.
 - A Site Dock favorite.
 
 ## 4. Validate and deploy

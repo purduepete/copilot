@@ -105,6 +105,11 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
   one header theme control or a misaligned one.
 - Persist the preference in `localStorage`. Classes on `<html>`: `light`, `dark theme-midnight`,
   or `dark` (gray dark only). Also set `style.colorScheme`.
+- Settings that must outlive a day on iPhone or iPad also need a server-set cookie. Safari deletes
+  script-written storage (`localStorage` and `document.cookie`) after 7 days without a visit, and
+  after a day when the page was reached through a cross-site redirect such as the Cloudflare Access
+  sign-in. Read `localStorage` first, then the cookie. Site Dock's `POST /api/preferences` is the
+  reference.
 - An inline script in `index.html` applies the class, `color-scheme`, and the `theme-color` meta
   **before** first paint. No flash of the wrong theme.
 - The theme hook updates `meta[name="theme-color"]` in the same effect that writes the class, using
@@ -183,6 +188,12 @@ rules in `personal.instructions.md`. For a new app:
   shadow root, and `style-src 'self'` blocks it, so the overlay renders as unstyled text (the
   Solution Directory did this until 2026-10-22). Keep `script-src` strict; this exception covers
   styles only.
+- **Site Dock must be able to frame the app.** Site Dock embeds favorites by their Cloudflare URL
+  from both of its own addresses, so `frame-ancestors` must list `'self'`,
+  `https://site-dock.jimlertech.com` and `https://jimbrownhome1.tail8ad282.ts.net:8790`, and the
+  app must not send `X-Frame-Options: DENY` or `SAMEORIGIN`. Team Scoreboard shipped with
+  `frame-ancestors 'self'` and showed a blank pane in Site Dock. `Test-WebStandard.mjs` fails this
+  unless the app's `apps` entry sets `frame: false` (apps Site Dock never embeds).
 - **Build-time settings live in a deploy script.** When the production bundle needs a variable
   (web-portfolio needs `VITE_AUTH_MODE=access`), the repo's deploy script sets it and refuses a
   bundle built without it. Never copy a plain `npm run build` output to the host. For
