@@ -94,6 +94,19 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   OS-owned file, date and time pickers are separate controls.
 - **Motion:** background transitions 0.3s; entrance animations `fade-in` / `fade-up` 0.6s
   ease-out. Honor `prefers-reduced-motion`.
+- **Navigation transitions:** keep one navigation control mounted while changing content.
+  Move only its selection fill with `transform: translateX(...)` over 250ms ease-out;
+  keep labels stationary and avoid label crossfades. Reserve scrollbar space with
+  `scrollbar-gutter: stable` so short and long views do not shift the layout. When content
+  needs an entrance transition, keep it separate from navigation and brief (Home Automation
+  uses 160ms). Disable both under reduced motion. Check rapid switching, Back/Forward,
+  keyboard focus, dialog stacking and stable navigation position at phone and tablet widths.
+  When matching a reference app, inspect its state changes and DOM lifetime as well as CSS
+  timing. Matching timing alone does not establish matching behavior.
+- **Checkboxes and checkmarks:** selection uses the theme accent; status colors describe
+  status. Native checkboxes use `accent-color: var(--accent)` (or the app's equivalent theme
+  token). Custom checked fills use the accent and their checkmarks use its paired text token.
+  Check checked, unchecked, disabled and keyboard-focus states in Light and Midnight.
 - **Dates and times:** a date reads `mm/dd/yyyy` (`10/23/2026`) and a time reads 24-hour
   `HH:mm` (`06:35`, `13:05`), zero-padded, in the user's local time zone. A timestamp is the two
   joined by a space (`10/23/2026 13:05`). Pacific is the default and is never labeled: no

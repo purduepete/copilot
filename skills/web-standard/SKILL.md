@@ -44,6 +44,12 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   fill, reduced-motion support and a persisted choice where the user selects sort or view.
   Reach for it before a dropdown or a row of full buttons; Solution Directory's A-Z / calendar
   sort control is the reference.
+- Keep navigation mounted while views change, animate only the selection fill, and reserve
+  scrollbar space. Follow the standard's navigation-transition rules; verify rapid switching,
+  history, reduced motion, focus and dialogs at phone and tablet widths. Compare reference
+  behavior and DOM lifetime, not just animation timing.
+- Checkbox selections and checkmarks use theme accent tokens, not device/status colors.
+  Check checked, unchecked, disabled and focus states in Light and Midnight.
 - Contextual help uses the standard's custom themed info box, opened from the `Info` icon
   only (plus keyboard focus and tap). Keep control rows compact; no browser `title` tooltip.
   Follow the standard's accessibility, dismissal and viewport checks.
