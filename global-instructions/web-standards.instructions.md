@@ -156,10 +156,16 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
 - **Exception: work-log** keeps its named theme set (nord, dracula, rose, tokyo, paper and the
   default). It still needs `system`, `light` and `midnight` among them, with midnight as the
   default; the others stay as extras.
-- **One theme control in the header.** Use either a compact dropdown listing every preference
-  (`system`, `light`, `midnight`, plus any extras) or a toggle that cycles `light` → `midnight`
-  (→ `dark` where present), never both side by side. An app with a toggle in the header lists the
-  full set, including `system`, on a settings or appearance page.
+- **One theme control in the header.** Use a palette icon button that opens an anchored custom
+  popover listing the app's supported theme preferences. Keep the choices inside the popover;
+  don't show a second theme selector or a cycling theme toggle in the header. When an app supports
+  all four, order the choices Light, Dark, Midnight, System; omit unsupported themes while keeping
+  this order. Use the square segmented control for 2 to 4 choices and a custom menu or radio list
+  for larger sets. Label the trigger with the current preference and expose `aria-haspopup`,
+  `aria-expanded` and `aria-controls`. Opening focuses the selected choice; arrow keys move and
+  select, Home/End move to the first/last choice, Escape closes and restores trigger focus, and
+  outside click or focus leaving dismisses the popover. Home Automation's `shell.html` is the
+  interaction reference.
 - Every control in the header bar (icon buttons, dropdowns, segmented groups, text buttons such as
   Logout) shares one height token (36px in web-portfolio) and the same top edge, with no stray
   `margin-top` or padding on a group wrapper. `Test-WebStandard.mjs` fails an app with more than

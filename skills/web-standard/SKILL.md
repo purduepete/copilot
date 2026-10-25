@@ -40,8 +40,12 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   native `<select>` controls. Web Portfolio allows them for simple forms; its data and
   analytics controls use custom dropdowns. No native `<datalist>`. Portal custom popups
   that sit inside tables or scroll containers.
-- Theme: `system`, `light`, `midnight` (default midnight), one control in the header, every
-  header control the same height and top edge.
+- Theme: one palette icon in the header opens an anchored popover; keep the selector inside it,
+  with no always-visible theme pills or separate cycling toggle. For Web Portfolio, order the
+  four pills Light, Dark, Midnight, System. Follow the keyboard, focus and dismissal behavior in
+  the global standard, using Home Automation's `shell.html` as the interaction reference.
+  Preserve the app's theme default and system preference behavior. Keep the icon aligned with
+  neighboring header controls.
 - Highlight defaults: Steel Blue `#6b8cae` on midnight with `#0f172a` text; Midnight Blue
   `#2f477b` on light with `#f8fafc` text. Apps with their own highlight are listed in the standard.
 - Colors through CSS variables, square corners, `lucide-react` icons, no emoji icons.
