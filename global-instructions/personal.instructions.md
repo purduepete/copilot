@@ -17,6 +17,10 @@ Repo-specific rules still belong in each repo's
   procedure and existing tools. Do not turn a one-time move into a framework
   project or add helpers, approval layers, repeated reviews, or speculative
   recovery tooling without a concrete need. Keep required database reviews.
+- **Stop after the requested result is verified.** For a small change, run the
+  focused checks and inspect the requested behavior. Do not expand to full suites
+  or investigate unrelated preview-data gaps unless a focused check fails or I
+  ask for more.
 - **Ask about consequential trade-offs early.** Establish acceptable data gaps,
   downtime and scope before designing a migration. Reuse answers already given.
   Assume my work is for personal use. **Webportfolio is the sole standing
@@ -73,6 +77,11 @@ Repo-specific rules still belong in each repo's
   `web-inventory`).
 - **Migration guardrails.** Written after WebBookmarks ran 76 minutes on a 144-row
   app and an agent restored Cloudflare aliases I had removed.
+  - Before submitting work to the shared deployment executor, check the executor task,
+    active executor process, submission lock, and pending operation result. Wait for active
+    work to finish before submitting. The deployment controller performs this bounded wait
+    while holding its submission lock. Never replace an unresolved pending request or
+    resubmit after writing one; if it remains unresolved, stop and inspect it.
   - Time box: a small app targets 45 minutes, with a hard stop at 90. Check progress
     every 15 minutes, tell me as soon as one runs past its target, and stop to
     diagnose at the hard stop.
