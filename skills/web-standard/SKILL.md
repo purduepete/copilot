@@ -52,6 +52,9 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   Measure header and main edges at 1280, 1440 and 1920px, accounting for scrollbar
   gutters. With a desktop sidebar, apply this geometry within the remaining area,
   including the header contents. Keep Web Inventory's 240px rail and its breakpoint.
+  Reserve the same stable, normal-width desktop page scrollbar gutter as the
+  directory for exact matching; keep thin control scrollbars. Use the same
+  available layout width for header and main, and check both scrolling states.
 - Prefer the standard's square segmented control for small option sets (sort order, view mode,
   2 to 4 filters). Use short text or icon buttons with `aria-pressed`, a smooth sliding highlight
   fill, reduced-motion support and a persisted choice where the user selects sort or view.

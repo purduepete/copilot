@@ -34,6 +34,11 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   at 1920px they are 260px. When an app has a desktop sidebar (Web Inventory keeps
   its 240px rail), apply this width and padding within the remaining content area,
   including its header contents; preserve the sidebar's width and breakpoint.
+  Reserve a stable desktop page scrollbar gutter. For exact cross-app matching,
+  use the same normal-width page gutter as Solution Directory; thin scrollbars
+  can remain inside controls. Center header and main against the same available
+  layout width, avoiding viewport-unit calculations for only one of them.
+  Verify edges with page scrolling both present and absent.
 - **Compact option groups:** use a square segmented control for small option sets such as sort
   order, view mode or 2 to 4 filters. Use short text or Lucide icon buttons with `aria-pressed`.
   A sliding highlight fill marks the active option, with readable text on the fill. It moves
