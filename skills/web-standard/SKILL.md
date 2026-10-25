@@ -45,6 +45,13 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
 - Highlight defaults: Steel Blue `#6b8cae` on midnight with `#0f172a` text; Midnight Blue
   `#2f477b` on light with `#f8fafc` text. Apps with their own highlight are listed in the standard.
 - Colors through CSS variables, square corners, `lucide-react` icons, no emoji icons.
+- Desktop width (1024px and above): match Solution Directory with a centered 1440px
+  border-box outer cap, 20px side padding and 1400px maximum usable content. Header
+  contents and main content share the same edges, including wrappers inside frames.
+  Keep the header background full-width, preserve safe areas and existing phone spacing.
+  Measure header and main edges at 1280, 1440 and 1920px, accounting for scrollbar
+  gutters. With a desktop sidebar, apply this geometry within the remaining area,
+  including the header contents. Keep Web Inventory's 240px rail and its breakpoint.
 - Prefer the standard's square segmented control for small option sets (sort order, view mode,
   2 to 4 filters). Use short text or icon buttons with `aria-pressed`, a smooth sliding highlight
   fill, reduced-motion support and a persisted choice where the user selects sort or view.

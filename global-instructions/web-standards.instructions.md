@@ -23,6 +23,17 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   `font-family: inherit`. No Inter, no second UI font.
 - **Corners:** square. `border-radius: 0` is the default for inputs, selects, textareas, buttons,
   cards, modals and option groups. `rounded-full` is allowed for avatars, dots and toggle tracks only.
+- **Desktop page width:** Solution Directory is the width reference. At viewport widths
+  of 1024px and above, use a centered, border-box outer container capped at 1440px,
+  including 20px left and right padding (1400px maximum usable content). Header
+  contents and main content share the same edges; the header background stays full-width.
+  Preserve larger safe-area insets and existing phone spacing. Apply the same geometry
+  to page wrappers inside frames. Do not add intermediate desktop padding overrides.
+  Measure actual header and content edges at 1280, 1440 and 1920px, accounting for
+  reserved scrollbar space. At 1440px without a scrollbar gutter, edges are 20px;
+  at 1920px they are 260px. When an app has a desktop sidebar (Web Inventory keeps
+  its 240px rail), apply this width and padding within the remaining content area,
+  including its header contents; preserve the sidebar's width and breakpoint.
 - **Compact option groups:** use a square segmented control for small option sets such as sort
   order, view mode or 2 to 4 filters. Use short text or Lucide icon buttons with `aria-pressed`.
   A sliding highlight fill marks the active option, with readable text on the fill. It moves
