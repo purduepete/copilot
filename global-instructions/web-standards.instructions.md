@@ -22,7 +22,15 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   or from `@fontsource-variable/roboto-flex`. Body weight 400, `antialiased`. Form controls use
   `font-family: inherit`. No Inter, no second UI font.
 - **Corners:** square. `border-radius: 0` is the default for inputs, selects, textareas, buttons,
-  cards and modals. `rounded-full` is allowed for pills, avatars, dots and toggle tracks only.
+  cards, modals and option groups. `rounded-full` is allowed for avatars, dots and toggle tracks only.
+- **Compact option groups:** use a square segmented control for small option sets such as sort
+  order, view mode or 2 to 4 filters. Use short text or Lucide icon buttons with `aria-pressed`.
+  A sliding highlight fill marks the active option, with readable text on the fill. It moves
+  with `transform` over 0.25s ease-out, and that movement stops under `prefers-reduced-motion`.
+  Persist a user-chosen sort or view in `localStorage`, accept only known values and fall back
+  to the default if storage is unavailable. Measure that the group and its icons line up
+  with neighboring controls. Solution Directory's A-Z and calendar sort control and Team
+  Scoreboard's section controls are the references.
 - **Palette:** Tailwind slate and gray for neutrals and status colors.
 - **Highlight color** (accents, selected states, primary buttons, focus rings). Defaults from
   `web-portfolio/shared/theme-constants.ts` lines 63-68:
