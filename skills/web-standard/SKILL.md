@@ -4,7 +4,7 @@ description: >-
   Build or change a page, site or app in @jimb's hosted web apps so it matches his web
   standard: Roboto Flex, square corners, system/light/midnight themes with midnight default,
   Steel Blue / Midnight Blue highlights, custom dropdowns, one aligned header theme control,
-  iOS PWA chrome, zero-downtime deploys, and a passing live check on Tailscale and Cloudflare.
+  iOS PWA chrome, zero-downtime frontend deploys, and live checks on Tailscale and Cloudflare.
   WHEN: "new web page", "add a page", "new site", "new web app", "build a page for",
   "add a screen", "new app on jimbrownhome1", "make this page match the others",
   "follow the web standard", "is this site consistent", "check the web standard",
@@ -20,7 +20,9 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
 
 ## 1. Ground the plan
 
-1. Read the standard file and the target repo's `.github/copilot-instructions.md`.
+1. Read the standard file and the target repo's `.github/copilot-instructions.md` if present,
+   plus any applicable `.github/instructions/*.instructions.md` files. Follow the repo's
+   approval requirements and explicit app-specific exceptions.
 2. Open the app's existing pieces you will reuse, and name them with file and line in the plan:
    - dropdown component (web-portfolio: `frontend/src/components/SelectField.tsx`)
    - theme context or hook and the pre-paint script in `index.html`
@@ -28,12 +30,16 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
    - the app's entry in `C:\Files\Dev\main\solution-deploy\site\sites.json`
 3. For a new app, use web-portfolio as the reference and copy its `.prettierrc.json`,
    `frontend/eslint.config.js`, `index.html` head and `:root` tokens.
-4. Present a short plan and wait for @jimb to confirm. Web Portfolio allows no downtime.
+4. Present a short plan and wait for @jimb to confirm. All frontend deploys use the
+   zero-downtime procedure. Web Portfolio also requires no downtime during migrations;
+   other apps follow the migration downtime defaults in `personal.instructions.md`.
 
 ## 2. Build checklist
 
-- No native `<select>` or `<datalist>`. Reuse the app's dropdown; portal popups that sit inside
-  tables or scroll containers.
+- Reuse the app's custom dropdown unless the target repo's instructions explicitly allow
+  native `<select>` controls. Web Portfolio allows them for simple forms; its data and
+  analytics controls use custom dropdowns. No native `<datalist>`. Portal custom popups
+  that sit inside tables or scroll containers.
 - Theme: `system`, `light`, `midnight` (default midnight), one control in the header, every
   header control the same height and top edge.
 - Highlight defaults: Steel Blue `#6b8cae` on midnight with `#0f172a` text; Midnight Blue
@@ -44,8 +50,10 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   fill, reduced-motion support and a persisted choice where the user selects sort or view.
   Reach for it before a dropdown or a row of full buttons; Solution Directory's A-Z / calendar
   sort control is the reference.
-- Keep navigation mounted while views change, animate only the selection fill, and reserve
-  scrollbar space. Follow the standard's navigation-transition rules; verify rapid switching,
+- Keep navigation mounted while views change, animate only the navigation's selection fill,
+  and reserve scrollbar space. App-specific loading animations remain in force; Ferry Tracker
+  keeps its documented skeleton and 900ms data fade as an exception to brief content entrances.
+  Follow the standard's navigation-transition rules; verify rapid switching,
   history, reduced motion, focus and dialogs at phone and tablet widths. Compare reference
   behavior and DOM lifetime, not just animation timing.
 - Checkbox selections and checkmarks use theme accent tokens, not device/status colors.
@@ -94,10 +102,13 @@ source of truth for hosting. It needs, at minimum:
 ## 4. Validate and deploy
 
 For local-only changes, run the relevant app tests and open its local preview. Stop before the
-deployment steps below. Deployed-URL checks cannot validate unshipped edits.
+deployment steps below. Commit and push only when authorized, following the target repo's
+approval requirements. Deployed-URL checks cannot validate unshipped edits.
 
+When deployment is requested:
 1. In the repo: Prettier, `lint`, `typecheck`, `build`, and the repo's own tests or smoke script.
-   Commit and push with the Copilot trailer. Deploys ship committed code.
+   Follow the target repo's commit and push approval rules. Commit and push only when
+   authorized, with the Copilot trailer. Deploys ship committed code.
 2. Check how the app is hosted: is it listed under `apps` in
    `solution-deploy\environments\production.json`?
    - **Framework app** (listed; today Ferry Tracker, Home Automation, Site Dock). Deploy only

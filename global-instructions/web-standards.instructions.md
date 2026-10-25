@@ -78,9 +78,12 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   overflow. Ferry Tracker's `frontend/src/components/NotificationControl.tsx` and
   `.notification-description` styles are the initial reference; reuse an existing app helper
   before adding another implementation.
-- **Dropdowns:** use custom, theme-aware dropdowns for every app-owned choice control,
-  including theme, settings and filters. Do not use a native `<select>` or `<datalist>`
-  popup, even when its closed control is styled. Reuse the app's existing dropdown
+- **Dropdowns:** use custom, theme-aware dropdowns for app-owned choice controls,
+  including theme, settings and filters, unless the target repo's instructions explicitly
+  allow native `<select>` controls. Web Portfolio permits native selects in simple forms;
+  its data and analytics controls use custom dropdowns. Native `<datalist>` popups are not
+  allowed. Styling a closed native control does not create an exception.
+  Reuse the app's existing dropdown
   component; static pages follow the same rule without adding a UI framework.
   The trigger and popup use the app font, square corners, surface/border/accent tokens,
   visible selected state, focus indicator and themed scrollbars in Light and Midnight.
@@ -90,7 +93,8 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   viewport and usable by touch. A popup inside a scrolling or `overflow` container (tables,
   virtualized lists) renders in a portal on `document.body` so the container cannot clip it;
   web-portfolio's `SelectField` is the pattern. Test keyboard selection, dismissal, persistence and
-  both themes; include a regression check rejecting native selects in the changed UI.
+  both themes; include a regression check rejecting native selects in the changed UI except
+  where the repo explicitly permits them.
   OS-owned file, date and time pickers are separate controls.
 - **Motion:** background transitions 0.3s; entrance animations `fade-in` / `fade-up` 0.6s
   ease-out. Honor `prefers-reduced-motion`.
@@ -99,7 +103,10 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   keep labels stationary and avoid label crossfades. Reserve scrollbar space with
   `scrollbar-gutter: stable` so short and long views do not shift the layout. When content
   needs an entrance transition, keep it separate from navigation and brief (Home Automation
-  uses 160ms). Disable both under reduced motion. Check rapid switching, Back/Forward,
+  uses 160ms). App-specific loading animations remain in force: Ferry Tracker's documented
+  skeleton and 900ms data fade are an exception to brief content entrances. The selection-fill
+  rule applies to navigation controls. Disable motion under reduced motion.
+  Check rapid switching, Back/Forward,
   keyboard focus, dialog stacking and stable navigation position at phone and tablet widths.
   When matching a reference app, inspect its state changes and DOM lifetime as well as CSS
   timing. Matching timing alone does not establish matching behavior.
@@ -219,6 +226,8 @@ rules in `personal.instructions.md`. For a new app:
 - **Frontend deploys have no downtime.** Copy the new hashed assets first and `index.html` last,
   and keep the previous build's assets so open tabs can still lazy-load. No backend restart unless
   the inline scripts in `index.html` changed (their CSP hashes are read at startup).
+  This rule covers frontend deployment. Web Portfolio also requires no downtime during
+  migrations; other apps follow the migration downtime defaults in `personal.instructions.md`.
 - **CSP must allow inline styles.** Any `Content-Security-Policy` an app sends, from its server or
   a Cloudflare transform rule, must allow `'unsafe-inline'` for `<style>` elements. Put it in
   `style-src-elem` when the policy sets that directive (it overrides `style-src` for elements),
@@ -279,7 +288,8 @@ saved to the home screen and checked on an iPhone in portrait and an iPad in lan
 launches, in light and midnight. Until then, report it as unverified on device.
 
 For local-only changes, run the relevant app tests and open its local preview. Checks against
-deployed URLs do not validate unshipped edits.
+deployed URLs do not validate unshipped edits. Commit and push only when authorized, following
+the target repo's approval requirements. Local-only work does not include deployment.
 
 After deploying an app, run both checks from `C:\Files\Dev\main\solution-deploy`, filtered to
 that app:
