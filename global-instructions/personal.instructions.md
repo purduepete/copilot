@@ -304,13 +304,26 @@ away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
 - **Open a local preview after every site change.** Treat local verification as implied,
   even when I don't ask. Start or reuse the local development server, confirm it responds,
   and open the changed site in the browser for me to verify before committing or deploying.
-  Keep the preview running for my review. State whether it uses live data or fixtures,
-  and report a blocker if a working local preview cannot be opened.
-  **Run the preview server detached so it never blocks chat.** Start it with powershell
-  `mode: "async", detach: true`, never attached async or sync, because an attached server
-  keeps the turn busy and hangs chat on restart. To restart, find the listener's PID with
-  `Get-NetTCPConnection -LocalPort <port> -State Listen`, `Stop-Process -Id <PID>`, start
-  the new detached server, then confirm a 200 with `Invoke-WebRequest`.
+  State whether it uses live data or fixtures, and report a blocker if a working
+  local preview cannot be opened.
+  **Track preview ownership and clean up after review.** Use
+  `C:\Files\Dev\main\copilot\tools\Manage-Preview.ps1` for Start, Status and Stop
+  (examples in the copilot repo README). Use the app's hyphenated name and the
+  current session id. Start runs a supervisor for the life of the preview; invoke
+  it with powershell `mode: "async", detach: true` so it never blocks chat.
+  Check Status and existing listeners before starting. Reuse one preview per app
+  and its existing browser page; don't use `forceNew` to open duplicate pages.
+  Never stop another session's preview without my approval. Untracked listeners
+  require an ownership inventory and approval before cleanup; never kill all Node
+  or browser processes. The helper checks PID, creation time and executable identity.
+  Keep a review preview only while my review is pending. Stop it when I approve,
+  reject, finish the review, or ask to close it, unless I explicitly ask to keep it.
+  Stop test-only servers in the same turn's cleanup. Restart through Stop then Start.
+  Close temporary browser pages when a close capability is available; otherwise
+  tell me which pages need closing. Browser pages and server processes have separate
+  lifetimes. At handoff, report any retained preview URL and reason. After stopping,
+  verify the helper confirms process exit and port release. Detached previews do
+  not expire automatically; follow up on pending cleanup explicitly.
 
 ## Pull requests
 
