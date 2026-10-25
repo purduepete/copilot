@@ -257,10 +257,20 @@ rules in `personal.instructions.md`. For a new app:
   app must not send `X-Frame-Options: DENY` or `SAMEORIGIN`. Team Scoreboard shipped with
   `frame-ancestors 'self'` and showed a blank pane in Site Dock. `Test-WebStandard.mjs` fails this
   unless the app's `apps` entry sets `frame: false` (apps Site Dock never embeds).
+- **Recorded releases apply to legacy apps too.** For supported hosted apps,
+  "commit, push and deploy" requires `solution-deploy\Deploy.ps1 -Action Release`
+  against the exact pushed commit, including frontend-only changes. Follow
+  `solution-deploy\docs\Deployment.md` for routing and component selection.
+  Never copy a build into `current` or an existing release folder or substitute
+  a build/launcher script for that release. Verify both access paths and the
+  Directory component record's commit/time against the receipt and active metadata.
+  A stale/missing record or record-write warning means verification is incomplete.
+  Do not fabricate dates or silently resubmit. `NoChanges` retains its prior date.
 - **Build-time settings live in a deploy script.** When the production bundle needs a variable
   (web-portfolio needs `VITE_AUTH_MODE=access`), the repo's deploy script sets it and refuses a
   bundle built without it. Never copy a plain `npm run build` output to the host. For
-  web-portfolio use `scripts\Deploy-PlatformFrontend.ps1`.
+  hosted updates, use the common recorded release entry point above; the app's
+  build script is an internal step, not a substitute deployment procedure.
 
 ## Code conventions
 

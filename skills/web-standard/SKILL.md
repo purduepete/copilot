@@ -119,21 +119,16 @@ When deployment is requested:
 1. In the repo: Prettier, `lint`, `typecheck`, `build`, and the repo's own tests or smoke script.
    Follow the target repo's commit and push approval rules. Commit and push only when
    authorized, with the Copilot trailer. Deploys ship committed code.
-2. Check how the app is hosted: is it listed under `apps` in
-   `solution-deploy\environments\production.json`?
-   - **Framework app** (listed; today Ferry Tracker, Home Automation, Site Dock). Deploy only
-     through the framework, following "Deploy a later version" in `docs\Deployment.md`:
-     `.\Deploy.ps1 -Action Plan -App <id> -Environment production -Target jimbrownhome1 -OpenReport`,
-     then Stage, Deploy and Verify, each with @jimb's approval. Never hand-copy files into its
-     release folder: the release then no longer matches its recorded commit. If Plan stops with
-     "Managed destination exists without central placement authority", stop and tell @jimb.
-     Recording placement is a reviewed production step; do not adopt or bypass it.
-   - **Hand-placed app** (everything else). Its release lives under
-     `\\jimbrownhome1.local\c$\ProgramData\SolutionDeploy\apps\<id>\releases\` and starts from
-     `shared\Start-Service.ps1`. Use the repo's deploy script when it has one (Web Portfolio:
-     `scripts\Deploy-PlatformFrontend.ps1`), never a plain `npm run build` copy. Copy hashed
-     assets first and `index.html` last. Restart through the `\JimlerTech\SolutionDeploy-<id>`
-     task only when backend code or CSP-hashed inline scripts changed.
+2. For supported hosted apps, including legacy/hand-placed apps and frontend-only
+   changes, use `solution-deploy\Deploy.ps1 -Action Release` with the exact pushed
+   commit, following "One entry point, existing procedures" in `docs\Deployment.md`.
+   The common entry point routes controller apps and legacy adapters automatically.
+   "Commit, push and deploy" includes this recorded release step. Select only the
+   requested component; do not release collectors for a web-only change.
+   Never copy a build into `current` or an existing release folder, invoke a build/
+   launcher script as a substitute, or edit release metadata to record a copy.
+   Stop on an adapter/placement blocker and report it; do not bypass it.
+   Web Portfolio's release downtime still requires its separately agreed window.
 3. After deployment, from `C:\Files\Dev\main\solution-deploy`, run both paths for the changed app:
 
    ```powershell
@@ -145,7 +140,13 @@ When deployment is requested:
    `npm run` drops them.
    Run an unfiltered sweep only when explicitly requested or when shared infrastructure or
    tooling changes affect multiple apps. Do not check unrelated apps for a single-app change.
-4. Deployment is verified only when both runs print PASS. Fix and redeploy on FAIL.
+4. Deployment is verified only when both runs print PASS and Solution Directory's
+   `/deployments.json` shows the changed component's commit and completion time
+   matching the release receipt and active metadata. Verify the full commit in
+   the public release record; the API shows a short commit. Keep unselected
+   collectors unchanged. A record-write warning or stale/missing record means
+   verification is incomplete, even if the app works. Investigate without silent
+   resubmission or fabricated dates. `NoChanges` retains the prior date.
 
 ## 5. Report
 
