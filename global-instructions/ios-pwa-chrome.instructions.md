@@ -35,6 +35,10 @@ landscape notch, the left and right edges, and the home indicator.
 No `maximum-scale=1.0, user-scalable=no`. A zoom lock is an accessibility problem and iOS
 overrides it anyway.
 
+Text inputs, textareas and selects need at least 16px text on touch devices. iOS zooms into any
+focused field below 16px and stays zoomed after the keyboard closes. Keep smaller desktop sizes
+if wanted, and raise them in `@media (pointer: coarse)` placed after the base field rules.
+
 ## Keep `theme-color` in sync with the active theme
 
 The reserved strip is painted from `theme-color`, so a stale value shows a dark bar above a light
