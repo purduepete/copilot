@@ -2,7 +2,7 @@
 
 - Created: 2026-10-29 12:04 local, from XFINJIMBLAPTOP
 - Repo: https://starlightagilebi.visualstudio.com/AgBI/_git/FDE_Revenue_Bedrock (local path C:\Files\Dev\msft\FDE_Revenue_Bedrock)
-- Branch: jimb/main at 5f1dd14f, 8 commits unpushed (no push approval yet). PR branch jimb/AB-467246/refactor/arr-fact-arrsummary at 5fa89528, pushed.
+- Branch: jimb/main at 5f1dd14f, pushed (plain fast-forward push, merge commit kept). PR branch jimb/AB-467246/refactor/arr-fact-arrsummary at 5fa89528, pushed.
 - Uncommitted: .mcp.json (machine-local Playwright and WorkIQ MCP settings; copy by hand if needed, never commit)
 
 ## Goal
@@ -28,14 +28,14 @@ Onboard ARR_FACT_ARRSummary to Bedrock as nb_silver_arr_fact_arrsummary (User St
 
 ## Next steps
 
-1. Decide how to push jimb/main: a plain git push keeps the merge commit; git reset --hard 8cb60044 then git push --force-with-lease origin jimb/main gives clean history.
+1. jimb/main is pushed at 5f1dd14f with the no-op merge commit kept. Optional later cleanup: git reset --hard 8cb60044, then git push --force-with-lease origin jimb/main (needs explicit OK).
 2. Sync FDE_Bedrock_Dev_jimb to the pushed SHA, then run notebook validation (onboard-solution-notebook, validate-notebook stage) for nb_silver_arr_fact_arrsummary.
 3. After parity passes: connect stage, e2e, approval, certify, Gold contract line 82 update.
 4. Cherry-pick 8cb60044 (plus later validated commits) onto the PR branch and open the PR.
 
 ## Open decisions
 
-- jimb/main push method (step 1).
+- Whether to clean the merge commit out of jimb/main history (step 1, optional).
 - Validation prerequisites:
   - The Fabric identity needs read access to abidata@fdedatalakeprod01; the source used the mssalesfdlprod linked service.
   - env_10_xl must set spark.driver.cores and spark.executor.instances.
@@ -49,6 +49,8 @@ Onboard ARR_FACT_ARRSummary to Bedrock as nb_silver_arr_fact_arrsummary (User St
 cd C:\Files\Dev\msft\FDE_Revenue_Bedrock
 git fetch origin
 git switch jimb/main
+git pull --ff-only
+git rev-parse --short HEAD   # expect 5f1dd14f
 git status -sb
 git log --oneline -3
 ```
