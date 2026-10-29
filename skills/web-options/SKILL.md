@@ -368,6 +368,14 @@ instructions for the read-only access model):
   granularity also means an intraday touch of the target is invisible, so the
   result is a conservative lower bound on how often an exit would have
   filled. State that rather than implying tick-level accuracy.
+- The 10-minute intraday history (local PostgreSQL, the Contract History
+  page) is a secondary source only. If it is used, the simulation has to be
+  causal: a target fires at capture i+1 only when captures i and i+1 both
+  meet it with valid, non-stale prices, and the fill is at capture i+1's
+  mark. The read-time overrides the page applies (`overrides[]` on each
+  point, rules in `backend/src/history/overrides.ts`) are display repairs,
+  never data: don't use a held mark as an observation, and a stale capture
+  never confirms or prices an exit.
 
 Guardrails:
 
