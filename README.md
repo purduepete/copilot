@@ -10,6 +10,8 @@ live here have **moved** to the cloud-hosted **`worklog_web`** project:
 
 - **`global-instructions/`** — the checked-in source for shared instructions.
 - `tools\Manage-Preview.ps1`: owned local preview supervision, status and cleanup.
+- `handoff/`: session handoff notes for moving work between machines, written and
+  read by the `skills\session-handoff` skill.
 
 ## Local previews
 
@@ -83,6 +85,15 @@ New-Item -ItemType Junction -Path "$HOME\.copilot\instructions" `
 ```
 
 Junctions need no admin rights and no Developer Mode, unlike symlinks.
+
+### Skills
+
+Junction each skill folder into `~\.copilot\skills`, for example:
+
+```powershell
+New-Item -ItemType Junction -Path "$HOME\.copilot\skills\session-handoff" `
+         -Target 'C:\Files\Dev\main\copilot\skills\session-handoff'
+```
 
 Each instruction file carries `applyTo: '**'` in its YAML frontmatter. VS Code only
 auto-loads instruction files that declare an `applyTo` glob, so do not remove it.
