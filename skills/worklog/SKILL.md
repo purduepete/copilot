@@ -1,20 +1,19 @@
 ---
 name: worklog
 description: >-
-  Track the user's time with the cloud-hosted WorkLog CLI — start/stop/switch the running
-  task, back-fill completed tasks, edit entries, add notes, and view the live web
-  dashboard. Times map to WorkLog (NOT Outlook). WHEN: start work, stop work,
-  switch task, log time, track time, add a task, "create task ending at HH:MM",
-  back-date a task, "I worked on X", start/end of work day, "learning about X",
-  "prepare for work day", "since my last item", recreate/rebuild the worklog html, dashboard,
-  standup, weekly summary, start work log / open the web dashboard, set
-  category/project/ADO id, lunch, commute to campus, create a note, jot a note,
-  date-bound note, remember this, notes dashboard, "get calendar tasks",
-  "get sessions tasks", "get session tasks", "get vscode tasks", "what am I working on",
-  "log what I'm doing now", "propose a task", edit a task/entry, "delete item N",
-  "delete task N", "delete entry N", "remove item N", delete/remove a session,
-  "duplicate item N".
-argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30" or "start 'Fix MS Sales pull' -Ado 435324 -Category development")
+  Track time with the cloud-hosted WorkLog CLI (wl.ps1), never Outlook. Start, stop,
+  switch, back-fill, edit, duplicate, or delete tasks; resolve "item N" as today's Nth
+  entry; word titles and accomplishments; open, recap, and close the work day; manage
+  profiles and time bounds; link GitHub issues as task notes; mine VS Code, Copilot
+  sessions, and the calendar into entries; keep date-bound notes. WHEN: start work,
+  stop work, switch task, log time, add a task, I worked on X, since my last item,
+  edit item N, delete item N, duplicate item N, shorten the title, add accomplishments,
+  lunch, commute, find gaps, start of day, clock in, end of day, wrap up my day,
+  highlights, recap my day, set profile, get profile, list profiles, time bound on or
+  off, link GitHub issue to item N, get session tasks, get vscode tasks, get calendar
+  tasks, what am I working on, jot a note, remember this, dashboard, standup, weekly
+  summary.
+argument-hint: Describe the task plus any time/category/project (e.g. "log lunch 12:00-12:30", "end my day", "set profile home")
 ---
 
 # WorkLog
@@ -33,6 +32,16 @@ profile** — **don't assume `work`**: read it first with
 and use that as the active profile, overriding with `-Profile <name>` only when the user
 asks for the other log. Everything persists to PostgreSQL on jimbrownhome1 and is
 visible on the web dashboard (https://work-log.jimlertech.com/app).
+
+## Load on demand
+
+Read the matching reference before acting on these requests:
+
+| Request | Read |
+|---|---|
+| Start of day, highlights or day recap, end of day | `references/day.md` |
+| Show, set, list, create, rename, or delete a profile; time bound on/off | `references/profile.md` |
+| Link a GitHub issue or PR to an item; close the issue with the task | `references/github.md` |
 
 ## Commands
 
@@ -119,8 +128,13 @@ visible on the web dashboard (https://work-log.jimlertech.com/app).
    resolve today's 1st entry to its real id, then `delete -Id <thatId>`.
    **Verify the resolved id exists before deleting** — `delete` reports success even for a
    nonexistent id, so never pass a raw number straight through without resolving it first.
+   **No day reference means today, with no fallback.** If today has no entries, treat
+   "item N" as a no-op and say so; never resolve it against a prior day. (This once deleted
+   the previous day's first entry.) Resolve against another date only when the user names
+   one ("item 1 yesterday"). `log -Days 1` can come back empty late in the day; use
+   `log -Days 2` and filter to the date yourself.
 8. **Workday boundaries are enforced (the module throws on violation) — per-profile,
-   controlled by each profile's `enforceWorkday` flag (see the `worklog-profile` skill).
+   controlled by each profile's `enforceWorkday` flag (see `references/profile.md`).
    By default **no profile enforces** (time bound OFF for all); opt a profile in with
    `profile <name> -Bounds on`. A profile with bounds OFF has no concept of start/end
    day, so none of these constraints apply to it:**
@@ -161,6 +175,35 @@ visible on the web dashboard (https://work-log.jimlertech.com/app).
     independent review before the write:** `delete -Id`, `note -Remove`, or another command
     whose requested effect is to remove stored WorkLog data.
 
+## Titles and accomplishments
+
+Every entry needs both a short **title** and an **accomplishment**. Exempt: lunch and
+breaks, entries with project `n/a`, and the `startday`/`endday` markers.
+
+- **Title** (the dashboard "Item" column): a scannable label of about 3 to 7 words. No
+  laundry lists, parentheticals, or `A; B; C` enumerations.
+  Bad: `WorkLog dashboard UX: shift-click date range, modal dialogs, themed goal stepper, detached serve`.
+  Good: `WorkLog dashboard UX improvements`.
+- **Accomplishment**: the concrete things done, separated by `; ` or Markdown bullets.
+  **Hard cap 50 words** for every accomplishment, however it was created. Lead with the
+  outcome and cut the narrative. Existing entries often run 60 to 130 words; don't copy
+  that length.
+- **Long titles from the user:** split them. Keep a concise title and move the rest to
+  `-Accomplishment` (or set it at `stop`, or later with `edit`).
+- **Mined blocks:** `Get-VSCodeWork.ps1` and `Get-CopilotWork.ps1` title a block with its
+  first message and set no accomplishment. Before logging or fixing one, read all the
+  block's `user.message` events (`%APPDATA%\Code\User\workspaceStorage\<hash>\GitHub.copilot-chat\transcripts\*.jsonl`
+  for VS Code, `~/.copilot/session-state/*/events.jsonl` for Copilot CLI; a block can span
+  several files). Title the dominant theme and list what was done across the block.
+- Prefer one well-formed accomplishment over many small task notes. Verify both fields
+  persisted (rule 4).
+
+```powershell
+# Tidy an existing entry: short title, detail to accomplishment
+$acc = "Shift-click date-range selection; in-page modals replace prompt/confirm; themed goal stepper; detached serve."
+pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 edit -Id <id> -Title "WorkLog dashboard UX improvements" -Accomplishment $acc
+```
+
 ## Phrase triggers
 
 Natural-language phrases that map to specific actions:
@@ -176,14 +219,9 @@ Natural-language phrases that map to specific actions:
   entries such as lunch and meetings. For an opening gap with no preceding task, move the
   first task's start back to the start-of-day marker. Apply edits sequentially, verify each
   stored range, then rerun `Find-WorkGaps.ps1` and require zero gaps and zero overlaps.
-- **"start of work day"** → `startday` (0-min marker). **"end of work day"** → first
-  `stop` any open running item, then **run gap analysis**
-  (`pwsh -File C:\Files\Dev\main\work-log\src\Find-WorkGaps.ps1`) and present any
-  untracked gaps (>= 10 min), offering to fill them per the "find gaps" routine above;
-  then **update the day's summary** (`summary "<text>"`,
-  e.g. via the worklog-highlights routine), then `endday`
-  (pass `-At "<yyyy-MM-dd HH:mm>"` to set a specific time). These bound the work day for
-  untracked-gap detection and render as divider rows on the dashboard.
+- **"start of work day" / "end of work day" / "highlights"** → follow
+  `references/day.md` (idempotent `startday`, the day recap, and the `Get-DayClose`
+  readiness loop before `endday`).
 - **"learning about &lt;x>"** → `start "Learning about <x>" -Category education -Project personal`.
 - **"get calendar tasks" / "import my calendar" / "import meetings" / "log my meetings" / "calendar to worklog"** →
   use WorkIQ `fetch` on `/me/calendarView` for the requested local-time window
@@ -207,7 +245,8 @@ Natural-language phrases that map to specific actions:
 - **Closing a task is one call.** Use `close "<accomplishment>" [-Id N] [-Issue G -RepoPath <repo> -CloseIssue]`
   — it bundles the gh-issue note + stop + a single dashboard rebuild. Don't call note/stop/dashboard separately.
 - **GitHub-issue note format.** When a task maps to a GitHub issue, add a note with a markdown
-  link `[#N Title](url)` plus **milestone, state, and commit hash**.
+  link `[#N Title](url)` plus **milestone, state, and commit hash**. To find the issue and
+  attach it, follow `references/github.md`.
 - **Prefer a single Markdown note** over many small notes — the dashboard note modal renders
   basic Markdown (bold, `code`, bullet lists, line breaks, links).
 - **Logging from VS Code chat.** For "get vscode tasks" / "log my work from chat" / "what did I do in the last hour":

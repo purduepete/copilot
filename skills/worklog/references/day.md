@@ -1,23 +1,4 @@
----
-name: worklog-day
-description: >-
-  Manage @jimb's WorkLog day boundaries and recap. START: read the active profile, check
-  whether today's start-of-day marker already exists (idempotent — never double-mark), run
-  startday. HIGHLIGHTS: generate a concise (<=2 line) specific day recap from the day's
-  sessions and save it as the day's commentary. END: use Get-DayClose to find blockers,
-  resolve each with confirmation (stop running task, fill untracked gaps, record a
-  per-task accomplishment on each work/meeting entry, normalize projects, set summary),
-  then endday once ready.
-  WHEN: "start of day", "start of work day", "start my work day", "begin my work day",
-  "startday", "open my work day", "clock in", "I'm starting work", "mark start of day",
-  "generate today's highlights", "write my highlights", "summarize my day", "day
-  highlights", "set the highlights", "recap my day", "what did I accomplish today", "end my
-  work day", "end of day", "wrap up my day", "close out the day", "endday", "am I ready to
-  close the day", "finish my work day", "end work day".
-argument-hint: (none) — operates on today; pass a time only if back-dating start, or a date for highlights
----
-
-# worklog-day — open, recap, and close the WorkLog day
+# Day boundaries — open, recap, and close the WorkLog day
 
 Three phases of a WorkLog day, all driven off the same `wl.ps1` CLI and the
 `Get-DayClose.ps1` readiness tool. Jump to the phase the user asked for:
@@ -80,7 +61,7 @@ one-line confirmation (e.g. "Work day started on the *work* profile.").
 
 **Start notes**
 - "Prepare for work day" is a *richer* morning routine (calendar, overnight items,
-  a prep task) — see the `worklog` skill's phrase triggers. This part only lays
+  a prep task) — see the phrase triggers in `SKILL.md`. This part only lays
   down the start marker; escalate to that routine only if the user asks for prep.
 - Never lay down a second start marker — the step-2 `dayOpen` check exists to
   prevent exactly that.
@@ -208,7 +189,7 @@ Work the `blockers[]` — in this order — re-checking with the tool after fixe
   ```powershell
   pwsh -File C:\Files\Dev\main\work-log\cli\wl.ps1 edit -Id <id> -Accomplishment "<concrete outcome>"
   ```
-  **Hard cap: 50 words.** This mirrors the `worklog` skill's session-logging rule and
+  **Hard cap: 50 words.** This mirrors the accomplishment rule in `SKILL.md` and
   applies to *every* accomplishment, however it was created. Lead with the outcome
   (what shipped / what was decided / what was proven), name the artifact or commit,
   and stop — cut the narrative of how you got there.

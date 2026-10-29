@@ -1,15 +1,3 @@
----
-name: worklog-link-github
-description: >-
-  Link a GitHub issue/PR to a WorkLog item as a clickable, markdown-linked task
-  note (and optionally close the issue). Finds the matching issue when the user
-  doesn't give a number, then attaches "[#N Title](url)" with state + milestone.
-  WHEN: "add the GitHub task to item N", "link this task to its GitHub issue",
-  "there is a gh task for it, add it as a task note", "attach issue #N to my
-  worklog task", "close the issue when I close this task".
-argument-hint: e.g. "link item 2 to webbookmarks #6" or "add the gh task to item 3"
----
-
 # Link a GitHub Item to a WorkLog Task
 
 Attaches a GitHub issue/PR to a time-tracked WorkLog session as a **clickable
@@ -17,10 +5,8 @@ markdown link**, so it renders as a real link in the dashboard note modal.
 
 ## Resolve the target task first
 
-"Item N" / "task N" is the **Nth entry of the day** (positional, start-time order,
-counting from 1) — **not** the WorkLog id. Resolve it via `wl.ps1 log -Days 1`,
-filter to the date, sort by start, map position N → its real id. Don't ask the user
-which item N is — figure it out.
+Resolve "item N" / "task N" to its global id per rule 7 in `SKILL.md`. Don't ask
+the user which item N is — figure it out.
 
 ## Find the GitHub item (when no number is given)
 
@@ -73,5 +59,4 @@ $j = pwsh -NoProfile -File C:\Files\Dev\main\work-log\cli\wl.ps1 state -Profile 
 ($j.sessions | Where-Object { $_.id -eq <resolvedId> }).notes
 ```
 
-See the **worklog** skill for the full wl.ps1 command set and the **github-worklist**
-skill to discover open issues to link.
+See `SKILL.md` for the full wl.ps1 command set.

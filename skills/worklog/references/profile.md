@@ -1,18 +1,3 @@
----
-name: worklog-profile
-description: >-
-  Show, set, list, create, rename, or delete WorkLog profiles (work, home, or
-  any other), and turn each profile's "time bound" (daily start/end-of-day
-  constraint) on or off. Deleting a profile removes ALL its data and is strictly
-  guarded. WHEN: "set profile <x>", "get profile", "list profiles", "create a
-  profile", "new profile <x>", "rename profile <x> to <y>", "delete profile <x>",
-  "remove profile <x>", "set time bound on", "set time bound off", "get time
-  bound", "change profile to home", "switch to work profile", "what profile am I
-  on", "does this profile use time bounds", "turn time bounds off for <profile>",
-  "use the home log by default".
-argument-hint: set <x> | get | -List | <x> -Create | <x> -Rename <y> | <x> -Delete [-Yes] | -Bounds on|off
----
-
 # WorkLog profile
 
 Each machine has a **default WorkLog profile** (`work`, `home`, or any other
