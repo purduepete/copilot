@@ -212,6 +212,12 @@ app already has its own mark. Site Dock looks for `/favicon.svg` first when it s
 the same file covers the dock. Apps that serve their own routes (FastAPI, a PowerShell listener)
 must answer `/favicon.svg` and `/apple-touch-icon.png` at the site root, not only under `/icons/`.
 
+Mark PNG files `binary` in `.gitattributes` (`*.png binary`). A text EOL rule corrupts them, and
+the corrupt icon fails the web check. Behind Cloudflare Access, the manifest link needs
+`crossorigin="use-credentials"` (`<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />`);
+without it the browser fetches the manifest without the Access cookie, gets the sign-in redirect,
+and logs a console error.
+
 Never add `apple-mobile-web-app-status-bar-style` or a zoom lock. Fixed layers offset by
 `--safe-area-*` variables built from `env(safe-area-inset-*)`. The top bar, or the app shell, is
 `position: fixed` or `sticky`, touches the top edge, and spans the full width, or Safari 26 blurs
