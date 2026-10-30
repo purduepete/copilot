@@ -139,6 +139,10 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   persistent wrapper toggled by an attribute (`data-leaving`); swapping an animation class
   and an opacity in the same render makes the browser jump straight to 0. Key the fade on the
   pathname so query-string changes (filters, modes) update in place without replaying it.
+  Top-level views switched from a tab strip (Ferry Tracker's Sailings, Terminals, Historical)
+  count as navigation: the strip selects at once, and the content uses the same 250ms out,
+  600ms in fade. Keep any data-refresh fade on a separate wrapper from the navigation fade so
+  the two don't fight over one element's opacity.
   Sidebar and menu items switch their selected highlight in place. Tab strips and segmented
   controls move only their selection fill with `transform: translateX(...)` over 250ms
   ease-out; labels stay stationary with no crossfade. Reserve scrollbar space with
@@ -160,6 +164,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
     `role="status"` and a visually hidden label naming what is loading ("Loading positions");
     no visible loading text beside it. It fades in over 0.6s ease-out on that non-rotating
     wrapper, with ring rotation kept separate.
+  - Give the loading overlay and every `role="status"` wrapper `caret-color: transparent` and
+    `user-select: none`. With caret browsing on, a click lands the text caret in whitespace
+    inside static spinner markup and draws a line beside the ring.
   - Page loads: `if (isLoading) return <PageLoading show={showLoading} />`. `PageLoading` is a
     fixed overlay in the page background color that covers the content area beside the
     sidebar and below the header, with the ring centered. The route `Suspense` fallback uses
