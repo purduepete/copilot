@@ -70,6 +70,9 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   Follow the standard's navigation-transition rules; verify rapid switching,
   history, reduced motion, focus and dialogs at phone and tablet widths. Compare reference
   behavior and DOM lifetime, not just animation timing.
+- Loading states use the shared `useDelayedLoading` hook and spinner component with the
+  standard's 250ms display threshold. No ad-hoc spinners or other delays; tests use
+  `findByRole('status')`.
 - Checkbox selections and checkmarks use theme accent tokens, not device/status colors.
   Check checked, unchecked, disabled and focus states in Light and Midnight.
 - Contextual help uses the standard's custom themed info box, opened from the `Info` icon

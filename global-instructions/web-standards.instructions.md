@@ -138,6 +138,18 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   keyboard focus, dialog stacking and stable navigation position at phone and tablet widths.
   When matching a reference app, inspect its state changes and DOM lifetime as well as CSS
   timing. Matching timing alone does not establish matching behavior.
+- **Loading indicators:** a spinner appears only after loading has lasted 250ms, so fast
+  requests never flash one. Use one shared `useDelayedLoading(isLoading, delayMs = 250)` hook,
+  keeping the 250 in one place, and one shared spinner component built on it
+  (`role="status"` plus a visually hidden label). Web Portfolio's
+  `frontend/src/hooks/useDelayedLoading.ts` and `components/PageLoading.tsx` are the pattern;
+  Fit Track's `LoadingSpinner.tsx` matches it. The spinner is a 40px ring (18px small variant
+  for buttons and inline use) with a `var(--border)` track and `var(--accent)` arc, spinning
+  1s linear and static under `prefers-reduced-motion`. Show it for the initial load only;
+  refreshes of data already on screen dim the content in place instead. Every new loading
+  state reuses the shared hook and component; no ad-hoc spinners or other delay values. Tests
+  wait for the spinner with `findByRole('status')`, since it is absent for the first 250ms.
+  Ferry Tracker's documented skeleton remains its exception.
 - **Checkboxes and checkmarks:** selection uses the theme accent; status colors describe
   status. Native checkboxes use `accent-color: var(--accent)` (or the app's equivalent theme
   token). Custom checked fills use the accent and their checkmarks use its paired text token.
