@@ -124,43 +124,62 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   both themes; include a regression check rejecting native selects in the changed UI except
   where the repo explicitly permits them.
   OS-owned file, date and time pickers are separate controls.
-- **Motion:** background transitions 0.3s; entrance animations `fade-in` / `fade-up` 0.6s
-  ease-out. Honor `prefers-reduced-motion`.
-- **Navigation transitions:** keep one navigation control mounted while changing content.
-  Move only its selection fill with `transform: translateX(...)` over 250ms ease-out;
-  keep labels stationary and avoid label crossfades. Reserve scrollbar space with
-  `scrollbar-gutter: stable` so short and long views do not shift the layout. When content
-  needs an entrance transition, keep it separate from navigation and brief (Home Automation
-  uses 160ms). App-specific loading animations remain in force: Ferry Tracker's documented
-  skeleton and 900ms data fade are an exception to brief content entrances. The selection-fill
-  rule applies to navigation controls. Disable motion under reduced motion.
-  Check rapid switching, Back/Forward,
+- **Motion:** background and hover transitions 0.3s; entrance animations `fade-in` /
+  `fade-up` 0.6s ease-out; in-page tab content 250ms opacity only, with no slide. Define each
+  animation once (one `fadeIn` keyframe, one `animate-fade-in` class). Honor
+  `prefers-reduced-motion` with an override that wins over utility classes (in Tailwind v4,
+  an unlayered `@media` block at the end of the stylesheet): entrances, tab fades, route fades
+  and spinner rotation stop, and content stays visible. Web Portfolio's `frontend/src/index.css`
+  is the reference.
+- **Navigation transitions:** Web Portfolio is the reference
+  (`frontend/src/components/PageTransition.tsx`, `.route-fade` in `index.css`). The header,
+  sidebar and menus stay mounted while the content area changes. On a route change, fade the
+  content area out over 250ms (`cubic-bezier(0.22, 0.61, 0.36, 1)`), swap to the new route,
+  then fade it in over 600ms ease-out. Drive both directions with CSS transitions on one
+  persistent wrapper toggled by an attribute (`data-leaving`); swapping an animation class
+  and an opacity in the same render makes the browser jump straight to 0. Key the fade on the
+  pathname so query-string changes (filters, modes) update in place without replaying it.
+  Sidebar and menu items switch their selected highlight in place. Tab strips and segmented
+  controls move only their selection fill with `transform: translateX(...)` over 250ms
+  ease-out; labels stay stationary with no crossfade. Reserve scrollbar space with
+  `scrollbar-gutter: stable` on `html` so short and long views don't shift the layout. Under
+  reduced motion, swap content immediately with no blank frame. Ferry Tracker's documented
+  skeleton and 900ms data fade remain its exception. Check rapid switching, Back/Forward,
   keyboard focus, dialog stacking and stable navigation position at phone and tablet widths.
   When matching a reference app, inspect its state changes and DOM lifetime as well as CSS
   timing. Matching timing alone does not establish matching behavior.
-- **Loading indicators:** a spinner appears only after loading has lasted 250ms, so fast
-  requests never flash one. Use one shared `useDelayedLoading(isLoading, delayMs = 250)` hook,
-  keeping the 250 in one place, and one shared spinner component built on it
-  (`role="status"` plus a visually hidden label). Web Portfolio's
-  `frontend/src/hooks/useDelayedLoading.ts` and `components/PageLoading.tsx` are the pattern;
-  Fit Track's `LoadingSpinner.tsx` matches it. The spinner is a 40px ring (18px small variant
-  for buttons and inline use) with a `var(--border)` track and `var(--accent)` arc, spinning
-  1s linear and static under `prefers-reduced-motion`. Show it for the initial load only;
-  refreshes of data already on screen dim the content in place instead. Every new loading
-  state reuses the shared hook and component; no ad-hoc spinners or other delay values. Tests
-  wait for the spinner with `findByRole('status')`, since it is absent for the first 250ms.
-  Fade the spinner in over 0.6s ease-out on a non-rotating wrapper mounted after the 250ms
-  threshold, keeping ring rotation separate. When initial data arrives, remove the spinner
-  immediately and fade only the initial results in over 0.6s ease-out. Don't wait for an exit
-  animation or enforce a minimum display time. Keep navigation and alerts outside the fade;
-  navigation may mount with first data, then stays mounted during content changes. Preserve
-  panel spacing and the stable scrollbar gutter, and don't animate height. Results stay
-  interactive during the fade. Run this entrance once per page load, including success after
-  an initial failure; polling, refreshes and view changes must not replay it. Use visible base
-  styles so reduced motion disables the fade and rotation without hiding content. Check short
-  loads that finish during the fade, slow loads, failure/retry, navigation node identity and
-  refresh/view changes. These initial-load fades are separate from brief navigation-content
-  transitions. Ferry Tracker's documented skeleton remains its exception.
+- **Loading indicators:** Web Portfolio is the reference: `frontend/src/hooks/useDelayedLoading.ts`,
+  `components/Spinner.tsx`, `components/PageLoading.tsx` and `components/PageLoader.tsx`.
+  - Delay: a spinner appears only after loading has lasted 250ms, so fast requests never
+    flash one. Use one shared `useDelayedLoading(isLoading, delayMs = 250)` hook, keeping the
+    250 in one place, and one shared `Spinner` built on it. No ad-hoc spinners, skeleton
+    pulses, "Loading..." text or other delay values.
+  - Spinner: a 40px ring (`md`) for pages, panels, charts and modals, and an 18px ring (`sm`)
+    for inline values, table cells and field labels. Neutral track (gray-200 light, gray-700
+    dark) with the highlight color on the top arc, spinning 1s linear. The wrapper carries
+    `role="status"` and a visually hidden label naming what is loading ("Loading positions");
+    no visible loading text beside it. It fades in over 0.6s ease-out on that non-rotating
+    wrapper, with ring rotation kept separate.
+  - Page loads: `if (isLoading) return <PageLoading show={showLoading} />`. `PageLoading` is a
+    fixed overlay in the page background color that covers the content area beside the
+    sidebar and below the header, with the ring centered. The route `Suspense` fallback uses
+    the same overlay, and when it hands over to the page's own overlay the ring stays on
+    screen without a second delay or fade.
+  - Panel loads: center the 40px ring in the panel's reserved height. Don't dim existing
+    content behind an overlay and don't animate height.
+  - Arrival: remove the spinner immediately and fade the loaded content in over 0.6s
+    ease-out (`animate-fade-in` on the page's content wrapper). No exit animation or minimum
+    display time. Run this once per page load, including success after an initial failure.
+  - Refreshes of data already on screen keep it visible at full opacity and show activity on
+    the refresh control by rotating its icon. Don't dim the page or panel, replay the
+    entrance, or replace values with spinners. A cell or field with no value yet may show the
+    18px ring.
+  - Action buttons may show an in-button spinner or rotate their own icon at once, with no
+    delay. That is feedback for the click, so it is exempt from the 250ms threshold.
+  - Tests wait with `findByRole('status')`, since the ring is absent for the first 250ms.
+    Check short loads that finish inside the delay, slow loads, slow route chunks,
+    failure/retry, refreshes and reduced motion (static ring, no fades, content visible).
+  - Ferry Tracker's documented skeleton remains its exception.
 - **Checkboxes and checkmarks:** selection uses the theme accent; status colors describe
   status. Native checkboxes use `accent-color: var(--accent)` (or the app's equivalent theme
   token). Custom checked fills use the accent and their checkmarks use its paired text token.

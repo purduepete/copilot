@@ -64,15 +64,18 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   fill, reduced-motion support and a persisted choice where the user selects sort or view.
   Reach for it before a dropdown or a row of full buttons; Solution Directory's A-Z / calendar
   sort control is the reference.
-- Keep navigation mounted while views change, animate only the navigation's selection fill,
-  and reserve scrollbar space. App-specific loading animations remain in force; Ferry Tracker
-  keeps its documented skeleton and 900ms data fade as an exception to brief content entrances.
-  Follow the standard's navigation-transition rules; verify rapid switching,
-  history, reduced motion, focus and dialogs at phone and tablet widths. Compare reference
-  behavior and DOM lifetime, not just animation timing.
-- Loading states use the shared `useDelayedLoading` hook and spinner component with the
-  standard's 250ms display threshold. No ad-hoc spinners or other delays; tests use
-  `findByRole('status')`.
+- Page loading and transitions follow Web Portfolio (`PageTransition.tsx`, `PageLoading.tsx`,
+  `Spinner.tsx`, `useDelayedLoading.ts`). Keep navigation mounted while the content area fades
+  out over 250ms and the new route fades in over 600ms; query-only changes update in place.
+  Tab strips and segmented controls slide their selection fill; sidebar highlights switch in
+  place. Reserve scrollbar space. Ferry Tracker keeps its documented skeleton and 900ms data
+  fade as an exception. Follow the standard's navigation-transition rules; verify rapid
+  switching, history, reduced motion, focus and dialogs at phone and tablet widths. Compare
+  reference behavior and DOM lifetime, not just animation timing.
+- Loading states use the shared `useDelayedLoading` hook and `Spinner` (40px page/panel ring,
+  18px inline ring) with the standard's 250ms threshold and a visually hidden label. Refreshes
+  keep data at full opacity and rotate the refresh control's icon; no dimming. No ad-hoc
+  spinners, skeleton pulses or other delays; tests use `findByRole('status')`.
 - Checkbox selections and checkmarks use theme accent tokens, not device/status colors.
   Check checked, unchecked, disabled and focus states in Light and Midnight.
 - Contextual help uses the standard's custom themed info box, opened from the `Info` icon
