@@ -94,6 +94,18 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   overflow. Ferry Tracker's `frontend/src/components/NotificationControl.tsx` and
   `.notification-description` styles are the initial reference; reuse an existing app helper
   before adding another implementation.
+- **Tooltips:** every hover or focus hint uses the app's custom, theme-aware tooltip. Never set
+  a native `title` attribute on a UI element (buttons, icons, links, table cells, chart marks,
+  truncated labels); the browser renders it unthemed, delayed, and not at all on touch.
+  `<iframe title>` is exempt because it is an accessible name. Give icon-only controls an
+  `aria-label` for their name, and connect the tooltip with `aria-describedby` and
+  `role="tooltip"`. Use the info box tokens above: square corners, surface/text/border
+  colors, compact padding and readable wrapping. Show it on hover and on keyboard focus, keep
+  it open while the pointer moves onto it, close it on Escape, scroll and click, and keep it
+  inside the viewport. Never put the only copy of an error or required fact in a tooltip.
+  Solution Directory's `data-tip` helper in `site/collectors.js` is a plain-JS reference;
+  React apps add one shared `Tooltip` component and reuse it. `Test-WebStandard.mjs` fails a
+  page that renders any element with a `title` attribute.
 - **Dropdowns:** use custom, theme-aware dropdowns for app-owned choice controls,
   including theme, settings and filters, unless the target repo's instructions explicitly
   allow native `<select>` controls. Web Portfolio permits native selects in simple forms;

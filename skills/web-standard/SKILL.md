@@ -74,6 +74,8 @@ iOS chrome rules are in `ios-pwa-chrome.instructions.md` in the same folder.
   Check checked, unchecked, disabled and focus states in Light and Midnight.
 - Contextual help uses the standard's custom themed info box, opened from the `Info` icon
   only (plus keyboard focus and tap). Keep control rows compact; no browser `title` tooltip.
+- Every other hover hint uses the app's shared custom tooltip. No native `title` attribute on
+  any UI element (iframes excepted); `Test-WebStandard.mjs` fails pages that render one.
   Follow the standard's accessibility, dismissal and viewport checks.
 - Display name with spaces ("Web Portfolio") anywhere a person reads it.
 - Dates `mm/dd/yyyy`, times 24-hour `HH:mm`, local zone; `mm/dd` only where space is tight. No
