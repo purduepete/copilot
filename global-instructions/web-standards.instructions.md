@@ -149,7 +149,18 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   refreshes of data already on screen dim the content in place instead. Every new loading
   state reuses the shared hook and component; no ad-hoc spinners or other delay values. Tests
   wait for the spinner with `findByRole('status')`, since it is absent for the first 250ms.
-  Ferry Tracker's documented skeleton remains its exception.
+  Fade the spinner in over 0.6s ease-out on a non-rotating wrapper mounted after the 250ms
+  threshold, keeping ring rotation separate. When initial data arrives, remove the spinner
+  immediately and fade only the initial results in over 0.6s ease-out. Don't wait for an exit
+  animation or enforce a minimum display time. Keep navigation and alerts outside the fade;
+  navigation may mount with first data, then stays mounted during content changes. Preserve
+  panel spacing and the stable scrollbar gutter, and don't animate height. Results stay
+  interactive during the fade. Run this entrance once per page load, including success after
+  an initial failure; polling, refreshes and view changes must not replay it. Use visible base
+  styles so reduced motion disables the fade and rotation without hiding content. Check short
+  loads that finish during the fade, slow loads, failure/retry, navigation node identity and
+  refresh/view changes. These initial-load fades are separate from brief navigation-content
+  transitions. Ferry Tracker's documented skeleton remains its exception.
 - **Checkboxes and checkmarks:** selection uses the theme accent; status colors describe
   status. Native checkboxes use `accent-color: var(--accent)` (or the app's equivalent theme
   token). Custom checked fills use the accent and their checkmarks use its paired text token.
