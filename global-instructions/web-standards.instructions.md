@@ -194,8 +194,8 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   Within a route that stays mounted across parameter changes (Fit Track's
   `/workouts/:uuid`), discard data that belongs to the previous parameter, so the old record
   never fades back in before the new one arrives.
-- **Site Dock frames:** embedded sites show no spinner. The frame fades in on load or after
-  the 4s readiness fallback.
+- **Site Dock frames:** embedded sites show no spinner. Keep the frame hidden until its load
+  event, then fade it in. After 4 seconds, offer to open a slow site in a new tab.
 - **Loading indicators:** Web Portfolio is the reference: `frontend/src/hooks/useDelayedLoading.ts`,
   `components/Spinner.tsx`, `components/PageLoading.tsx` and `components/PageLoader.tsx`.
   - Delay: a spinner appears only after loading has lasted 250ms, so fast requests never
