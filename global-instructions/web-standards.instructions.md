@@ -166,6 +166,13 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   first open keeps its body laid out but hidden, with chart and panel heights reserved,
   shows the 40px ring after 250ms, then fades the body in over 0.6s. Later opens and Refresh
   keep the existing data on screen. Home Automation's `weather-history.js` is the reference.
+- **Cache-first apps:** an app that renders from a local cache (Idea Notes) treats a missing
+  cache as "not loaded yet". It shows the page loading overlay until the first sync finishes,
+  then fades the content in. It never shows its empty state or a zero count before that sync
+  answers. With a saved cache, it renders the cached data at once and syncs in place.
+  Within a route that stays mounted across parameter changes (Fit Track's
+  `/workouts/:uuid`), discard data that belongs to the previous parameter, so the old record
+  never fades back in before the new one arrives.
 - **Site Dock frames:** embedded sites show no spinner. The frame fades in on load or after
   the 4s readiness fallback.
 - **Loading indicators:** Web Portfolio is the reference: `frontend/src/hooks/useDelayedLoading.ts`,
