@@ -156,6 +156,18 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   keyboard focus, dialog stacking and stable navigation position at phone and tablet widths.
   When matching a reference app, inspect its state changes and DOM lifetime as well as CSS
   timing. Matching timing alone does not establish matching behavior.
+  Apps built as separate HTML documents (Solution Directory's `index.html` and
+  `collectors.html`) get the same effect with a cross-document view transition:
+  `@view-transition { navigation: auto; }`, the old root fading out over 250ms and the new
+  root not animating, switched off under reduced motion. Header text that differs between
+  the pages (title, intro) stays hidden while the loading overlay is up and fades in with the
+  content; header parts that match on every page stay visible.
+- **Dialogs:** a modal and its backdrop fade in over 250ms on open. A dialog that fetches on
+  first open keeps its body laid out but hidden, with chart and panel heights reserved,
+  shows the 40px ring after 250ms, then fades the body in over 0.6s. Later opens and Refresh
+  keep the existing data on screen. Home Automation's `weather-history.js` is the reference.
+- **Site Dock frames:** embedded sites show no spinner. The frame fades in on load or after
+  the 4s readiness fallback.
 - **Loading indicators:** Web Portfolio is the reference: `frontend/src/hooks/useDelayedLoading.ts`,
   `components/Spinner.tsx`, `components/PageLoading.tsx` and `components/PageLoader.tsx`.
   - Delay: a spinner appears only after loading has lasted 250ms, so fast requests never
