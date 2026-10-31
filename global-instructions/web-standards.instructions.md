@@ -145,6 +145,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   prompt and the shell immediately; a successful retry may fade in its content.
   Later route changes and refreshes keep the shell visible and do not replay its entrance.
   Home Automation's `shell.html` and `shell-frame.js` are the first-load reference.
+  An app that shows its pages in frames keeps each frame hidden until that page has applied
+  its theme, so the dark stage shows instead of an unthemed white frame. Home Automation's
+  `themed` handshake (`Shell.themed` and the `iframe:not(.themed)` rule) is the reference.
 - **Navigation transitions:** Web Portfolio is the reference
   (`frontend/src/components/PageTransition.tsx`, `.route-fade` in `index.css`). The header,
   sidebar and menus stay mounted while the content area changes. On a route change, fade the
@@ -232,7 +235,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
     In a browser test with delayed initial data, measure the shell and page content from
     first paint through arrival. Assert that neither appears early and that their entrances
     start together, with all initial sections present. Also check that refreshes and route
-    changes do not replay the shell entrance.
+    changes do not replay the shell entrance. Run that first-load check in Playwright's WebKit
+    as well as Edge: Safari on iPhone and iPad uses WebKit, and Edge does not show a white
+    frame that WebKit paints (Home Automation flashed white on iPad and passed in Edge).
   - Ferry Tracker's documented skeleton remains its exception.
 - **Checkboxes and checkmarks:** selection uses the theme accent; status colors describe
   status. Native checkboxes use `accent-color: var(--accent)` (or the app's equivalent theme
@@ -286,7 +291,9 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
   sign-in. Read `localStorage` first, then the cookie. Site Dock's `POST /api/preferences` is the
   reference.
 - An inline script in `index.html` applies the class, `color-scheme`, and the `theme-color` meta
-  **before** first paint. No flash of the wrong theme.
+  **before** first paint. No flash of the wrong theme. Make it the first script in `<head>`,
+  ahead of every external stylesheet and script, so nothing blocks it. The same applies to
+  every page an app loads in a frame.
 - The theme hook updates `meta[name="theme-color"]` in the same effect that writes the class, using
   the color of the fixed top bar (usually the page background; the panel color when the top bar
   uses it).
