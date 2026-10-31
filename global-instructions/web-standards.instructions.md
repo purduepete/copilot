@@ -135,6 +135,16 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   an unlayered `@media` block at the end of the stylesheet): entrances, tab fades, route fades
   and spinner rotation stop, and content stays visible. Web Portfolio's `frontend/src/index.css`
   is the reference.
+- **First-load transition:** On the first entry to an app, keep the shell header, navigation,
+  page controls, footer and content hidden from first paint while the initial page data loads.
+  Preserve their layout and show the delayed loading indicator when needed. Once the initial
+  content is ready, reveal the shell and page together over 600ms ease-out. Include data-backed
+  sections that belong in the initial view, so they don't appear after the entrance. A valid
+  saved cache is ready content for a cache-first app. Under reduced motion, show everything
+  together without animation once ready. On an initial failure or sign-in, show the error or
+  prompt and the shell immediately; a successful retry may fade in its content.
+  Later route changes and refreshes keep the shell visible and do not replay its entrance.
+  Home Automation's `shell.html` and `shell-frame.js` are the first-load reference.
 - **Navigation transitions:** Web Portfolio is the reference
   (`frontend/src/components/PageTransition.tsx`, `.route-fade` in `index.css`). The header,
   sidebar and menus stay mounted while the content area changes. On a route change, fade the
@@ -159,9 +169,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   Apps built as separate HTML documents (Solution Directory's `index.html` and
   `collectors.html`) get the same effect with a cross-document view transition:
   `@view-transition { navigation: auto; }`, the old root fading out over 250ms and the new
-  root not animating, switched off under reduced motion. Header text that differs between
-  the pages (title, intro) stays hidden while the loading overlay is up and fades in with the
-  content; header parts that match on every page stay visible.
+  root not animating, switched off under reduced motion. During these route changes, header
+  text that differs between the pages (title, intro) stays hidden while the loading overlay
+  is up and fades in with the content; header parts that match on every page stay visible.
 - **Dialogs:** a modal and its backdrop fade in over 250ms on open. A dialog that fetches on
   first open keeps its body laid out but hidden, with chart and panel heights reserved,
   shows the 40px ring after 250ms, then fades the body in over 0.6s. Later opens and Refresh
@@ -205,8 +215,10 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   - Panel loads: center the 40px ring in the panel's reserved height. Don't dim existing
     content behind an overlay and don't animate height.
   - Arrival: remove the spinner immediately and fade the loaded content in over 0.6s
-    ease-out (`animate-fade-in` on the page's content wrapper). No exit animation or minimum
-    display time. Run this once per page load, including success after an initial failure.
+    ease-out (`animate-fade-in` on the page's content wrapper). On first entry, the shell
+    and content enter together as described above. No exit animation or minimum display
+    time. Run the content entrance once per page load, including success after an initial
+    failure.
   - Refreshes of data already on screen keep it visible at full opacity and show activity on
     the refresh control by rotating its icon. Don't dim the page or panel, replay the
     entrance, or replace values with spinners. A cell or field with no value yet may show the
@@ -216,6 +228,10 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   - Tests wait with `findByRole('status')`, since the ring is absent for the first 250ms.
     Check short loads that finish inside the delay, slow loads, slow route chunks,
     failure/retry, refreshes and reduced motion (static ring, no fades, content visible).
+    In a browser test with delayed initial data, measure the shell and page content from
+    first paint through arrival. Assert that neither appears early and that their entrances
+    start together, with all initial sections present. Also check that refreshes and route
+    changes do not replay the shell entrance.
   - Ferry Tracker's documented skeleton remains its exception.
 - **Checkboxes and checkmarks:** selection uses the theme accent; status colors describe
   status. Native checkboxes use `accent-color: var(--accent)` (or the app's equivalent theme
