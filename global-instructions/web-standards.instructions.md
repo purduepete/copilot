@@ -293,7 +293,9 @@ Pattern from `web-portfolio/frontend/src/contexts/ThemeContext.tsx` and the pre-
 - An inline script in `index.html` applies the class, `color-scheme`, and the `theme-color` meta
   **before** first paint. No flash of the wrong theme. Make it the first script in `<head>`,
   ahead of every external stylesheet and script, so nothing blocks it. The same applies to
-  every page an app loads in a frame.
+  every page an app loads in a frame. WebKit can leave the document unpainted while a stylesheet
+  is pending. Check the visible standalone canvas and any embedding shell with a stalled
+  stylesheet; a themed DOM value alone does not prove the background has painted.
 - The theme hook updates `meta[name="theme-color"]` in the same effect that writes the class, using
   the color of the fixed top bar (usually the page background; the panel color when the top bar
   uses it).
