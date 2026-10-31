@@ -162,7 +162,8 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   ease-out; labels stay stationary with no crossfade. Reserve scrollbar space with
   `scrollbar-gutter: stable` on `html` so short and long views don't shift the layout. Under
   reduced motion, swap content immediately with no blank frame. Ferry Tracker's documented
-  skeleton and 900ms data fade remain its exception. Check rapid switching, Back/Forward,
+  skeleton and 900ms data-refresh fade remain its exception; its first-load shell and content
+  use the shared 600ms entrance. Check rapid switching, Back/Forward,
   keyboard focus, dialog stacking and stable navigation position at phone and tablet widths.
   When matching a reference app, inspect its state changes and DOM lifetime as well as CSS
   timing. Matching timing alone does not establish matching behavior.
