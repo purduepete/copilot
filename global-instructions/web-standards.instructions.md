@@ -19,7 +19,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
 - **Font:** Roboto Flex, variable axes `opsz,wght@8..144,100..1000`, with this exact fallback:
   `'Roboto Flex', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
   'Helvetica Neue', Arial, 'Noto Sans', sans-serif`. Load it from Google Fonts with `preconnect`
-  or from `@fontsource-variable/roboto-flex`. Body weight 400, `antialiased`. Form controls use
+  or from `@fontsource-variable/roboto-flex`, with `display=block` (`font-display: block`) so
+  headings never paint in the fallback and reflow when Roboto Flex arrives (Solution Directory's
+  header shifted with `swap`). Body weight 400, `antialiased`. Form controls use
   `font-family: inherit`. No Inter, no second UI font.
 - **Corners:** square. `border-radius: 0` is the default for inputs, selects, textareas, buttons,
   cards, modals and option groups. `rounded-full` is allowed for avatars, dots and toggle tracks only.
@@ -102,7 +104,9 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   `role="tooltip"`. Use the info box tokens above: square corners, surface/text/border
   colors, compact padding and readable wrapping. Show it on hover and on keyboard focus, keep
   it open while the pointer moves onto it, close it on Escape, scroll and click, and keep it
-  inside the viewport. Never put the only copy of an error or required fact in a tooltip.
+  inside the viewport. Hover alone must open it: a hint wired only to focus opens on the click's
+  focus and closes on the click, so it flashes (Ferry Tracker's `HintButton` did this). Keep
+  disabled controls closed. Never put the only copy of an error or required fact in a tooltip.
   Solution Directory's `data-tip` helper in `site/collectors.js` is a plain-JS reference;
   React apps add one shared `Tooltip` component and reuse it. `Test-WebStandard.mjs` fails a
   page that renders any element with a `title` attribute.
