@@ -75,6 +75,11 @@ Repo-specific rules still belong in each repo's
   folders on the host, Cloudflare hostname, GitHub repo and local folder use the
   same words joined by hyphens (`web-bookmarks`, `fit-track`, `work-log`,
   `web-inventory`).
+- **Deploy from the master list.** Before any deploy, read
+  `C:\Files\Dev\main\solution-deploy\docs\ReleaseCommands.md` and use its exact
+  command, flags, executor check and pass criteria for that app. Web Options and
+  Web Portfolio are blocked during US market hours; pass `-AllowMarketHours` only
+  when I explicitly ask to deploy during them.
 - **Migration guardrails.** Written after WebBookmarks ran 76 minutes on a 144-row
   app and an agent restored Cloudflare aliases I had removed.
   - Before submitting work to the shared deployment executor, check the executor task,
