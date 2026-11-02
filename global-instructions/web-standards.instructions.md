@@ -187,7 +187,7 @@ Values come from `web-portfolio/frontend/src/index.css` and `tailwind.config.js`
   (`navigator.platform === 'MacIntel'` with `maxTouchPoints > 1`). Preserve desktop
   input autofocus, keyboard focus trapping and return focus. Tapping an editable field
   or choosing an explicit edit/validation action may focus it normally.
-- **Cache-first apps:** an app that renders from a local cache (Idea Notes) treats a missing
+- **Cache-first apps:** an app that renders from a local cache (The Workbench) treats a missing
   cache as "not loaded yet". It shows the page loading overlay until the first sync finishes,
   then fades the content in. It never shows its empty state or a zero count before that sync
   answers. With a saved cache, it renders the cached data at once and syncs in place.
