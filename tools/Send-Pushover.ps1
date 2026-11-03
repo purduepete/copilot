@@ -12,6 +12,7 @@ made unconditionally at the end of every turn.
 Credentials come from the PUSHOVER_USER_KEY and PUSHOVER_APP_TOKEN environment variables
 (user scope). They are never stored in this repo. A missing credential warns and exits 0 so a
 notification problem can never be mistaken for a failure of the work itself.
+Notifications are disabled for FDE_Revenue_Bedrock.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Send')]
 param(
@@ -38,6 +39,32 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+$repositoryExcluded = $false
+$originFound = $false
+$git = Get-Command git -CommandType Application -ErrorAction SilentlyContinue
+if ($git) {
+    $previousExitCode = $global:LASTEXITCODE
+    try {
+        $PSNativeCommandUseErrorActionPreference = $false
+        $origin = & $git.Source config --local --get remote.origin.url 2>$null
+        $gitExitCode = $LASTEXITCODE
+    }
+    finally {
+        $global:LASTEXITCODE = $previousExitCode
+    }
+    if ($gitExitCode -eq 0) {
+        $originFound = $true
+        $repositoryExcluded = $origin -match '(?i)(?:^|[\\/:])FDE_Revenue_Bedrock(?:\.git)?[\\/]?$'
+    }
+}
+if (-not $originFound) {
+    $repositoryExcluded = ((Get-Location).Path -split '[\\/]') -icontains 'FDE_Revenue_Bedrock'
+}
+if ($repositoryExcluded) {
+    Write-Host 'Pushover disabled for FDE_Revenue_Bedrock.'
+    return
+}
 
 function Get-PushoverSecret {
     param([string]$Name)

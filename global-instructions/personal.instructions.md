@@ -249,6 +249,9 @@ suggestions.
 
 ### Notify on completion (Pushover)
 
+For `FDE_Revenue_Bedrock`, skip Pushover entirely, including stamps, forced sends,
+and plan handoffs. The rules below apply to other repositories.
+
 @jimb does not sit and watch a running turn. **Any turn of 5 minutes or more ends with a push
 notification** so the result reaches his phone instead of sitting in a chat tab he has walked
 away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
