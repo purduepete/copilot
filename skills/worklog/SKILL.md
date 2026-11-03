@@ -49,7 +49,7 @@ Read the matching reference before acting on these requests:
 |---|---|---|
 | `start "<title>"` | Begin a new running task | `-Category -Project -Ado -Tags -At <when> -AfterLast` |
 | `startday` / `endday` | Mark the start/end of the work day (**0-minute marker** task) | `-At <when>` |
-| `stop "<accomplishment>"` | Close the open task | `-Id -Blocker -Status <done\|paused\|in-progress> -At <when>` |
+| `stop "<accomplishment>"` | Close the open task | `-Id -Blocker -Status <done\|in-progress> -At <when>` |
 | `switch -Id <n>` | Switch active task to id n | |
 | `add "<title>"` | Back-fill a **completed** task | `-Start <when> -End <when> -Category -Project -Ado -Tags -Accomplishment` |
 | `edit -Id <n>` | Modify an entry | `-Title -Category -Project -Ado -Start -End -Accomplishment -Blocker -Status -Reopen` |
@@ -174,6 +174,10 @@ Read the matching reference before acting on these requests:
     persistence checks above. **Explicit deletion/removal still requires a different-family
     independent review before the write:** `delete -Id`, `note -Remove`, or another command
     whose requested effect is to remove stored WorkLog data.
+12. **A task with an end time cannot be paused.** Stop or close the completed time
+    segment with status `done`; never use `-Status paused` on `stop` or `close`, or
+    set `paused` on an entry that has an end time. When work resumes after a break,
+    start a new task after the break. Verify the ended entry's time and status.
 
 ## Titles and accomplishments
 
