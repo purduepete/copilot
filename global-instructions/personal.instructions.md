@@ -119,8 +119,12 @@ Repo-specific rules still belong in each repo's
 - **Reach home hosts by their `.local` names** (`jimbrownhome.local`,
   `jimbrownhome1.local`) so traffic stays on the LAN and skips Tailscale. Use the
   Tailscale names only when testing the Tailscale access path itself.
-  jimbrownhome1 has no SSH or WinRM. Reach it with the admin share
-  (`\\jimbrownhome1.local\c$`) and `New-CimSession -Protocol Dcom` for tasks and processes.
+  Use SSH/SFTP for deployment and maintenance on jimbrownhome1 through
+  `jimbrownhome1.local`, with the local `sd-maintenance` account and key-only
+  authentication. Pin the verified host key and keep strict host-key checking.
+  SSH listens only on LAN address `192.168.2.14`, with access restricted to
+  `192.168.2.0/24`. Use the solution-deploy SSH transport helpers; don't use
+  admin shares or DCOM for routine work on this host.
 - When cloning source/solution repos for analysis, clone them under
   `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
   most often written to `C:\Files\Dev\msft`.
