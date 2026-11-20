@@ -133,9 +133,9 @@ Repo-specific rules still belong in each repo's
   explicitly says not to push or asks to keep the commit local.
 - **VS Code Marketplace publisher is `lerxst`.** Set `"publisher": "lerxst"` in any
   extension `package.json`, and publish with `npx @vscode/vsce login lerxst` then
-  `npx @vscode/vsce publish`. My GitHub account is `purduepete` and is unrelated to the
-  marketplace publisher, so `repository`/`bugs`/`homepage` URLs still point at
-  `github.com/purduepete/...`. The marketplace PAT comes from Azure DevOps with
+  `npx @vscode/vsce publish`. Extension repos live in the `jimlertech` GitHub
+  organization, which is unrelated to the marketplace publisher, so
+  `repository`/`bugs`/`homepage` URLs point at `github.com/jimlertech/...`. The marketplace PAT comes from Azure DevOps with
   **All accessible organizations** and the **Marketplace > Manage** scope. Never ask me
   for the token in chat or put it in a command; I enter it at the `vsce login` prompt.
 - **Always display times in my local time zone**, never UTC. When a data source
