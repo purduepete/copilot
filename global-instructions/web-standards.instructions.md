@@ -432,6 +432,23 @@ rules in `personal.instructions.md`. For a new app:
 
 ## Checking an app against this standard
 
+### Approved mockup release gate
+
+When implementing an approved mockup, record its reference and the required layout for each
+changed view in the implementation plan. Include placement and hierarchy of navigation,
+headings, controls and content, along with the approved themes and phone, tablet and desktop
+layouts. A palette or control-style match alone does not satisfy the design.
+
+Before deploying, compare screenshots of the running local app and the approved mockup side by
+side at matching viewport sizes. Cover every changed view, both themes, and the agreed phone,
+tablet and desktop sizes. Use safe example data when live data is unavailable, state which data
+the preview uses, and identify any differences that affect the design or behavior.
+
+Open the comparison and working preview for @jimb. Get his explicit approval of the implemented
+design before deployment, even when deployment was requested earlier. Tests, model reviews and
+an approved plan do not substitute for this approval. If the implementation differs from the
+mockup, fix the difference or obtain approval for the specific deviation before deploying.
+
 Diff the app's `index.html` head and `:root` tokens against web-portfolio before touching other
 CSS. Then check, in order: font stack, corner radius, highlight defaults, theme options and
 default, `theme-color` sync, icon files (`/favicon.svg` and a 180x180 `/apple-touch-icon.png`
