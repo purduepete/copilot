@@ -5,443 +5,101 @@ description: "@jimb's global workflow, tooling, and review preferences. Apply in
 
 # Personal global Copilot instructions (@purduepete)
 
-Shared across **all** repositories and machines. The canonical copy lives in the
-`copilot` repo at `global-instructions\personal.instructions.md`. Edit here,
-commit/push, then update the instruction location configured on other machines.
-Repo-specific rules still belong in each repo's
-`.github/copilot-instructions.md`, which take precedence for that repo.
+Shared across repositories and machines. Repo-specific rules belong in each repo's
+`.github/copilot-instructions.md` and take precedence for that repo.
 
-## Preferences
+## General workflow
 
-- **Keep it simple. Overengineering is a failure.** Use the shortest working
-  procedure and existing tools. Do not turn a one-time move into a framework
-  project or add helpers, approval layers, repeated reviews, or speculative
-  recovery tooling without a concrete need. Keep required database reviews.
-- **Stop after the requested result is verified.** For a small change, run the
-  focused checks and inspect the requested behavior. Do not expand to full suites
-  or investigate unrelated preview-data gaps unless a focused check fails or I
-  ask for more.
-- **Ask about consequential trade-offs early.** Establish acceptable data gaps,
-  downtime and scope before designing a migration. Reuse answers already given.
-  Assume my work is for personal use. **Webportfolio is the sole standing
-  exception:** do not assume data gaps or downtime are acceptable for it.
-  For all other projects, data gaps and downtime are acceptable by default
-  unless I explicitly change that requirement. Do not design for zero data
-  loss, continuous availability or enterprise-grade migration controls unless I
-  request them. Keep basic integrity checks, credential safety and required DB reviews.
-  Keep the old site available during snapshot, copy and import where practical;
-  stop its collector before starting the replacement collector.
-- **Report actual progress in simple terms.** Distinguish requested, launched,
-  writing data, committed and verified. Never say work has started merely because
-  it was delegated. Give confirmed results or specific blockers, with elapsed time.
-  A completion budget includes preparation; do not restart the clock at copying.
-- **Reuse lessons on the next application.** Record actual phase times and
-  failures, fix repeatable defects in shared procedures with regression tests,
-  and reuse verified setup. Do not repeat the same preparation and review loops
-  for Home Automation, SiteDock or later moves. Feedback work must not delay the
-  current migration.
-- **Deployment and migration access requirements.** Every deployed solution must
-  work through a Cloudflare hostname (for example `ferry-tracker.jimlertech.com`) and a
-  private Tailscale fallback. Assign each solution a documented, explicit Tailscale
-  HTTPS port so multiple sites can share the host. Verify both access paths before
-  calling the deployment complete.
-- **Cloudflare Access replaces duplicate application login by default.** When
-  migrating an existing solution with token-based user authentication, use the
-  configured Cloudflare Access policy as the primary public-access authentication
-  and remove the duplicate application-token requirement unless I override this.
-  A Cloudflare DNS record or tunnel alone does not authenticate users: verify the
-  actual Access policy and its intended API exceptions. The private fallback relies
-  on Tailscale access controls. Keep database permissions, secret protection and
-  origin restrictions; do not expose an unauthenticated origin directly to the
-  public internet. Preserve tokens needed for outbound service integrations.
-- **Cleanup is part of migration completion.** Inventory databases, files,
-  credentials and scheduled tasks created during the work. Remove test databases,
-  duplicate payloads, temporary credentials and obsolete tasks once no longer
-  needed, with the required independent review before database deletion. Check
-  live dependencies first. Move runtime components out of preparation folders,
-  retain needed backups and migration records in permanent locations, and verify
-  the live app and both access paths after cleanup. Keep tasks needed for startup,
-  capture, monitoring or future deployments.
-- **Keep migrations relatively fast and simple.** Use the shortest working
-  stop/copy/import/compare/start procedure and existing tools. Data gaps and
-  temporary loss of access are acceptable unless I say otherwise, subject to the
-  standing Webportfolio exception above. Prefer a direct source-to-destination
-  comparison; add extra copies or rehearsals only for a concrete requirement.
-- **Use the `public` schema in per-solution PostgreSQL databases.** Each solution
-  has its own database, so put its tables in `public`. Do not recreate the source
-  database's schema names (for example Azure SQL `fit` or `dbo`).
-- **Solution naming.** PostgreSQL databases use underscores between words
-  (`web_bookmarks`, `fit_track`, `work_log`, `web_inventory`). The solution id,
-  folders on the host, Cloudflare hostname, GitHub repo and local folder use the
-  same words joined by hyphens (`web-bookmarks`, `fit-track`, `work-log`,
-  `web-inventory`).
-- **Deploy from the master list.** Before any deploy, read
-  `C:\Files\Dev\main\solution-deploy\docs\ReleaseCommands.md` and use its exact
-  command, flags, executor check and pass criteria for that app. Web Options and
-  Web Portfolio are blocked during US market hours; pass `-AllowMarketHours` only
-  when I explicitly ask to deploy during them.
-- **Migration guardrails.** Written after WebBookmarks ran 76 minutes on a 144-row
-  app and an agent restored Cloudflare aliases I had removed.
-  - Before submitting work to the shared deployment executor, check the executor task,
-    active executor process, submission lock, and pending operation result. Wait for active
-    work to finish before submitting. The deployment controller performs this bounded wait
-    while holding its submission lock. Never replace an unresolved pending request or
-    resubmit after writing one; if it remains unresolved, stop and inspect it.
-  - Time box: a small app targets 45 minutes, with a hard stop at 90. Check progress
-    every 15 minutes, tell me as soon as one runs past its target, and stop to
-    diagnose at the hard stop.
-  - Run one migration at a time, directly or through a single agent. Never run
-    agents in parallel against shared infrastructure (Cloudflare, SiteDock, the
-    tunnel).
-  - Only the parent session writes Cloudflare, and only through
-    `solution-deploy\scripts\Set-CloudflareHostnames.ps1`, whose allowlist holds
-    exactly one public hostname per app. No aliases. Delegated agents request
-    route changes and never "repair" routes from their own snapshot.
-  - Follow the fixed checklist and add nothing: stop the source, dump and import,
-    compare row counts, start, verify Tailscale plus the Cloudflare Access redirect,
-    update the SiteDock favorite, clean up. Skip extra hardening, test suites and
-    side deliverables unless I ask.
-  - Stop the source app as part of cutover and keep it stopped. Do not restart a
-    retired source for rollback convenience.
-- **Start services and background tasks at system startup, not at logon.** Use an
-  `-AtStartup` trigger and run as `LOCAL SERVICE` or a dedicated non-admin account
-  with a stored password, so the work runs after a reboot with nobody signed in.
-  Add a repeat trigger only when the task needs periodic retries or reconciliation,
-  and only when each run is safe to repeat: the action blocks for the life of the
-  workload, or the script checks for a live instance before starting one.
-  `IgnoreNew` blocks only while the previous action is still running, so a repeat
-  of a launcher that exits after starting a detached process creates duplicates.
-  Use a logon trigger only when the workload needs the signed-in
-  session (for example the FitTrack upload watcher reads the per-user Google Drive
-  `G:` mount), and record that reason in the task description. Launch PowerShell by
-  full path, never bare `pwsh`: on jimbrownhome1 use
-  `C:\ProgramData\SolutionDeploy\runtime\powershell\7\pwsh.exe`.
-- **Reach home hosts by their `.local` names** (`jimbrownhome.local`,
-  `jimbrownhome1.local`) so traffic stays on the LAN and skips Tailscale. Use the
-  Tailscale names only when testing the Tailscale access path itself.
-  Use SSH/SFTP for deployment and maintenance on jimbrownhome1 through
-  `jimbrownhome1.local`, with the local `sd-maintenance` account and key-only
-  authentication. Pin the verified host key and keep strict host-key checking.
-  SSH listens only on LAN address `192.168.2.14`, with access restricted to
-  `192.168.2.0/24`. Use the solution-deploy SSH transport helpers; don't use
-  admin shares or DCOM for routine work on this host.
-- When cloning source/solution repos for analysis, clone them under
-  `C:\Files\Dev\msft` (not a temp directory). On the work computer, new repos are
-  most often written to `C:\Files\Dev\msft`.
-- Treat the WorkLog category alias `dev` as `development`.
-- When @jimb says "commit," interpret it as commit and push by default. Commit only when he
-  explicitly says not to push or asks to keep the commit local.
-- **VS Code Marketplace publisher is `lerxst`.** Set `"publisher": "lerxst"` in any
-  extension `package.json`, and publish with `npx @vscode/vsce login lerxst` then
-  `npx @vscode/vsce publish`. Extension repos live in the `jimlertech` GitHub
-  organization, which is unrelated to the marketplace publisher, so
-  `repository`/`bugs`/`homepage` URLs point at `github.com/jimlertech/...`. The marketplace PAT comes from Azure DevOps with
-  **All accessible organizations** and the **Marketplace > Manage** scope. Never ask me
-  for the token in chat or put it in a command; I enter it at the `vsce login` prompt.
-- **Always display times in my local time zone**, never UTC. When a data source
-  stores timestamps in UTC (e.g. the Copilot session store's `created_at`), convert
-  to local time before showing them, and label them as local.
-- **Anything that alters a database** (schema migrations, data-fix scripts, or any
-  write/DDL against a live DB) **requires an independent model review** before it is
-  run. Use the validation models below, then proceed (see `## Models`). **WorkLog is
-  exempt for routine writes** (`start`, `stop`, `add`, `edit`, day markers, summaries,
-  and notes); only an explicit WorkLog deletion/removal requires review.
+- **Keep it simple.** Use the shortest working procedure and existing tools. Avoid
+  speculative helpers, approval layers, repeated reviews, and side work.
+- **Stop after the requested result is verified.** Run focused checks and inspect the
+  requested behavior. Expand the checks only when a focused check fails or I ask.
+- **Ask about consequential trade-offs early.** Establish scope, data gaps, and downtime
+  before designing work that depends on them. Reuse answers already given.
+- **Plan first, then implement.** Give me a short plan for implementation work. For small,
+  clear, low-risk changes, state the plan and proceed in the same turn. Wait for confirmation
+  when a consequential trade-off needs my decision or I ask to review the plan.
+- **Ground decisions in the actual evidence.** Before asking me to choose, inspect the
+  relevant code, query, config, or DDL and cite the exact lines.
+- **Report actual progress.** Distinguish requested, launched, writing data, committed,
+  and verified. Give confirmed results, elapsed time, and specific blockers.
+- Reuse verified setup and lessons when they prevent repeat failures. Don't delay current
+  work for unrelated feedback.
+- Always show times in my local time zone. Convert UTC timestamps and label them local.
+- When I say "commit," commit and push unless I explicitly ask to keep the commit local
+  or not to push.
+- Include this trailer on commits unless I ask otherwise:
+
+  ```text
+  Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+  ```
+
+## Shared safety and task-specific procedures
+
+- Any write or DDL against a live database requires an independent model review before
+  it runs. Routine WorkLog writes (`start`, `stop`, `add`, `edit`, day markers, summaries,
+  and notes) are exempt. Explicit WorkLog deletion or removal requires review.
+- Use the matching skill for specialized procedures:
+  - `msft-ado-repo` for Azure DevOps work and PRs.
+  - `vscode-extension` for Marketplace work.
+  - `worklog` for WorkLog tasks.
 
 ## Models
 
-When I want a **second opinion, accuracy review, or cross-check**, invoke a review
-sub-agent with a model override, not a separate external CLI. **The reviewer must
-come from a different model family/provider than the primary model** so it is less
-likely to repeat the same assumptions: GPT/ChatGPT primary → Claude or Gemini;
-Claude primary → GPT/ChatGPT or Gemini; Gemini primary → GPT/ChatGPT or Claude.
+For second opinions, accuracy reviews, and cross-checks, choose a currently available
+model that fits the task, context size, and time budget. I prefer Claude, Gemini, or
+ChatGPT, with no fixed model-version requirement.
 
-- **Claude Sonnet 5** (`Claude Sonnet 5 (copilot)`): Anthropic model for every
-  independent review when the primary model is not Claude, including routine checks,
-  code review, architecture, and higher-stakes validation.
-- **Gemini 3.8 Flash** (`gemini-3.8-flash`): fast validation when the primary model
-  is Claude, and large-context reading.
+- For independent reviews, prefer a different provider from the primary model when
+  practical. A same-provider review is acceptable when it is the best fit or the only
+  suitable option.
+- For multiple independent reviews, prefer different providers when available. Record
+  the model selected and its verdict.
+- Keep narrow validations time-bounded. Ask for a concise verdict when the budget ends.
+- Use a faster, lower-cost model for read-only lookups and summaries. Use a model with
+  enough reasoning and context for code changes, debugging, architecture, PR reviews,
+  and database work.
+- For a required database review, choose a suitable independent model. The required
+  review does not depend on a specific model version or provider.
 
-A narrow validation gets 60 seconds. Ask for a verdict from the supplied evidence
-without extra investigation or tool calls. If it has not returned after 60 seconds,
-request an immediate verdict and stop waiting.
+## Completion notifications
 
-Never use the same model family as the primary for an independent review, including
-routine checks.
+For turns with a start marker, send a Pushover notification through
+`C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1` when the turn reaches 5 minutes.
 
-**This holds even when I name the reviewer myself.** If I ask for a review from the
-primary model's own family, ignore that reviewer. Do not run it, do not ask me to
-confirm, and do not run it anyway with a caveat attached. Substitute a different-family
-model and state in one line which reviewer was dropped and what replaced it. Example:
-primary is Claude Opus 5 and I ask for GPT, Claude Opus 5, and Gemini; run GPT and
-Gemini only.
+- Stamp the clock with `-Stamp` in the first terminal command of the turn. Turns without
+  a marker do not get an automatic notification.
+- For marked turns, call the script as the last action before handing the turn back. Give
+  it a lock-screen-readable title and put any decision I need to make in the message.
+- Call the script unconditionally; its threshold defaults to 5 minutes. Use `-Force`
+  for plan handoffs and `-Priority 1` for failures or blocking questions.
+- Keys are per machine. Check that both environment variables are set before assuming
+  the notification will send. Never put credentials in the repo, command line, chat,
+  or question tool.
+- Tell me to set missing keys from a terminal outside VS Code. A watched terminal's
+  `Last Command` line can expose a `SetEnvironmentVariable` call in the transcript.
 
-**Never use Grok or any other xAI model**, for reviews or any other sub-agent work,
-even when it is the only family left. When dropping a reviewer leaves no permitted
-family to substitute, run the remaining reviewers and say so.
+## Communication and previews
 
-When 2 or more independent reviews are requested, every reviewer must also come from
-a different model family/provider than every other reviewer. Different variants from
-one family do not count as independent families: Sonnet plus Opus counts as Claude,
-and two GPT versions count as GPT. For two reviews, route GPT primary to Claude plus
-Gemini, Claude primary to GPT plus Gemini, and Gemini primary to GPT plus Claude.
-Record the exact model and verdict for every validation.
+- Writing preferences are in `writing-style.instructions.md`. They apply to responses
+  to me and content drafted for me.
+- Be concise and lead with the useful answer.
+- For HTML deliverables, include dark and light themes with a toggle or system
+  preference support. Open the HTML after writing and after each regeneration.
+- Open a local preview after every site change. State whether it uses live data or
+  fixtures. Use `C:\Files\Dev\main\copilot\tools\Manage-Preview.ps1` for Start, Status,
+  and Stop. Use the app's hyphenated name and current session id.
+- Check preview ownership and listeners before starting. Reuse the current session's
+  preview and browser page. Never stop another session's preview or an untracked
+  listener without approval.
+- Keep review previews only while review is pending. Stop them after approval,
+  rejection, or review completion. Stop test-only servers in the same turn.
+- Close temporary browser pages when supported. At handoff, report any retained
+  preview URL and why. After stopping, verify the process exited and the port is free.
 
-The `## Preferences` rule for DB-altering changes is satisfied by an independent
-review from Claude Sonnet 5 or Gemini 3.5 Flash, subject to the model-family rule
-above.
+## Pull requests and repository-specific work
 
-### Route cheap work to a cheap model
-
-Don't burn a premium model on a task that doesn't need one. You **cannot** change your
-own model mid-session (only I can, via `/model`), but you *can* delegate the expensive
-part: hand the bulk reading to a sub-agent with a `model` override and spend premium
-tokens only on the final synthesis.
-
-| Kind of work | Model |
-|---|---|
-| Read-only Q&A, doc/repo lookups, summarizing existing files, "what does X say / where does Y live" | Delegate to `explore`, or a `task` sub-agent overridden to `gemini-3.5-flash` / `gpt-5.4-mini` |
-| Code changes, debugging, architecture & design judgment, PR review, anything touching a live DB | Keep the premium model |
-
-Rule of thumb: if the task is read-only, the answer already exists in docs or config,
-and no cross-file reasoning about *behavior* is required, delegate it. Producing a
-substantial artifact from what was read (e.g. a themed HTML report) still justifies the
-premium model for that step. When it's genuinely borderline, delegate and check the
-result rather than defaulting to expensive.
-
-## Long-running jobs: the 5-minute rule
-
-Written after a **2.5-hour stall** (2026-08-09): a Spark diff was launched through a
-runner that printed nothing until completion, on a session Fabric had silently sized at
-**1 executor / 8 cores** while the job it validated ran on **384 cores**. It was only
-caught because I asked. Wasted time is unaffordable. These are hard rules, not
-suggestions.
-
-**Before launching anything expected to take >5 minutes:**
-
-1. **State an estimate and an abort threshold, out loud, before starting.**
-   "I expect this to take ~4 min; if it passes 12 min (3×) I will stop and diagnose."
-   Without a pre-declared number there is nothing to notice a breach against.
-2. **Verify the resources actually granted match what was requested.** Cloud schedulers
-   silently downsize. Read the allocation back and **fail closed** if it's short. Never
-   assume a session/pool/cluster gave you what you asked for.
-3. **Sanity-check the work against the compute.** Roughly: how much data, how many
-   passes, on how many cores? If the arithmetic doesn't support the estimate, fix the
-   job before launching, not after.
-4. **Right-size the tool for the job.** A helper written for a metadata operation
-   (dropping a table) is not automatically fit for a billion-row scan. Re-check its
-   sizing assumptions whenever it's reused at a different scale.
-
-**While it runs:**
-
-5. **No black boxes. A long job must emit a heartbeat** with elapsed time. If the
-   runner can't stream progress, add that first. Remote APIs that only return output at
-   completion (e.g. Livy statements) need an explicit poll-and-print loop.
-6. **Polling is not progress.** Repeatedly waiting on a silent job is not work. If two
-   consecutive checks show no new information, **stop waiting and start diagnosing.**
-7. **Breach the threshold → abort and investigate.** Do not extend the wait. Kill it,
-   find out why, fix it, relaunch. "It's probably almost done" is not evidence.
-8. **Tell @jimb as soon as something exceeds its estimate**, and don't absorb the delay
-   silently. A 10-minute heads-up is worth hours.
-
-**Efficiency, before hitting run:**
-
-9. **Minimise full passes over large data.** Fuse aggregations into a single scan rather
-   than one scan per check; prune to the columns actually needed.
-10. **Don't `cache()` anything that won't comfortably fit in memory.** On wide,
-    hundred-million-row frames it forces spill *and* defeats columnar pruning. Reading
-    the source twice is usually faster.
-
-### Notify on completion (Pushover)
-
-For `FDE_Revenue_Bedrock`, skip Pushover entirely, including stamps, forced sends,
-and plan handoffs. The rules below apply to other repositories.
-
-@jimb does not sit and watch a running turn. **Any turn of 5 minutes or more ends with a push
-notification** so the result reaches his phone instead of sitting in a chat tab he has walked
-away from. The script is `C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1`.
-
-- **Stamp the clock in the first terminal command of the turn**, before any real work:
-  `& C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1 -Stamp`
-- **Send as the last action** before handing the turn back:
-  `& C:\Files\Dev\main\copilot\tools\Send-Pushover.ps1 -Title '<outcome>' -Message '<what happened, what is next>'`
-- **Call it unconditionally.** The 5-minute threshold is enforced inside the script, which
-  exits quietly under it, so elapsed time never has to be judged by eye. `-ThresholdMinutes`
-  tunes it, `-Force` sends regardless, `-Priority 1` bypasses quiet hours (use for a failure
-  or a question that blocks everything else).
-- **Write the title to read on a lock screen with no other context**, e.g.
-  `ferry_tracker: deployed, arrivals landing in 3 min`. Put the decision @jimb needs to make
-  in the message body.
-- A long turn that ends by **asking a question** still gets a notification. Waiting on an
-  unread question is the exact failure this prevents.
-- **Every plan handoff notifies when the work lands.** When a plan leaves Plan mode for
-  implementation, the implementing turn ends with a send, pass or fail, using `-Force` so the
-  5-minute threshold cannot swallow a short run. Title names the repo and the outcome, body says
-  what still needs checking.
-- Credentials are the `PUSHOVER_USER_KEY` and `PUSHOVER_APP_TOKEN` environment variables, user
-  scope. Never put them in a repo, a command line, a chat message, or the question tool. A
-  missing key makes the script warn and exit 0, so it can never fail the work.
-- **The keys are per machine.** @jimb works across several laptops and copies chats between
-  them, so the repo can be current here while the environment is empty. Check before assuming
-  the notifier will fire, and say so plainly when it will not.
-- **Warn him to set the keys from a terminal outside VS Code.** The `Last Command` line is
-  attached to the chat context, so a `SetEnvironmentVariable` call run in a watched terminal
-  writes the secret straight into the transcript and forces a rotation.
-
-## Communication style
-
-- **Writing rules live in `writing-style.instructions.md`** (same folder, loaded every
-  session). It covers voice, banned vocabulary and phrase shapes, the negative-parallelism
-  ban, and analogy limits. It applies to everything: chat, commits, PR text, work items,
-  reports, and code comments. The source of truth is
-  `G:\My Drive\ai\anti-ai-writing-style.md`; re-run `copilot\tools\Sync-WritingStyle.ps1`
-  after editing it. Two rules I get wrong most often: **no em dashes**, and **bold at most
-  1 or 2 moments per section**.
-- **Be concise; lead with the answer, minimal preamble.**
-- **Plan first, then implement.** I don't do well when work jumps straight to
-  implementation. Lay out a short plan and let me confirm before you build.
-- **Ground every decision you bring me in the exact code.** Before presenting options, open
-  the real code, query, config, or DDL and show the specific lines the choice turns on. Name
-  the file and line numbers. Options described in the abstract cost a round trip and usually
-  hide the one detail that decides it, so do the reading first and let me choose from
-  concrete alternatives. This applies to any judgement call, not only code: schema changes,
-  runtime budgets, scope decisions, and data assumptions.
-- **I'm a visual person, and dense text is not great.** HTML is by far the best way to
-  share information; prefer it for anything substantial.
-- **For any HTML you produce, include both a dark and a light theme** (with a way to
-  toggle / respect the system preference).
-- **Always open the HTML for me, every time.** Don't hand me a path or a link and wait.
-  Open it in the browser as soon as it is written, and reopen it after every regeneration
-  so what I'm looking at is never a stale render.
-- **Open a local preview after every site change.** Treat local verification as implied,
-  even when I don't ask. Start or reuse the local development server, confirm it responds,
-  and open the changed site in the browser for me to verify before committing or deploying.
-  State whether it uses live data or fixtures, and report a blocker if a working
-  local preview cannot be opened.
-  **Track preview ownership and clean up after review.** Use
-  `C:\Files\Dev\main\copilot\tools\Manage-Preview.ps1` for Start, Status and Stop
-  (examples in the copilot repo README). Use the app's hyphenated name and the
-  current session id. Start runs a supervisor for the life of the preview; invoke
-  it with powershell `mode: "async", detach: true` so it never blocks chat.
-  Check Status and existing listeners before starting. Reuse one preview per app
-  and its existing browser page; don't use `forceNew` to open duplicate pages.
-  Never stop another session's preview without my approval. Untracked listeners
-  require an ownership inventory and approval before cleanup; never kill all Node
-  or browser processes. The helper checks PID, creation time and executable identity.
-  Keep a review preview only while my review is pending. Stop it when I approve,
-  reject, finish the review, or ask to close it, unless I explicitly ask to keep it.
-  Stop test-only servers in the same turn's cleanup. Restart through Stop then Start.
-  Close temporary browser pages when a close capability is available; otherwise
-  tell me which pages need closing. Browser pages and server processes have separate
-  lifetimes. At handoff, report any retained preview URL and reason. After stopping,
-  verify the helper confirms process exit and port release. Detached previews do
-  not expire automatically; follow up on pending cleanup explicitly.
-
-## Pull requests
-
-- **Lint changed Python for the security ruleset before opening a PR.** Run
-  `python -m ruff check --no-cache --select S <changed paths>` (`ruff` is not on PATH here,
-  so use the module form). Clear every finding or state in the PR why each one stays.
-- **Point the independent review at OWASP classes, not only correctness.** Ruff and bandit
-  have no zip-slip rule, so a path-traversal write in an archive extractor reached PR 216619
-  untouched. Ask the reviewer how the change breaks, not whether it is right.
-- **Before creating a PR, show an HTML of all changed files** (dark/light themed, per
-  the communication-style rules above). Present it and let @jimb review the change set
-  *before* the PR is opened, not after.
-- **Keep changed-files review HTML consistent with recent ARR status reports.** Use the
-  squared, dark-first visual system with an indigo/violet accent, a light theme, system
-  preference support, a persisted theme toggle, the Inter font, and Lucide-style stroke
-  icons. Generate it from the exact reviewed `origin/main...HEAD`, then show the branch,
-  HEAD, local generation time, commit and file counts, review decision, validation
-  evidence, change intent, and work still pending. Group files by purpose and list every
-  changed file with a plain-language summary plus its full searchable, expandable patch.
-  Include expand-all and collapse-all controls. Regenerate and reopen the report whenever
-  HEAD changes. Do not fall back to the rounded, light-first raw-diff template.
-- **Reviewers: Jesus Anaya Valdes and `v-ssfikas` only, and both REQUIRED.** Do not add
-  anyone else as an approver, and never leave a reviewer optional. `az repos pr reviewer add`
-  creates *optional* reviewers, so set `isRequired` afterwards via the REST API:
-  `PUT .../pullRequests/<id>/reviewers/<reviewerId>?api-version=7.1` with
-  `{"isRequired": true, "id": "<reviewerId>"}`. Verify with
-  `az repos pr show --query "reviewers[].{name:displayName, required:isRequired}"`.
-- **Proof of presence is @jimb's to complete, never mine.** It is a human-presence
-  attestation, so automating it defeats the control. When a PR needs it, say so plainly and
-  stop. The method is **always Microsoft**.
-- **Set the PR description over REST, not the CLI.** `az repos pr create --description`
-  silently truncates a multi-line body to its first line. Create the PR, then
-  `PATCH .../pullRequests/<id>?api-version=7.1` with `{"description": "..."}` and read the
-  length back. `--work-items` on create can also no-op; verify with
-  `az repos pr work-item list` and attach separately if it is empty.
-- **After creating a PR, always check its comment threads**. Don't assume a fresh PR has
-  none. The `GitOps` **PR Assistant** posts an automated AI code review within a minute or
-  two, and it **also rewrites the PR description** with its own generated summary, silently
-  discarding whatever description was set at creation. So: re-read the description after it
-  runs and restore it if it was clobbered, and triage its review threads (they carry a
-  severity, and the high-severity ones are often legitimate). Fetch threads via
-  `GET .../pullRequests/<id>/threads?api-version=7.1` and filter out `commentType == "system"`.
-
-## Developer branch and shipping
-
-@jimb develops on `jimb/main` in `FDE_Revenue_Bedrock` and pushes it to origin. Feature
-branches are cut from `origin/main` and carry cherry-picks. Written after PR 216619, where a
-cherry-pick took one commit of a two-commit change and the missing half surfaced only as a
-merge conflict, and the branch had drifted 18 commits before anyone looked.
-
-- **One shippable change is one commit on `jimb/main`.** Amend or squash before shipping so
-  every cherry-pick is self-contained. If a change grew across commits, collapse it first.
-- **Cut the feature branch from `origin/main`, never from `jimb/main`.**
-- **Verify the cherry-pick before opening the PR.** For every path being shipped,
-  `git diff origin/main...<feature> -- <paths>` must equal
-  `git diff origin/main...jimb/main -- <paths>`. Any difference means part of the change was
-  left behind. This is the gate; skipping it is what let PR 216619 go out incomplete.
-- **Keep personal-only files off `jimb/main`.** Emptied developer shortcut manifests and
-  Fabric's own "Committing N items from workspace" commits rewrite shared files and make the
-  branch unmergeable. Park them where they can never be a cherry-pick source.
-- **Never treat the `jimb/main` tip as the source for a shared file.** Fabric's workspace
-  export writes to the same branch, so a file can look repaired there and still be stale
-  against main. The `setup_catalog` seeds read as restored on the branch and were 383 lines
-  behind `origin/main`. Compare against `origin/main` before shipping any shared file.
-- **Reset `jimb/main` onto `origin/main` after every merge** and re-apply only the personal
-  overlay. Drift is what forced the 18-commit cleanup after PR 216619.
-
-## Naming conventions
-
-**Fabric notebooks** (the `FDE_Revenue_Bedrock` data platform) are named:
-
-```
-nb_<layer>_<solution>_<schema>_<entity>
-```
-
-e.g. `nb_silver_arr_revenue_nuancearr`, `nb_silver_arr_bridge_nonearemaining`,
-`nb_silver_arr_dim_tenant`. Rules:
-
-- **Solution comes before schema.** `arr` leads, so every notebook belonging to a
-  solution sorts together in the folder listing regardless of which schema it writes
-  to. It is `nb_silver_arr_revenue_…`, never `nb_silver_revenue_…_arr`.
-- **Never repeat a token.** If the solution is `arr`, the entity does not carry `arr`
-  again. Write `nb_silver_arr_bridge_nonearemaining`, not
-  `nb_silver_arr_bridge_arr_nonearemaining`, even when the legacy p32 source object
-  is named `ARR_BRIDGE_ARR_NonEARemaining`. Don't inherit redundancy from the source.
-- **Drop the `fact` token.** It adds nothing the schema and entity don't already say.
-  `nb_silver_arr_revenue_wwicquotatarget`, not `nb_silver_revenue_fact_arr_wwicquotatarget`.
-- The **folder** (`<name>.Notebook`), the **`displayName`** in its `.platform`, and any
-  self-reference in the notebook body must all agree. A rename that updates only the
-  folder leaves Fabric showing the old name.
-
-**Renaming a notebook**: always `git mv` the `.Notebook` folder (so git records a
-rename `R` rather than a delete + add), update `displayName`, and **keep `logicalId`
-unchanged**. The `logicalId` is what makes Fabric treat it as a rename instead of a
-delete-and-recreate, which preserves the item's run history. Then grep the whole repo
-for the old name, because pipelines and `%run` references won't follow a folder rename.
-
-**`.platform` manifests are LF**, like everything else in the tree. Watch for a CRLF
-manifest sneaking in: it shows up as a whole-file rewrite in `git diff --numstat`
-(e.g. `12  12` for a 12-line file) instead of the one or two lines actually changed.
-Normalize with `[IO.File]::WriteAllText($p, $t -replace "\r\n","\n")` and re-check the
-numstat before committing.
-
-## Commits
-
-Include the trailer on commits:
-
-```
-Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
-```
+Use `msft-ado-repo` for Azure DevOps PR requirements, including the review report,
+required reviewers, PR description verification, and comment-thread triage.
+Follow repo-specific instructions for other PR providers, notebook conventions,
+and repository workflows.

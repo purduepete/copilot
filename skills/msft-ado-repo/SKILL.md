@@ -1,19 +1,14 @@
 ---
 name: msft-ado-repo
 description: >-
-  Manage the full Azure DevOps repo lifecycle for @jimb's Microsoft work repo
-  (default FDE_Revenue_Bedrock in org starlightagilebi / project AgBI): clone &
-  onboard the repo under C:\Files\Dev\msft, create/confirm a linked work item
-  FIRST (required), cut a feature branch named jimb/<tasknumber>/<task_title>,
-  and open / update / complete PRs and check policy + build status via az repos /
-  az boards (authed with the Git Credential Manager bearer token). The repo, org,
-  project and paths are adjustable. Committing/pushing itself is handed off to
-  git-ship. WHEN: "create an ADO branch", "start work on an ADO task", "new
-  feature branch", "open an ADO PR", "create a pull request", "check PR status",
-  "check PR policies", "create a work item", "link a work item", "clone the ADO
-  repo", "set up the bedrock repo", "manage the ADO repo", "ADO repo lifecycle",
-  "the PR is approved", "PR approved", "complete the PR", "merge the PR", "close
-  the task".
+  Manage an Azure DevOps repository: clone or onboard it, create a linked work
+  item, branch, and manage pull requests and policy checks with az repos and az
+  boards. Ask for the organization, project, repository, and local path when
+  they are not known. WHEN: "create an ADO branch", "start work on an ADO task",
+  "new feature branch", "open an ADO PR", "create a pull request", "check PR
+  status", "check PR policies", "create a work item", "link a work item",
+  "clone an ADO repo", "manage an ADO repo", "ADO repo lifecycle", "the PR is
+  approved", "PR approved", "complete the PR", "merge the PR", "close the task".
 argument-hint: Optionally the task number, work-item title, and/or repo name
 ---
 
@@ -24,24 +19,25 @@ create a linked work item, branch, and manage PRs. This owns the *ADO plumbing*;
 the actual **commit / push / deploy** is done by the **git-ship** skill — hand off
 there once a branch exists and changes are staged.
 
-## Config (defaults — all adjustable; confirm if the user names a different repo)
+## Config
 
-| Setting | Default |
+Ask for any missing values. Use the user's existing local checkout when available.
+
+| Setting | Value |
 |---|---|
-| Org URL | `https://dev.azure.com/StarlightAgileBI` (aka `https://starlightagilebi.visualstudio.com`) |
-| Project | `AgBI` |
-| Repo | `FDE_Revenue_Bedrock` |
-| Local path | `C:\Files\Dev\msft\FDE_Revenue_Bedrock` |
-| Work-item **Area Path** | `AgBI\FDE\FDE FPA Revenue\FDE Revenue Bedrock` |
-| Clone root | `C:\Files\Dev\msft` |
+| Org URL | User-provided organization URL |
+| Project | User-provided project |
+| Repo | User-provided repository |
+| Local path | Existing checkout, or a user-approved path under `C:\Files\Dev\msft` |
+| Work-item **Area Path** | User-provided team area path |
 
 Set once per session so every `az` call can reuse them:
 ```powershell
-$Org  = 'https://dev.azure.com/StarlightAgileBI'
-$Proj = 'AgBI'
-$Repo = 'FDE_Revenue_Bedrock'
-$Area = 'AgBI\FDE\FDE FPA Revenue\FDE Revenue Bedrock'
-$Local = 'C:\Files\Dev\msft\FDE_Revenue_Bedrock'
+$Org  = '<organization URL>'
+$Proj = '<project>'
+$Repo = '<repository>'
+$Area = '<work-item area path>'
+$Local = '<local checkout path>'
 ```
 
 ## Auth — reuse the Git Credential Manager token (never print it)
@@ -49,18 +45,15 @@ $Local = 'C:\Files\Dev\msft\FDE_Revenue_Bedrock'
 Pull the cached OAuth token for the ADO host, then hand it to the `az devops` CLI
 as its PAT. **Do not echo the token.**
 ```powershell
-$inp = "protocol=https`nhost=starlightagilebi.visualstudio.com`n`n"
+$adoHost = ([uri]$Org).Host
+$inp = "protocol=https`nhost=$adoHost`n`n"
 $tok = ($inp | git credential fill 2>$null | Where-Object { $_ -match '^password=' }) -replace '^password=',''
 if (-not $tok) { throw "No cached ADO credential. Run 'git fetch' against the repo once first." }
 $env:AZURE_DEVOPS_EXT_PAT = $tok       # consumed by `az repos` / `az boards`
 az devops configure --defaults organization=$Org project=$Proj 2>$null
 ```
-**Verified 2026-07-08:** the GCM OAuth JWT is accepted as `AZURE_DEVOPS_EXT_PAT`
-for `az repos`, `az boards`, and `az repos pr` against this org — no `az login` or
-separate PAT needed. If a machine ever returns `TF400813 / unauthorized`, **fall
-back to the REST API** with `Authorization = "Bearer $tok"` (the proven path in
-`git-ship`). Prefer `az`; use REST only if `az`
-can't auth.
+If authentication fails, verify that Git Credential Manager has a credential for
+the host in `$adoHost`. Keep the token in the process environment and never print it.
 
 > **JSON-parsing gotcha (bit me in testing):** `az` prints a cp1252 encoding
 > `WARNING:` to **stderr** on this machine. **Never** merge stderr into a JSON
@@ -72,11 +65,12 @@ can't auth.
 
 ```powershell
 if (-not (Test-Path $Local)) {
-  git -C C:\Files\Dev\msft clone "$Org/$Proj/_git/$Repo"
+  git clone "$Org/$Proj/_git/$Repo" $Local
 }
 git -C $Local fetch --prune          # also primes the credential cache for auth above
 ```
-Always clone under `C:\Files\Dev\msft` (never a temp dir) — @jimb's standing rule.
+Use the local path supplied for this repository. For work repositories, use
+`C:\Files\Dev\msft` rather than a temp directory.
 
 ## 2. Work item is REQUIRED — create or confirm FIRST
 
@@ -139,20 +133,25 @@ az repos pr create --org $Org --project $Proj --repository $Repo `
   --source-branch $Branch --target-branch $Default `
   --title "<PR title>" --description "<what & why>" `
   --work-items $TaskNum `                 # auto-links the work item
-  --squash --delete-source-branch true `  # tidy merge + cleanup
+  --squash --delete-source-branch false ` # Fabric branch gate controls deletion
   --auto-complete true `                  # completes once policies pass
-  --reviewers "janayavaldes@microsoft.com" "srvoru@microsoft.com" "shaneolson@microsoft.com" `
   -o json | ConvertFrom-Json | Select-Object pullRequestId, @{n='url';e={"$Org/$Proj/_git/$Repo/pullrequest/$($_.pullRequestId)"}}
 ```
-**Default approvers** for this repo (add unless @jimb says otherwise):
-`janayavaldes@microsoft.com`, `srvoru@microsoft.com`, `shaneolson@microsoft.com`.
-Add them on create via `--reviewers` (above), or to an existing PR:
-```powershell
-az repos pr reviewer add --id <prId> --org $Org `
-  --reviewers "janayavaldes@microsoft.com" "srvoru@microsoft.com" "shaneolson@microsoft.com"
+Use the target repository's branch policies and any reviewer requirements @jimb
+specifies. Do not apply a preset reviewer list to every PR. When a reviewer must be
+required, set `isRequired` to `true` through the REST API:
+
+```text
+PUT .../pullRequests/<id>/reviewers/<reviewerId>?api-version=7.1
+{"isRequired": true, "id": "<reviewerId>"}
 ```
-Add any extra reviewers @jimb names; branch-policy default/required reviewers still
-apply on top.
+
+Verify the reviewer list and required flags with:
+
+```powershell
+az repos pr show --id <prId> --org $Org `
+  --query "reviewers[].{name:displayName, required:isRequired}"
+```
 
 ## 5. Manage & check status / policies
 
@@ -169,74 +168,27 @@ az repos pr policy list --id <prId> --org $Org -o table
 az repos pr update --id <prId> --org $Org --auto-complete true
 az repos pr set-vote --id <prId> --org $Org --vote approve
 ```
-Add reviewers to an **existing** PR (e.g. the default approvers) with
-`az repos pr reviewer add --id <prId> --org $Org --reviewers <a> <b> <c>` — they land
-as **optional** reviewers (`isRequired` is blank); required reviewers come from branch
-policy, not this flag.
+The CLI adds reviewers as optional. Set each required flag through the REST API and
+verify it; branch policy does not replace this check.
 
 ## 6. Complete (merge) & close out — once approved
 
 **When @jimb says the PR is approved** (e.g. "the PR's approved", "PR approved",
 "complete/merge the PR"), that is the go-signal to run this whole close-out
 **without re-asking**: merge the PR, delete the feature branch, and close the work
-item. Only precondition: the PR is approved and policies are green. DB/schema-
-affecting changes still need a Gemini second opinion first (@jimb's standing rule) —
-not relevant to doc/skill PRs.
-
-### Fabric branch deletion gate
-
-**Hard deletion rule:** never delete a feature branch while Fabric is connected to it.
-Fabric must be connected to `main`, synchronized with matching heads, and clean before the
-feature branch is deleted.
-
-Before deleting any remote Bedrock branch, check whether a Fabric developer
-workspace is connected to it. For @jimb, resolve the exact workspace display name
-`FDE_Bedrock_Engine_jimb`, then read:
-
-```text
-GET /v1/workspaces/{workspaceId}/git/connection
-GET /v1/workspaces/{workspaceId}/git/status
-```
-
-If the connection names the branch being deleted:
-
-1. Refuse deletion when either Fabric read returns any non-200 response (including
-   `GitProviderResourceNotFound`, timeout, 404, or 5xx) or any workspace-side change exists.
-2. Switch the existing connection to `main`. Use the Fabric portal's in-place branch switch
-   when available; never improvise with `PATCH /git/connection`.
-3. When no supported in-place switch is available, a guarded disconnect/reconnect is allowed
-   for a developer workspace:
-   - require successful connection and status reads, matching workspace/remote heads, and
-     zero workspace-side changes;
-   - verify the target remote branch exists and capture the full current provider details,
-     branch, directory, and head for recovery;
-   - disconnect, connect to the same organization/project/repository/directory on the target
-     branch, then initialize with `PreferRemote`;
-   - if connect or initialize fails, disconnect any partial target connection first, then
-     reconnect and initialize the captured original branch and stop;
-   - do not delete the original remote branch until the target connection is initialized,
-     synchronized, and clean.
-4. Run `updateFromGit` for the current remote `main` commit.
-5. Verify the connection names `main`, workspace and remote heads match, and workspace-side
-   changes are empty.
-6. Only then delete the remote branch.
-
-This gate also applies to manual cleanup requests outside PR completion. Never delete a
-branch first and assume Fabric will recover. A deleted connected branch leaves the
-workspace metadata on a missing ref and makes `git/status` return
-`GitProviderResourceNotFound`.
+item. The PR must be approved and its policies green. Check the target repository's
+instructions before deleting a source branch. Database changes need the independent
+model review required by the global instructions.
 
 ```powershell
-# Merge without automatic branch deletion.
+# Merge without automatic branch deletion so repository-specific cleanup can run.
 az repos pr update --id <prId> --org $Org --status completed --squash true --delete-source-branch false | Out-Null
 ```
 - **Completion is ASYNC** — `az` returns immediately with `mergeStatus=queued`.
   Re-query `az repos pr show --id <prId>` until `status=completed` /
   `mergeStatus=succeeded` (a `Start-Sleep 5-6` then re-check works).
-- Run the Fabric branch deletion gate only after `mergeStatus=succeeded` is confirmed.
-- After the Fabric gate passes, delete the remote branch explicitly with
-  `git push origin --delete <branch>`, then confirm with `git ls-remote origin <branch>`
-  (empty = gone).
+- After `mergeStatus=succeeded`, delete the remote branch if the target repository's
+  rules allow it. Confirm deletion with `git ls-remote origin <branch>` (empty = gone).
 - **Close the work item** (state names vary by type; Task/Bug use `Closed`):
   ```powershell
   az boards work-item update --id $TaskNum --org $Org --state "Closed" | Out-Null
@@ -249,6 +201,30 @@ az repos pr update --id <prId> --org $Org --status completed --squash true --del
   git -C $Local branch -D <branch>
   git -C $Local fetch --prune
   ```
+
+## PR review requirements
+
+- Before opening a PR, lint changed Python with
+  `python -m ruff check --no-cache --select S <changed paths>`. Clear findings
+  or explain them in the PR. Ask the independent reviewer to check relevant
+  OWASP vulnerability classes, not only correctness.
+- Before creating a PR, generate and open a dark/light HTML review of the exact
+  `origin/main...HEAD` diff. Show the branch, HEAD, local generation time,
+  commit and file counts, review decision, validation, intent, and remaining
+  work. Group all changed files by purpose and include each summary and its
+  searchable, expandable patch. Add expand-all and collapse-all controls.
+  Regenerate and reopen it whenever HEAD changes. Use the squared, dark-first
+  indigo/violet style with Inter and Lucide-style stroke icons.
+- Set a multi-line PR description through the REST API after creation:
+  `PATCH .../pullRequests/<id>?api-version=7.1` with
+  `{"description": "..."}`. Read it back and verify its length. Verify that
+  `--work-items` attached the work item; attach it separately if the list is
+  empty.
+- After PR creation, check comment threads. The GitOps PR Assistant may rewrite
+  the description and post a review. Re-read and restore the description if
+  needed. Triage non-system review threads, including their severity.
+- Proof of presence is @jimb's to complete. Never complete it for him. The
+  method is Microsoft. If a PR requires it, tell him and stop.
 
 ## Notes
 - `az repos` / `az boards` need the **azure-devops** extension: `az extension add

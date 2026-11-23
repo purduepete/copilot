@@ -107,5 +107,6 @@ Copilot chat memory lives in
 Settings Sync does not carry `globalStorage`, so those notes start empty on a new
 machine. The junctioned instructions still load, so this is optional redundancy.
 
-`tools\Sync-WritingStyle.ps1` only runs on machines with `G:\My Drive` mounted.
-Everywhere else the checked-in copy is the source and `git pull` refreshes it.
+`global-instructions\writing-style.instructions.md` is maintained in this
+repository. Edit the checked-in copy directly; `git pull` refreshes it on other
+machines.
