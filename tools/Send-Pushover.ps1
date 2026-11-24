@@ -9,9 +9,9 @@ Two modes:
 The threshold is enforced here rather than by the caller's judgement, so the send call can be
 made unconditionally at the end of every turn.
 
-Credentials come from the PUSHOVER_USER_KEY and PUSHOVER_APP_TOKEN environment variables
-(user scope). They are never stored in this repo. A missing credential warns and exits 0 so a
-notification problem can never be mistaken for a failure of the work itself.
+Credentials are read from a per-user Windows DPAPI-encrypted file outside this repo.
+A missing credential warns and exits 0 so a notification problem can never be mistaken
+for a failure of the work itself.
 #>
 [CmdletBinding(DefaultParameterSetName = 'Send')]
 param(
@@ -38,16 +38,6 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-
-function Get-PushoverSecret {
-    param([string]$Name)
-    $value = [Environment]::GetEnvironmentVariable($Name, 'Process')
-    if ([string]::IsNullOrWhiteSpace($value)) {
-        # Picks up a key set after this shell started.
-        $value = [Environment]::GetEnvironmentVariable($Name, 'User')
-    }
-    return $value
-}
 
 if ($Stamp) {
     [IO.File]::WriteAllText($MarkerPath, (Get-Date).ToString('o'), (New-Object Text.UTF8Encoding $false))
@@ -82,10 +72,22 @@ if (-not $Force) {
     }
 }
 
-$userKey = Get-PushoverSecret -Name 'PUSHOVER_USER_KEY'
-$appToken = Get-PushoverSecret -Name 'PUSHOVER_APP_TOKEN'
+$credentialPath = Join-Path $env:LOCALAPPDATA 'Copilot\pushover.credential.xml'
+if (-not (Test-Path -LiteralPath $credentialPath -PathType Leaf)) {
+    Write-Warning "Pushover credential file is missing: $credentialPath"
+    return
+}
+try {
+    $credentials = Import-Clixml -LiteralPath $credentialPath
+    $userKey = [System.Net.NetworkCredential]::new('', $credentials.user).Password
+    $appToken = [System.Net.NetworkCredential]::new('', $credentials.token).Password
+}
+catch {
+    Write-Warning "Pushover credential file could not be read: $($_.Exception.Message)"
+    return
+}
 if ([string]::IsNullOrWhiteSpace($userKey) -or [string]::IsNullOrWhiteSpace($appToken)) {
-    Write-Warning 'PUSHOVER_USER_KEY and/or PUSHOVER_APP_TOKEN are not set; notification skipped.'
+    Write-Warning 'Pushover credential file is incomplete; notification skipped.'
     return
 }
 

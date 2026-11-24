@@ -77,11 +77,10 @@ For turns with a start marker, send a Pushover notification through
   it a lock-screen-readable title and put any decision I need to make in the message.
 - Call the script unconditionally; its threshold defaults to 5 minutes. Use `-Force`
   for plan handoffs and `-Priority 1` for failures or blocking questions.
-- Keys are per machine. Check that both environment variables are set before assuming
-  the notification will send. Never put credentials in the repo, command line, chat,
-  or question tool.
-- Tell me to set missing keys from a terminal outside VS Code. A watched terminal's
-  `Last Command` line can expose a `SetEnvironmentVariable` call in the transcript.
+- Keys are stored in the current Windows user's DPAPI-encrypted
+  `%LOCALAPPDATA%\Copilot\pushover.credential.xml` file. Check that the file exists
+  before assuming the notification will send. Never put credentials in the repo,
+  command line, chat, or question tool.
 
 ## Communication and previews
 

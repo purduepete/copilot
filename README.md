@@ -10,6 +10,10 @@ live here have **moved** to the cloud-hosted **`worklog_web`** project:
 
 - **`global-instructions/`** — the checked-in source for shared instructions.
 - `tools\Manage-Preview.ps1`: owned local preview supervision, status and cleanup.
+- `tools\Send-Pushover.ps1`: completion notifications using the current Windows
+  user's DPAPI-encrypted `%LOCALAPPDATA%\Copilot\pushover.credential.xml`. The
+  file contains `user` and `token` SecureString values exported with
+  `Export-Clixml`; it cannot be copied to another user or machine.
 - `handoff/`: session handoff notes for moving work between machines, written and
   read by the `skills\session-handoff` skill.
 
