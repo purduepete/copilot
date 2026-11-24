@@ -14,6 +14,8 @@ Shared across repositories and machines. Repo-specific rules belong in each repo
   speculative helpers, approval layers, repeated reviews, and side work.
 - **Stop after the requested result is verified.** Run focused checks and inspect the
   requested behavior. Expand the checks only when a focused check fails or I ask.
+- During site iteration, use previews and other non-test checks; defer tests until
+  before a commit. Run browser/e2e suites only when I also ask to deploy.
 - **Ask about consequential trade-offs early.** Establish scope, data gaps, and downtime
   before designing work that depends on them. Reuse answers already given.
 - **Plan first, then implement.** Give me a short plan for implementation work. For small,
@@ -43,6 +45,8 @@ Shared across repositories and machines. Repo-specific rules belong in each repo
   - `msft-ado-repo` for Azure DevOps work and PRs.
   - `vscode-extension` for Marketplace work.
   - `worklog` for WorkLog tasks.
+  - `web-design` for web design and UI changes. Give each site its own visual
+    identity and keep its pages and controls consistent.
 
 ## Models
 
@@ -89,6 +93,12 @@ For turns with a start marker, send a Pushover notification through
 - Open a local preview after every site change. State whether it uses live data or
   fixtures. Use `C:\Files\Dev\main\copilot\tools\Manage-Preview.ps1` for Start, Status,
   and Stop. Use the app's hyphenated name and current session id.
+- For deployed-site verification, use the app's `localUrl` in
+  `C:\Files\Dev\main\solution-deploy\site\sites.json`, not its Cloudflare or
+  Tailscale URL. Identify a separate development preview when checking unreleased
+  changes; it cannot prove the deployed site has those changes.
+- Local previews should show the full underlying backend data when safely available.
+  Verify data coverage, and disclose any missing data or fixture substitutions.
 - Check preview ownership and listeners before starting. Reuse the current session's
   preview and browser page. Never stop another session's preview or an untracked
   listener without approval.
