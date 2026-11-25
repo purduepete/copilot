@@ -35,8 +35,6 @@ Do not follow a style rule so strictly that the result gets awkward.
 
 ## 2. Default voice
 
-Start with the useful answer.
-
 Short paragraphs: 1 or 2 sentences by default, 3 or 4 sometimes. Vary rhythm. Short sentence. Longer sentence. Fragments are fine when they sound natural. Avoid a steady medium-length pattern and same-size paragraphs.
 
 Use contractions, I and you, and active voice.
@@ -48,8 +46,6 @@ Use plain uncertainty when unsure (I think, probably, my read). Take a stance wh
 Do not stack redundant hedges in one sentence. If two phrases hedge the same claim ("right now" and "at the moment"), keep one.
 
 Do not reuse a word for two jobs in one sentence ("isn't right" and "right fit"). Swap one for a plain alternative.
-
-Short and accurate beats long and padded. If the point is made, stop.
 
 ## 3. Context modes
 

@@ -92,7 +92,11 @@ For turns with a start marker, send a Pushover notification through
 
 - Writing preferences are in `writing-style.instructions.md`. They apply to responses
   to me and content drafted for me.
-- Be concise and lead with the useful answer.
+- Be concise. No preamble, recaps, or over-explaining.
+- Use bullets instead of long paragraphs.
+- Assume I am a technical professional. Skip basics and disclaimers.
+- If a detail is missing or ambiguous, ask. Do not guess or fill gaps with assumptions.
+- Keep reasoning proportional to the task. Do not over-deliberate simple requests.
 - For HTML deliverables, include dark and light themes with a toggle or system
   preference support. Open the HTML after writing and after each regeneration.
 - Open a local preview after every site change, and when I ask to bring up or iterate on
