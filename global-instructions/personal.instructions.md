@@ -28,6 +28,12 @@ Shared across repositories and machines. Repo-specific rules belong in each repo
 - Reuse verified setup and lessons when they prevent repeat failures. Don't delay current
   work for unrelated feedback.
 - Always show times in my local time zone. Convert UTC timestamps and label them local.
+- Before editing or previewing a repo, run `git worktree list` and `git branch -vv` to
+  check for unmerged branches or worktrees ahead of `main`. Do not create git worktrees
+  or call `isolate_session` unless I explicitly ask; work directly in the repo's `main`
+  checkout. Keep `main` as the deployed branch: merge any worktree or feature branches
+  into `main`, push `main`, and remove finished worktrees so `main` stays in sync with
+  production.
 - When I say "commit," commit and push unless I explicitly ask to keep the commit local
   or not to push.
 - Include this trailer on commits unless I ask otherwise:
@@ -89,14 +95,25 @@ For turns with a start marker, send a Pushover notification through
 - Be concise and lead with the useful answer.
 - For HTML deliverables, include dark and light themes with a toggle or system
   preference support. Open the HTML after writing and after each regeneration.
-- Open a local preview after every site change. State whether it uses live data or
-  fixtures. Use `C:\Files\Dev\main\copilot\tools\Manage-Preview.ps1` for Start, Status,
-  and Stop. Use the app's hyphenated name and current session id.
+- Open a local preview after every site change, and when I ask to bring up or iterate on
+  a site, start a local development preview from the current machine's checkout. State
+  whether it uses live data or fixtures. Use
+  `C:\Files\Dev\main\copilot\tools\Manage-Preview.ps1` for Start, Status, and Stop with
+  the app's hyphenated name and current session id.
+- When development runs on `JIMBROWNHOME`, bind local previews to `0.0.0.0`, pass
+  `http://127.0.0.1:<port>/` to `Manage-Preview.ps1 -Url`, and open the preview in VS
+  Code's integrated browser (`openBrowserPage`) using `JIMBROWNHOME`'s LAN IP
+  (`http://192.168.2.11:<port>/`). Never open a loopback URL or launch a desktop browser
+  with `Start-Process` on the remote host.
 - For deployed-site verification, use the app's `localUrl` in
   `C:\Files\Dev\main\solution-deploy\site\sites.json`, not its Cloudflare or
   Tailscale URL. Identify a separate development preview when checking unreleased
   changes; it cannot prove the deployed site has those changes.
 - Local previews should show the full underlying backend data when safely available.
+  For frontend iteration on apps backed by `jimbrownhome1` (such as Home Automation),
+  serve local UI files while proxying read-only `GET` API requests to the deployed
+  `localUrl` and blocking mutating requests (`POST`/`PUT`/`DELETE`) so current devices,
+  weather, rules, and logs appear without touching live devices or production state.
   Verify data coverage, and disclose any missing data or fixture substitutions.
 - Check preview ownership and listeners before starting. Reuse the current session's
   preview and browser page. Never stop another session's preview or an untracked
